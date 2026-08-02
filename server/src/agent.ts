@@ -1,11 +1,37 @@
-import { callLlm, defaultModel, resolveApiKey, type LlmSettings } from "./llm.js";
+import {
+  defaultModel,
+  resolveApiKey,
+  streamLlm,
+  type LlmSettings,
+  type ProviderResponse,
+} from "./llm.js";
 import {
   executeTool,
   toolRequiresApproval,
   toolsForPrompt,
 } from "./tools.js";
-import { createSession, getSession, touch } from "./sessions.js";
-import type { ChatMessage, ProviderName, StreamEvent } from "./types.js";
+import {
+  clearApprovals,
+  createSession,
+  getSession,
+  promoteApprovalQueue,
+  setApprovalQueue,
+  touch,
+} from "./sessions.js";
+import { summarizeHistory } from "./summarize.js";
+import type {
+  ChatMessage,
+  PendingTool,
+  ProviderName,
+  StreamEvent,
+  ToolCall,
+} from "./types.js";
+import { getShellMode } from "./shellPolicy.js";
+
+export type LlmFn = (
+  settings: LlmSettings,
+  messages: ChatMessage[]
+) => Promise<{ text: string; toolCalls: ToolCall[] }>;
 
 const SYSTEM_PROMPT = `You are Omni — the user's personal AI, Jarvis-class and better:
 always available, proactive when useful, precise under pressure, and actually able to act.
@@ -28,7 +54,8 @@ Rules:
 3. Keep replies tight on mobile: short status, then results.
 4. If blocked (missing info/key/permission), say exactly what's needed.
 5. You can code, research the web, remember facts, run commands, and manage workspace files.
-6. Never claim you accessed the user's personal phone data unless a tool result proves it.`;
+6. Never claim you accessed the user's personal phone data unless a tool result proves it.
+7. Shell mode is ${getShellMode(process.env.OMNI_SHELL_MODE)} — blocked commands will fail; adapt.`;
 
 export type RunOptions = {
   sessionId?: string;
@@ -42,10 +69,76 @@ export type RunOptions = {
     id: string;
     approve: boolean;
   };
+  /** Test seam — defaults to production LLM client. */
+  callLlm?: LlmFn;
 };
 
 async function* emit(event: StreamEvent): AsyncGenerator<StreamEvent> {
   yield event;
+}
+
+function toPending(call: ToolCall): PendingTool {
+  return {
+    id: call.id,
+    name: call.name,
+    arguments: call.arguments,
+    reason: `${call.name} can change your system/workspace`,
+  };
+}
+
+async function* runOneTool(
+  sessionId: string,
+  workspaceRoot: string,
+  call: { id: string; name: string; arguments: Record<string, unknown> },
+  sessionMessages: ChatMessage[],
+  history: ChatMessage[]
+): AsyncGenerator<StreamEvent, void, unknown> {
+  yield* emit({
+    type: "tool_start",
+    id: call.id,
+    name: call.name,
+    arguments: call.arguments,
+  });
+  try {
+    const output = await executeTool(
+      call.name,
+      call.arguments,
+      workspaceRoot,
+      { sessionId }
+    );
+    const toolMsg: ChatMessage = {
+      role: "tool",
+      tool_call_id: call.id,
+      name: call.name,
+      content: output,
+    };
+    sessionMessages.push(toolMsg);
+    history.push(toolMsg);
+    yield* emit({
+      type: "tool_result",
+      id: call.id,
+      name: call.name,
+      ok: true,
+      output,
+    });
+  } catch (err) {
+    const output = err instanceof Error ? err.message : String(err);
+    const toolMsg: ChatMessage = {
+      role: "tool",
+      tool_call_id: call.id,
+      name: call.name,
+      content: `Error: ${output}`,
+    };
+    sessionMessages.push(toolMsg);
+    history.push(toolMsg);
+    yield* emit({
+      type: "tool_result",
+      id: call.id,
+      name: call.name,
+      ok: false,
+      output,
+    });
+  }
 }
 
 export async function* runAgent(
@@ -60,7 +153,6 @@ export async function* runAgent(
     model: options.model || defaultModel(provider),
     apiKey: resolveApiKey(provider, options.apiKey),
   };
-
   let session = options.sessionId ? getSession(options.sessionId) : undefined;
   if (!session) {
     const title =
@@ -69,9 +161,12 @@ export async function* runAgent(
   }
 
   yield* emit({ type: "session", sessionId: session.id });
-  yield* emit({ type: "status", status: `provider=${settings.provider} model=${settings.model}` });
+  yield* emit({
+    type: "status",
+    status: `provider=${settings.provider} model=${settings.model}`,
+  });
 
-  // Resume from pending approval
+  // Resume from pending approval (supports multi-tool queue)
   if (options.approvalDecision && session.pendingApproval) {
     const pending = session.pendingApproval;
     if (options.approvalDecision.id !== pending.id) {
@@ -85,8 +180,6 @@ export async function* runAgent(
         name: pending.name,
         content: "User denied this action.",
       });
-      session.pendingApproval = undefined;
-      touch(session);
       yield* emit({
         type: "tool_result",
         id: pending.id,
@@ -94,49 +187,60 @@ export async function* runAgent(
         ok: false,
         output: "Denied by user",
       });
-    } else {
-      yield* emit({
-        type: "tool_start",
-        id: pending.id,
-        name: pending.name,
-        arguments: pending.arguments,
-      });
-      try {
-        const output = await executeTool(
-          pending.name,
-          pending.arguments,
-          options.workspaceRoot
-        );
-        session.messages.push({
-          role: "tool",
-          tool_call_id: pending.id,
-          name: pending.name,
-          content: output,
-        });
+
+      const next = promoteApprovalQueue(session);
+      if (next) {
         yield* emit({
-          type: "tool_result",
-          id: pending.id,
-          name: pending.name,
-          ok: true,
-          output,
+          type: "approval_required",
+          id: next.id,
+          name: next.name,
+          arguments: next.arguments,
+          reason: next.reason,
+          queueRemaining: session.pendingToolQueue?.length ?? 0,
         });
-      } catch (err) {
-        const output = err instanceof Error ? err.message : String(err);
-        session.messages.push({
-          role: "tool",
-          tool_call_id: pending.id,
-          name: pending.name,
-          content: `Error: ${output}`,
-        });
-        yield* emit({
-          type: "tool_result",
-          id: pending.id,
-          name: pending.name,
-          ok: false,
-          output,
-        });
+        yield* emit({ type: "done", sessionId: session.id });
+        return;
       }
-      session.pendingApproval = undefined;
+      clearApprovals(session);
+    } else {
+      yield* runOneTool(
+        session.id,
+        options.workspaceRoot,
+        pending,
+        session.messages,
+        session.messages
+      );
+
+      // Drain queue: auto-run safe tools; pause again on next approval tool
+      while (session.pendingToolQueue?.length) {
+        const next = session.pendingToolQueue[0]!;
+        if (toolRequiresApproval(next.name) && !options.autoApprove) {
+          promoteApprovalQueue(session);
+          const current = session.pendingApproval!;
+          yield* emit({
+            type: "approval_required",
+            id: current.id,
+            name: current.name,
+            arguments: current.arguments,
+            reason: current.reason,
+            queueRemaining: session.pendingToolQueue?.length ?? 0,
+          });
+          yield* emit({ type: "done", sessionId: session.id });
+          return;
+        }
+        session.pendingToolQueue.shift();
+        if (!session.pendingToolQueue.length) {
+          session.pendingToolQueue = undefined;
+        }
+        yield* runOneTool(
+          session.id,
+          options.workspaceRoot,
+          next,
+          session.messages,
+          session.messages
+        );
+      }
+      clearApprovals(session);
       touch(session);
     }
   } else if (options.message.trim()) {
@@ -144,28 +248,38 @@ export async function* runAgent(
     touch(session);
   }
 
-  const history: ChatMessage[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    ...session.messages,
-  ];
-
   const maxRounds = 12;
   for (let round = 0; round < maxRounds; round++) {
     yield* emit({ type: "status", status: `thinking (round ${round + 1})` });
 
-    let response;
+    const history: ChatMessage[] = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...summarizeHistory(session.messages),
+    ];
+
+    let response: ProviderResponse;
     try {
-      response = await callLlm(settings, history);
+      if (options.callLlm) {
+        response = await options.callLlm(settings, history);
+        if (response.text) {
+          yield* emit({ type: "text_delta", text: response.text });
+        }
+      } else {
+        response = { text: "", toolCalls: [] };
+        for await (const ev of streamLlm(settings, history)) {
+          if (ev.type === "text_delta") {
+            yield* emit({ type: "text_delta", text: ev.text });
+          } else {
+            response = ev.response;
+          }
+        }
+      }
     } catch (err) {
       yield* emit({
         type: "error",
         message: err instanceof Error ? err.message : String(err),
       });
       return;
-    }
-
-    if (response.text) {
-      yield* emit({ type: "text", text: response.text });
     }
 
     if (!response.toolCalls.length) {
@@ -175,92 +289,48 @@ export async function* runAgent(
           content: response.text,
         };
         session.messages.push(assistantMsg);
-        history.push(assistantMsg);
         touch(session);
       }
       yield* emit({ type: "done", sessionId: session.id });
       return;
     }
 
-    // Persist assistant tool-call turn with proper tool_calls for API continuity
     const assistantToolMsg: ChatMessage = {
       role: "assistant",
       content: response.text || "",
       tool_calls: response.toolCalls,
     };
     session.messages.push(assistantToolMsg);
-    history.push(assistantToolMsg);
     touch(session);
 
-    for (const call of response.toolCalls) {
+    for (let i = 0; i < response.toolCalls.length; i++) {
+      const call = response.toolCalls[i]!;
       const needsApproval =
         toolRequiresApproval(call.name) && !options.autoApprove;
 
       if (needsApproval) {
-        session.pendingApproval = {
-          id: call.id,
-          name: call.name,
-          arguments: call.arguments,
-          reason: `${call.name} can change your system/workspace`,
-        };
-        touch(session);
+        const head = toPending(call);
+        const rest = response.toolCalls.slice(i + 1).map(toPending);
+        setApprovalQueue(session, head, rest);
         yield* emit({
           type: "approval_required",
-          id: call.id,
-          name: call.name,
-          arguments: call.arguments,
-          reason: session.pendingApproval.reason,
+          id: head.id,
+          name: head.name,
+          arguments: head.arguments,
+          reason: head.reason,
+          queueRemaining: rest.length,
         });
         yield* emit({ type: "done", sessionId: session.id });
         return;
       }
 
-      yield* emit({
-        type: "tool_start",
-        id: call.id,
-        name: call.name,
-        arguments: call.arguments,
-      });
-
-      try {
-        const output = await executeTool(
-          call.name,
-          call.arguments,
-          options.workspaceRoot
-        );
-        const toolMsg: ChatMessage = {
-          role: "tool",
-          tool_call_id: call.id,
-          name: call.name,
-          content: output,
-        };
-        session.messages.push(toolMsg);
-        history.push(toolMsg);
-        yield* emit({
-          type: "tool_result",
-          id: call.id,
-          name: call.name,
-          ok: true,
-          output,
-        });
-      } catch (err) {
-        const output = err instanceof Error ? err.message : String(err);
-        const toolMsg: ChatMessage = {
-          role: "tool",
-          tool_call_id: call.id,
-          name: call.name,
-          content: `Error: ${output}`,
-        };
-        session.messages.push(toolMsg);
-        history.push(toolMsg);
-        yield* emit({
-          type: "tool_result",
-          id: call.id,
-          name: call.name,
-          ok: false,
-          output,
-        });
-      }
+      yield* runOneTool(
+        session.id,
+        options.workspaceRoot,
+        call,
+        session.messages,
+        session.messages
+      );
       touch(session);
     }
   }

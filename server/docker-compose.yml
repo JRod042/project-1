@@ -1,0 +1,18 @@
+services:
+  omni-server:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      PORT: "8787"
+      WORKSPACE_ROOT: /data/workspace
+      OMNI_SHELL_MODE: strict
+      OMNI_PROVIDER: xai
+      OMNI_MODEL: grok-4.5
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OMNI_SERVER_TOKEN: ${OMNI_SERVER_TOKEN:-}
+    volumes:
+      - ./workspace:/data/workspace
+    restart: unless-stopped

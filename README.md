@@ -38,6 +38,10 @@ npm install
 npm start              # http://0.0.0.0:8787
 ```
 
+Optional hardening (see **[AUDIT.md](AUDIT.md)**): set `OMNI_SERVER_TOKEN`, keep `OMNI_SHELL_MODE=strict`, run `npm test`.
+
+Deploy / tunnel / Docker: **[server/DEPLOY.md](server/DEPLOY.md)**
+
 ## Repo layout
 
 | Path | Role |

@@ -1,4 +1,4 @@
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
   mkdir,
@@ -9,8 +9,16 @@ import {
   appendFile,
 } from "node:fs/promises";
 import path from "node:path";
+import { writeAudit } from "./audit.js";
+import {
+  assertShellAllowed,
+  getShellMode,
+  getShellTimeoutMs,
+  sanitizedShellEnv,
+  type ShellMode,
+} from "./shellPolicy.js";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export type ToolDef = {
   name: string;
@@ -72,7 +80,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: "run_shell",
     description:
-      "Run a shell command in the workspace. Use for builds, git, scripts, installs.",
+      "Run a shell command in the workspace. Blocked patterns depend on OMNI_SHELL_MODE (strict|full).",
     parameters: {
       type: "object",
       properties: {
@@ -155,11 +163,21 @@ export const TOOLS: ToolDef[] = [
   },
 ];
 
-function resolveSafe(root: string, rel: string): string {
-  const cleaned = rel.replace(/^\/+/, "") || ".";
-  const full = path.resolve(root, cleaned);
+/** Resolve a workspace-relative path; throws if it escapes WORKSPACE_ROOT. */
+export function resolveSafe(root: string, rel: string): string {
+  const raw = String(rel ?? ".").trim() || ".";
+  if (path.isAbsolute(raw) || raw.startsWith("~")) {
+    throw new Error("Path escapes workspace");
+  }
+  const cleaned = raw.replace(/^\/+/, "") || ".";
   const rootResolved = path.resolve(root);
-  if (full !== rootResolved && !full.startsWith(rootResolved + path.sep)) {
+  const full = path.resolve(rootResolved, cleaned);
+  const relToRoot = path.relative(rootResolved, full);
+  if (
+    relToRoot === ".." ||
+    relToRoot.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relToRoot)
+  ) {
     throw new Error("Path escapes workspace");
   }
   return full;
@@ -170,10 +188,142 @@ async function ensureWorkspace(root: string) {
   await mkdir(path.join(root, ".omni"), { recursive: true });
 }
 
-export async function executeTool(
+function stripTags(html: string): string {
+  return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function decodeDuckUrl(href: string): string {
+  try {
+    if (href.includes("uddg=")) {
+      const u = new URL(href, "https://duckduckgo.com");
+      const target = u.searchParams.get("uddg");
+      if (target) return decodeURIComponent(target);
+    }
+    // //duckduckgo.com/l/?uddg=...
+    const m = href.match(/[?&]uddg=([^&]+)/);
+    if (m) return decodeURIComponent(m[1]);
+  } catch {
+    /* keep original */
+  }
+  return href.startsWith("//") ? `https:${href}` : href;
+}
+
+type SearchHit = { title: string; url: string; snippet: string };
+
+async function webSearch(query: string, limitRaw: number): Promise<string> {
+  const limit = Math.min(Math.max(limitRaw || 5, 1), 10);
+  const q = query.trim();
+  if (!q) throw new Error("query required");
+
+  const hits: SearchHit[] = [];
+  const seen = new Set<string>();
+
+  const push = (title: string, url: string, snippet = "") => {
+    const cleanTitle = stripTags(title);
+    const cleanUrl = decodeDuckUrl(url);
+    if (!cleanTitle || !cleanUrl) return;
+    if (seen.has(cleanUrl)) return;
+    seen.add(cleanUrl);
+    hits.push({
+      title: cleanTitle,
+      url: cleanUrl,
+      snippet: stripTags(snippet).slice(0, 280),
+    });
+  };
+
+  // 1) DuckDuckGo Instant Answer API (structured, when available)
+  try {
+    const iaUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&no_html=1&skip_disambig=1`;
+    const iaRes = await fetch(iaUrl, {
+      headers: { "User-Agent": "OmniAgent/0.1" },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (iaRes.ok) {
+      const ia = (await iaRes.json()) as {
+        AbstractText?: string;
+        AbstractURL?: string;
+        Heading?: string;
+        RelatedTopics?: Array<{
+          Text?: string;
+          FirstURL?: string;
+          Topics?: Array<{ Text?: string; FirstURL?: string }>;
+        }>;
+        Results?: Array<{ Text?: string; FirstURL?: string }>;
+      };
+      if (ia.AbstractText && ia.AbstractURL) {
+        push(ia.Heading || q, ia.AbstractURL, ia.AbstractText);
+      }
+      for (const r of ia.Results || []) {
+        if (hits.length >= limit) break;
+        if (r.Text && r.FirstURL) push(r.Text, r.FirstURL);
+      }
+      const flatten = (
+        topics: NonNullable<typeof ia.RelatedTopics>
+      ): Array<{ Text?: string; FirstURL?: string }> => {
+        const out: Array<{ Text?: string; FirstURL?: string }> = [];
+        for (const t of topics) {
+          if (t.FirstURL && t.Text) out.push(t);
+          if (t.Topics) out.push(...flatten(t.Topics as typeof topics));
+        }
+        return out;
+      };
+      for (const t of flatten(ia.RelatedTopics || [])) {
+        if (hits.length >= limit) break;
+        if (t.Text && t.FirstURL) push(t.Text, t.FirstURL);
+      }
+    }
+  } catch {
+    /* fall through to HTML */
+  }
+
+  // 2) HTML scrape fallback / supplement
+  if (hits.length < limit) {
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; OmniAgent/0.1; +https://github.com/JRod042/project-1)",
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+    const html = await res.text();
+
+    const blockRe =
+      /class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>([\s\S]*?)(?=class="result__a"|$)/gi;
+    let m: RegExpExecArray | null;
+    while ((m = blockRe.exec(html)) && hits.length < limit) {
+      const href = m[1];
+      const title = m[2];
+      const rest = m[3] || "";
+      const snip =
+        rest.match(/class="result__snippet"[^>]*>([\s\S]*?)<\//i)?.[1] || "";
+      push(title, href, snip);
+    }
+
+    if (hits.length < limit) {
+      const loose = /uddg=([^&"]+)[^>]*>\s*([\s\S]*?)<\/a>/gi;
+      let lm: RegExpExecArray | null;
+      while ((lm = loose.exec(html)) && hits.length < limit) {
+        push(lm[2], `https://duckduckgo.com/l/?uddg=${lm[1]}`);
+      }
+    }
+  }
+
+  if (!hits.length) return "No results found.";
+  return hits
+    .slice(0, limit)
+    .map(
+      (h, i) =>
+        `${i + 1}. ${h.title}\n   ${h.url}${h.snippet ? `\n   ${h.snippet}` : ""}`
+    )
+    .join("\n\n");
+}
+
+async function executeToolInner(
   name: string,
   args: Record<string, unknown>,
-  workspaceRoot: string
+  workspaceRoot: string,
+  shellMode: ShellMode
 ): Promise<string> {
   await ensureWorkspace(workspaceRoot);
 
@@ -205,7 +355,10 @@ export async function executeTool(
       const buf = await readFile(file);
       const slice = buf.subarray(0, maxBytes);
       const text = slice.toString("utf8");
-      const truncated = buf.length > maxBytes ? `\n\n[truncated ${buf.length - maxBytes} bytes]` : "";
+      const truncated =
+        buf.length > maxBytes
+          ? `\n\n[truncated ${buf.length - maxBytes} bytes]`
+          : "";
       return text + truncated;
     }
     case "write_file": {
@@ -221,25 +374,35 @@ export async function executeTool(
       return `Appended to ${file}`;
     }
     case "run_shell": {
-      const command = String(args.command ?? "");
-      if (!command.trim()) throw new Error("Empty command");
-      const timeoutMs = Math.min(Number(args.timeoutMs ?? 60_000), 180_000);
+      const command = String(args.command ?? "").trim();
+      if (!command) throw new Error("Empty command");
+      assertShellAllowed(command, shellMode);
+      const timeoutMs = getShellTimeoutMs(Number(args.timeoutMs ?? undefined));
       try {
-        const { stdout, stderr } = await execAsync(command, {
-          cwd: workspaceRoot,
-          timeout: timeoutMs,
-          maxBuffer: 2_000_000,
-          env: { ...process.env, FORCE_COLOR: "0" },
-        });
+        const { stdout, stderr } = await execFileAsync(
+          "/bin/bash",
+          ["-lc", command],
+          {
+            cwd: workspaceRoot,
+            timeout: timeoutMs,
+            maxBuffer: 512_000,
+            env: sanitizedShellEnv(),
+          }
+        );
         const out = [stdout, stderr].filter(Boolean).join("\n").trim();
-        return out || "(no output)";
+        return (out || "(no output)").slice(0, 20_000);
       } catch (err) {
-        const e = err as { stdout?: string; stderr?: string; message?: string };
-        return [
-          e.stdout,
-          e.stderr,
-          e.message ?? String(err),
-        ]
+        const e = err as {
+          stdout?: string;
+          stderr?: string;
+          message?: string;
+          killed?: boolean;
+          code?: string;
+        };
+        if (e.killed || e.code === "ETIMEDOUT") {
+          throw new Error(`Shell timed out after ${timeoutMs}ms`);
+        }
+        return [e.stdout, e.stderr, e.message ?? String(err)]
           .filter(Boolean)
           .join("\n")
           .slice(0, 20_000);
@@ -262,36 +425,7 @@ export async function executeTool(
       return `HTTP ${res.status}\n${stripped.slice(0, maxChars)}`;
     }
     case "web_search": {
-      const query = String(args.query ?? "");
-      const limit = Math.min(Number(args.limit ?? 5), 10);
-      const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-      const res = await fetch(url, {
-        headers: { "User-Agent": "OmniAgent/0.1" },
-        signal: AbortSignal.timeout(15_000),
-      });
-      const html = await res.text();
-      const results: string[] = [];
-      const re =
-        /class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
-      let m: RegExpExecArray | null;
-      while ((m = re.exec(html)) && results.length < limit) {
-        const href = m[1];
-        const title = m[2].replace(/<[^>]+>/g, "").trim();
-        const snippet = m[3].replace(/<[^>]+>/g, "").trim();
-        results.push(`${results.length + 1}. ${title}\n   ${href}\n   ${snippet}`);
-      }
-      if (!results.length) {
-        // Fallback looser parse
-        const loose =
-          /uddg=([^&"]+)[^>]*>\s*([\s\S]*?)<\/a>/gi;
-        let lm: RegExpExecArray | null;
-        while ((lm = loose.exec(html)) && results.length < limit) {
-          const href = decodeURIComponent(lm[1]);
-          const title = lm[2].replace(/<[^>]+>/g, "").trim();
-          if (title) results.push(`${results.length + 1}. ${title}\n   ${href}`);
-        }
-      }
-      return results.join("\n\n") || "No results found.";
+      return await webSearch(String(args.query ?? ""), Number(args.limit ?? 5));
     }
     case "remember": {
       const key = String(args.key ?? "").replace(/[^\w.-]+/g, "_");
@@ -332,13 +466,59 @@ export async function executeTool(
       const listed = steps
         .map((s, i) => {
           const step = s as { title?: string; detail?: string };
-          return `${i + 1}. ${step.title ?? "step"}${step.detail ? ` — ${step.detail}` : ""}`;
+          return `${i + 1}. ${step.title ?? "step"}${
+            step.detail ? ` — ${step.detail}` : ""
+          }`;
         })
         .join("\n");
       return `Plan saved.\nGoal: ${goal}\n${listed}`;
     }
     default:
       throw new Error(`Unknown tool: ${name}`);
+  }
+}
+
+export type ExecuteToolOptions = {
+  sessionId?: string;
+  shellMode?: ShellMode;
+};
+
+export async function executeTool(
+  name: string,
+  args: Record<string, unknown>,
+  workspaceRoot: string,
+  options: ExecuteToolOptions = {}
+): Promise<string> {
+  const started = Date.now();
+  const shellMode =
+    options.shellMode ?? getShellMode(process.env.OMNI_SHELL_MODE);
+  try {
+    const output = await executeToolInner(
+      name,
+      args,
+      workspaceRoot,
+      shellMode
+    );
+    await writeAudit(workspaceRoot, {
+      sessionId: options.sessionId,
+      tool: name,
+      ok: true,
+      args,
+      output,
+      durationMs: Date.now() - started,
+    });
+    return output;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await writeAudit(workspaceRoot, {
+      sessionId: options.sessionId,
+      tool: name,
+      ok: false,
+      args,
+      output: message,
+      durationMs: Date.now() - started,
+    });
+    throw err;
   }
 }
 

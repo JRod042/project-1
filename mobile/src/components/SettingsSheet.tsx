@@ -34,8 +34,13 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
     try {
       setStatus("Checking…");
       const h = await healthCheck(draft.serverUrl);
+      const auth = h.authRequired
+        ? draft.serverToken
+          ? "auth=token set"
+          : "auth=REQUIRED (set server token)"
+        : "auth=open";
       setStatus(
-        `Online · workspace ${h.workspaceRoot} · keys xai=${h.providers.xai} openai=${h.providers.openai} gemini=${h.providers.gemini}`
+        `Online · ${auth} · shell=${h.shellMode ?? "?"} · workspace ${h.workspaceRoot} · keys xai=${h.providers.xai} openai=${h.providers.openai} gemini=${h.providers.gemini}`
       );
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Unreachable");
@@ -111,6 +116,23 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
               placeholder="sk-… / xai-…"
               placeholderTextColor={colors.textMuted}
             />
+
+            <Text style={styles.label}>Server token (OMNI_SERVER_TOKEN)</Text>
+            <TextInput
+              style={styles.input}
+              value={draft.serverToken}
+              onChangeText={(serverToken) =>
+                setDraft((d) => ({ ...d, serverToken }))
+              }
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+              placeholder="Required when server auth is enabled"
+              placeholderTextColor={colors.textMuted}
+            />
+            <Text style={styles.hint}>
+              If /health reports authRequired, chat and sessions need this token.
+            </Text>
 
             <View style={styles.switchRow}>
               <View style={{ flex: 1 }}>
