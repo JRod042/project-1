@@ -1,123 +1,61 @@
-# Omni for iOS (Apple Developer account)
+# Omni on iPad only (no Mac)
 
-Bundle ID: **`com.jrod042.omni`**  
-You already have an Apple Developer account — use that to sign, install on device, and ship TestFlight.
+You can get Omni onto your **iPad via TestFlight** without a Mac.  
+Builds run in the cloud (EAS). You only use Safari + TestFlight.
 
-This cloud agent **cannot** sign in as you. Run the commands below on **your Mac** (or any machine where you can complete Apple + Expo browser login).
-
----
-
-## 1. One-time Apple setup (10 minutes)
-
-### App ID
-1. [Apple Developer → Identifiers](https://developer.apple.com/account/resources/identifiers/list)
-2. Register App ID → App → Bundle ID: `com.jrod042.omni`
-3. Enable **Associated Domains** only if you add them later (not required now)
-
-### App Store Connect app
-1. [App Store Connect → My Apps → +](https://appstoreconnect.apple.com)
-2. New App → iOS → name **Omni** → bundle `com.jrod042.omni`
-3. Copy the numeric **Apple ID** from App Information (not your email)
-4. Optional for scripts:
-   ```bash
-   export ASC_APP_ID=that_number
-   ```
-
-### Devices (for development builds)
-- Xcode → Window → Devices, or
-- `npx eas device:create` and open the registration URL on your iPhone
+Bundle ID: **`com.jrod042.omni`** (iPhone + iPad)
 
 ---
 
-## 2. Ship to TestFlight (recommended)
+## Path A — easiest on iPad (Expo website)
 
-On your Mac, from the repo:
+### 1. Apple (Safari)
+1. [App Store Connect](https://appstoreconnect.apple.com) → **My Apps** → **+** → New App  
+2. Platforms: iOS · Name: **Omni** · Bundle ID: `com.jrod042.omni`  
+3. (If bundle ID missing) create it under [Certificates, IDs & Profiles → Identifiers](https://developer.apple.com/account/resources/identifiers/list)
 
-```bash
-cd mobile
-npm install
-chmod +x scripts/ship-ios.sh
-./scripts/ship-ios.sh production
-```
+### 2. Expo (Safari)
+1. Create/login at [expo.dev](https://expo.dev)  
+2. **Create project** → link this GitHub repo (`JRod042/project-1`)  
+3. Open the project → **Credentials** → iOS → set up **App Store** distribution  
+   - Sign in with your Apple Developer account in the browser when prompted  
+4. **Builds** → **Start a build** → iOS → profile `production`  
+5. When the build finishes → **Submit to App Store** / TestFlight  
 
-What happens:
-
-1. `eas login` (Expo account — free)
-2. `eas init` (links project)
-3. `eas build --platform ios --profile production`  
-   → EAS prompts for **Apple ID / app-specific password or ASC API key**  
-   → Creates distribution cert + App Store provisioning profile under your team
-4. Optional `eas submit` → TestFlight
-
-Then install **TestFlight** from the App Store and open Omni when processing finishes (~5–30 min).
-
-### Manual equivalent
-
-```bash
-cd mobile
-npx eas login
-npx eas init
-npx eas build --platform ios --profile production
-npx eas submit --platform ios --profile production --latest
-```
+### 3. Install on iPad
+1. Install **TestFlight** from the App Store  
+2. Accept the Omni invite (email or App Store Connect internal testing)  
+3. Open Omni on your iPad  
 
 ---
 
-## 3. Dev client on a physical iPhone (faster iteration)
+## Path B — one-tap from GitHub Actions (also iPad Safari)
 
-```bash
-cd mobile
-npx eas device:create          # register iPhone UDID
-npx eas build --platform ios --profile development
-# install the .ipa from the Expo build page (QR / link)
-npx expo start --dev-client    # then open Omni on phone
-```
+### Secrets (GitHub → Settings → Secrets and variables → Actions)
 
----
+| Secret | Where to get it |
+|--------|------------------|
+| `EXPO_TOKEN` | [expo.dev](https://expo.dev) → Account → Access tokens → Create |
+| `APPLE_API_KEY_P8` | App Store Connect → Users and Access → Integrations → App Store Connect API → create key → paste **full .p8 text** |
+| `APPLE_API_KEY_ID` | Key ID shown when you create the key |
+| `APPLE_API_ISSUER_ID` | Issuer ID at the top of the API keys page |
 
-## 4. Local Xcode (optional)
+Also complete **Expo → Credentials → iOS** once in Safari (Path A step 2.3) so EAS can sign builds non-interactively.
 
-```bash
-cd mobile
-npm install
-npx pod-install
-open ios/Omni.xcodeproj
-```
-
-In Xcode:
-
-1. Target **Omni** → Signing & Capabilities  
-2. Team = your Apple Developer team  
-3. Run on your plugged-in iPhone  
-
-First launch: allow Local Network; confirm **SYS** server URL is your Mac LAN IP.
+### Run the workflow
+1. iPad Safari → this repo → **Actions** → **iOS TestFlight**  
+2. **Run workflow** → profile `production` → submit `true`  
+3. Wait for the green check, then install from **TestFlight**
 
 ---
 
-## 5. ASC API key (best for non-interactive submit)
+## After install
 
-If you don’t want password prompts every ship:
-
-1. App Store Connect → Users and Access → Integrations → App Store Connect API  
-2. Create key with **Admin** or **App Manager**  
-3. Download `.p8` once  
-4. Either let `eas submit` store it, or:
+Omni still needs the **agent server** running somewhere (home PC, VPS, cloud).  
+On first launch, open **SYS** and set the server URL (not `localhost` — use a public HTTPS URL or your LAN IP if the iPad is on the same Wi‑Fi as the server).
 
 ```bash
-export EXPO_APPLE_API_KEY_PATH=~/AuthKey_XXXX.p8
-export EXPO_APPLE_API_KEY_ID=XXXX
-export EXPO_APPLE_API_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-```
-
----
-
-## Networking
-
-iPhones can’t use `localhost` on your Mac. Omni auto-detects the Metro/dev-client LAN host when possible; otherwise set **SYS → Agent server URL** to `http://YOUR_MAC_LAN_IP:8787`.
-
-Run the agent:
-
-```bash
+# on any always-on machine / VPS
 cd server
 cp .env.example .env   # add XAI_API_KEY etc
 npm install && npm run dev
@@ -125,11 +63,9 @@ npm install && npm run dev
 
 ---
 
-## Checklist
+## What you cannot do on iPad alone
 
-- [ ] App ID `com.jrod042.omni` registered
-- [ ] App created in App Store Connect
-- [ ] `eas login` + `eas init`
-- [ ] `eas build --platform ios --profile production`
-- [ ] TestFlight install on iPhone
-- [ ] Agent server running + LAN URL in **SYS**
+- Run Xcode  
+- Compile the IPA locally  
+
+Cloud build (Expo/EAS or this GitHub Action) replaces that.
