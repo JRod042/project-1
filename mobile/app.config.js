@@ -83,11 +83,12 @@ const config = {
   ],
   extra: {
     eas: {
-      // Set after `eas init` / first EAS login on your machine.
+      // Paste your Expo Project ID here (Project settings → General).
+      // Example: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
       projectId: process.env.EAS_PROJECT_ID || undefined,
     },
   },
-  owner: process.env.EAS_OWNER || undefined,
+  owner: "jrod42",
 };
 
 module.exports = config;
