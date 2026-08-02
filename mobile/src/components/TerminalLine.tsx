@@ -62,7 +62,10 @@ export function TerminalLine({ item }: { item: TimelineItem }) {
   if (item.kind === "status") {
     return (
       <FadeIn>
-        <Text style={styles.status}>∷ {item.text}</Text>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusTick}>▸</Text>
+          <Text style={styles.status}>{item.text}</Text>
+        </View>
       </FadeIn>
     );
   }
@@ -70,7 +73,8 @@ export function TerminalLine({ item }: { item: TimelineItem }) {
   if (item.kind === "error") {
     return (
       <FadeIn>
-        <View style={[styles.rail, styles.railDanger]}>
+        <View style={[styles.rail, styles.railDanger, styles.railPanel]}>
+          <View style={[styles.railCap, styles.railCapDanger]} />
           <Text style={styles.errorLabel}>FAULT //</Text>
           <Text style={styles.error}>{item.text}</Text>
         </View>
@@ -80,12 +84,24 @@ export function TerminalLine({ item }: { item: TimelineItem }) {
 
   if (item.kind === "tool") {
     const mark = item.running ? "RUN" : item.ok === false ? "ERR" : "OK";
+    const markColor =
+      item.running
+        ? colors.warn
+        : item.ok === false
+          ? colors.danger
+          : colors.brand;
     return (
       <FadeIn>
-        <View style={[styles.rail, styles.railTool]}>
+        <View style={[styles.rail, styles.railTool, styles.railPanel]}>
+          <View style={[styles.railCap, styles.railCapTool]} />
           <View style={styles.toolHead}>
-            <Text style={styles.toolMark}>[{mark}]</Text>
+            <Text style={[styles.toolMark, { color: markColor }]}>
+              [{mark}]
+            </Text>
             <Text style={styles.toolHeader}>tool::{item.name}</Text>
+            {item.running ? (
+              <Text style={styles.toolPulse}>SCAN</Text>
+            ) : null}
           </View>
           {item.args ? (
             <Text style={styles.toolMeta} numberOfLines={3}>
@@ -93,9 +109,11 @@ export function TerminalLine({ item }: { item: TimelineItem }) {
             </Text>
           ) : null}
           {item.output ? (
-            <Text style={styles.toolOut} numberOfLines={12}>
-              {item.output}
-            </Text>
+            <View style={styles.toolOutBox}>
+              <Text style={styles.toolOut} numberOfLines={12}>
+                {item.output}
+              </Text>
+            </View>
           ) : null}
         </View>
       </FadeIn>
@@ -105,7 +123,8 @@ export function TerminalLine({ item }: { item: TimelineItem }) {
   if (item.kind === "approval") {
     return (
       <FadeIn>
-        <View style={[styles.rail, styles.railWarn]}>
+        <View style={[styles.rail, styles.railWarn, styles.railPanel]}>
+          <View style={[styles.railCap, styles.railCapWarn]} />
           <Text style={styles.approvalHeader}>
             HOLD // authorize {item.name}
           </Text>
@@ -153,12 +172,23 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 23,
   },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
+  statusTick: {
+    color: colors.accent,
+    fontFamily: fonts.monoBold,
+    fontSize: 11,
+  },
   status: {
     color: colors.accentDim,
     fontFamily: fonts.mono,
     fontSize: 11,
     letterSpacing: 0.4,
-    marginBottom: 10,
+    flex: 1,
   },
   rail: {
     borderLeftWidth: 2,
@@ -167,9 +197,46 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingVertical: 2,
   },
+  railPanel: {
+    backgroundColor: "rgba(16, 24, 32, 0.45)",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+    borderBottomColor: colors.line,
+    borderRightColor: colors.line,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingRight: 10,
+  },
+  railCap: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderTopWidth: 2,
+    borderRightWidth: 2,
+  },
+  railCapTool: { borderColor: colors.tool },
+  railCapWarn: { borderColor: colors.warn },
+  railCapDanger: { borderColor: colors.danger },
   railTool: { borderLeftColor: colors.tool },
   railWarn: { borderLeftColor: colors.warn },
   railDanger: { borderLeftColor: colors.danger },
+  toolPulse: {
+    marginLeft: "auto",
+    color: colors.warn,
+    fontFamily: fonts.monoBold,
+    fontSize: 10,
+    letterSpacing: 1.2,
+  },
+  toolOutBox: {
+    marginTop: 2,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.accentDim,
+    paddingLeft: 8,
+  },
   errorLabel: {
     color: colors.danger,
     fontFamily: fonts.monoBold,
