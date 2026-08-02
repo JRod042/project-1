@@ -10,6 +10,29 @@ You do **not** need a Mac. Use Safari + TestFlight.
 
 ---
 
+## Fix for: `Set ascAppId in the submit profile` / Submission failed
+
+Auto-submit **cannot** run without the numeric App Store Connect **Apple ID**.
+
+### Get the ID (30 seconds)
+1. Open [App Store Connect → My Apps → Omni](https://appstoreconnect.apple.com/apps)
+2. **App Information** (under General)
+3. Copy **Apple ID** — digits only, e.g. `6751234567`  
+   (also in the URL: `appstoreconnect.apple.com/apps/<THIS_NUMBER>/…`)
+
+### Put it in the repo
+In `mobile/eas.json` under `submit.production.ios`, set:
+
+```json
+"ascAppId": "6751234567"
+```
+
+Replace the placeholder `REPLACE_WITH_ASC_APPLE_ID`. Commit to **`main`**, then rebuild with **auto-submit** again.
+
+If Omni doesn’t exist in App Store Connect yet: **Apps → + → New App** with bundle ID **`com.jrod042.omni`**, then copy the Apple ID.
+
+---
+
 ## Why a green Expo build is not in TestFlight
 
 **EAS Build ≠ TestFlight.**

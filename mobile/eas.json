@@ -12,7 +12,8 @@
       },
       "env": {
         "APP_ENV": "preview",
-        "EXPO_USE_PRECOMPILED_MODULES": "0"
+        "EXPO_USE_PRECOMPILED_MODULES": "0",
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
       }
     },
     "production": {
@@ -22,21 +23,20 @@
       },
       "env": {
         "APP_ENV": "production",
-        "EXPO_USE_PRECOMPILED_MODULES": "0"
+        "EXPO_USE_PRECOMPILED_MODULES": "0",
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
       }
     }
   },
   "submit": {
     "preview": {
-      "ios": {
-        "appleTeamId": "FY5H9V76QL",
-        "bundleIdentifier": "com.jrod042.omni"
-      }
+      "extends": "production"
     },
     "production": {
       "ios": {
         "appleTeamId": "FY5H9V76QL",
-        "bundleIdentifier": "com.jrod042.omni"
+        "bundleIdentifier": "com.jrod042.omni",
+        "ascAppId": "REPLACE_WITH_ASC_APPLE_ID"
       }
     }
   }
