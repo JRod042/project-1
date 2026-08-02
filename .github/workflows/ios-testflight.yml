@@ -70,8 +70,16 @@ jobs:
         run: |
           set -euo pipefail
           PROFILE="${{ inputs.profile }}"
+          # Build alone does NOT put the app in TestFlight — --auto-submit uploads to ASC.
           if [ "${{ inputs.submit }}" = "true" ]; then
             eas build --platform ios --profile "$PROFILE" --non-interactive --auto-submit
           else
             eas build --platform ios --profile "$PROFILE" --non-interactive
+            echo "::warning::Built without submit. IPA is on Expo only. Run Submit in Expo or re-run with submit=true."
           fi
+
+      - name: Reminder
+        if: ${{ inputs.submit == true }}
+        run: |
+          echo "After auto-submit, open App Store Connect → Activity (Processing), then TestFlight."
+          echo "Check Apple ID email for ITMS rejection messages if the build never appears."

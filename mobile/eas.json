@@ -29,11 +29,13 @@
   "submit": {
     "preview": {
       "ios": {
+        "appleTeamId": "FY5H9V76QL",
         "bundleIdentifier": "com.jrod042.omni"
       }
     },
     "production": {
       "ios": {
+        "appleTeamId": "FY5H9V76QL",
         "bundleIdentifier": "com.jrod042.omni"
       }
     }
