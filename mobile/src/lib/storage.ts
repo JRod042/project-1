@@ -26,10 +26,14 @@ export function defaultServerUrl(): string {
   return "http://127.0.0.1:8787";
 }
 
+/**
+ * Prefer a LAN host from Metro/dev when available.
+ * Otherwise leave empty — localhost is useless on a physical iPad.
+ */
 export function defaultOpenclawUrl(): string {
   const host = lanHost();
   if (host) return `http://${host}:18789`;
-  return "http://127.0.0.1:18789";
+  return "";
 }
 
 const defaults = (): AppSettings => ({
@@ -72,6 +76,7 @@ export async function loadSettings(): Promise<AppSettings> {
         ? base.serverUrl
         : parsed.serverUrl;
 
+    // Migrate stale loopback defaults; physical devices need LAN/Tailscale.
     const openclawUrl =
       !parsed.openclawUrl ||
       parsed.openclawUrl === "http://127.0.0.1:18789" ||

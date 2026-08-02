@@ -24,13 +24,23 @@ We audited Cursor history + open-source options. For a personal operator that *a
 
 ## 1) Run the agent (OpenClaw)
 
+**Docker wrapper** (this repo):
+
 ```bash
 cd openclaw
-cp .env.example .env   # add XAI_API_KEY (or OpenAI/Anthropic/Gemini)
-./up.sh                # Docker → http://HOST:18789
+cp .env.example .env   # OPENCLAW_GATEWAY_TOKEN; XAI_API_KEY optional if using OAuth
+./up.sh                # → http://HOST:18789
 ```
 
-Full notes: **[openclaw/README.md](openclaw/README.md)**
+**npm global** (host daemon — fine if already onboarded):
+
+```bash
+npm i -g openclaw@latest
+openclaw onboard --install-daemon
+openclaw gateway status   # :18789
+```
+
+xAI **OAuth** from onboard works without `XAI_API_KEY`. Full notes: **[openclaw/README.md](openclaw/README.md)**.
 
 Fastest phone path without rebuilding the app: add **Telegram** to the gateway (instructions in that README).
 
@@ -44,7 +54,7 @@ Short version:
 2. GitHub base directory = `mobile`
 3. Builds → Build from GitHub → `main` → iOS → `production`
 4. Submit → TestFlight → install on iPad
-5. In app **SYS** → Runtime **OpenClaw** → Control UI URL + gateway token → **OPEN CONTROL UI**
+5. In app **SYS** → Runtime **OpenClaw** → Control UI URL `http://<LAN-IP>:18789` + gateway token → **OPEN CONTROL UI** (opens `…/#token=…`)
 
 ## Legacy Omni server (optional)
 

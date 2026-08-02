@@ -29,6 +29,7 @@ import { ApprovalBar } from "./src/components/ApprovalBar";
 import { SettingsSheet } from "./src/components/SettingsSheet";
 import { SessionDrawer } from "./src/components/SessionDrawer";
 import { ApiError, getSession, streamChat } from "./src/lib/api";
+import { controlUiUrl, normalizeOpenclawBaseUrl } from "./src/lib/openclaw";
 import { loadSettings, saveSettings } from "./src/lib/storage";
 import { colors, fonts } from "./src/theme";
 import type { AppSettings, TimelineItem } from "./src/types";
@@ -169,22 +170,26 @@ export default function App() {
 
   const openOpenclawUi = useCallback(async () => {
     if (!settings) return;
-    const base = settings.openclawUrl.trim().replace(/\/+$/, "");
+    const base = normalizeOpenclawBaseUrl(settings.openclawUrl);
     if (!base) {
       append({
         id: uid("err"),
         kind: "error",
-        text: "Set OpenClaw Control UI URL in SYS first.",
+        text: "Set OpenClaw Control UI URL in SYS (LAN/Tailscale IP:18789 — not localhost).",
       });
       setSettingsOpen(true);
       return;
     }
+    const url = controlUiUrl(base, settings.openclawToken);
+    const hasToken = Boolean(settings.openclawToken.trim());
     try {
-      await Linking.openURL(base);
+      await Linking.openURL(url);
       append({
         id: uid("st"),
         kind: "status",
-        text: `opened control ui · ${base}`,
+        text: hasToken
+          ? `opened control ui · ${base} · token via #token=`
+          : `opened control ui · ${base} · set gateway token in SYS for auto-auth`,
       });
     } catch (err) {
       append({

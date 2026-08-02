@@ -24,41 +24,62 @@ Safari / Telegram / Discord                 │
 
 Legacy path (still in repo): Expo terminal ↔ Omni `server/` SSE on `:8787`.
 
-## Quick start (Linux VPS or any Docker host)
+## Install path A — Docker wrapper (this folder)
 
 ```bash
 cd openclaw
 cp .env.example .env
-# edit: XAI_API_KEY=…  (and keep the generated OPENCLAW_GATEWAY_TOKEN)
+# optional: XAI_API_KEY=…  (not required if you already used xAI OAuth via onboard)
+# keep / generate OPENCLAW_GATEWAY_TOKEN
 chmod +x up.sh
 ./up.sh
 ```
 
-Open the Control UI:
+Uses image `openclaw/openclaw:latest` (see `docker-compose.yml`).
 
-- Local: `http://127.0.0.1:18789/`
-- Phone on same LAN: `http://<host-lan-ip>:18789/`
-- Remote: Tailscale Serve (recommended) — see [docs](https://docs.openclaw.ai/web)
+## Install path B — npm global (host daemon)
 
-Paste `OPENCLAW_GATEWAY_TOKEN` into Control UI Settings.
-
-### No Docker?
+If OpenClaw is already on the machine (common after first setup):
 
 ```bash
 npm i -g openclaw@latest
-openclaw onboard --install-daemon
+openclaw onboard --install-daemon   # once
+openclaw gateway status             # expect :18789
 openclaw dashboard
 ```
+
+State lives under `~/.openclaw/` (config: `~/.openclaw/openclaw.json`).
+
+### Auth / models
+
+- **Gateway token:** `gateway.auth.token` in `~/.openclaw/openclaw.json`, or `OPENCLAW_GATEWAY_TOKEN` in `openclaw/.env` for Docker.
+- **xAI:** OAuth via `openclaw onboard` works **without** `XAI_API_KEY`. API keys are optional if OAuth is already linked (e.g. default `xai/grok-4.3`).
+
+## Control UI URLs
+
+- Local host: `http://127.0.0.1:18789/`
+- Phone on same LAN: `http://<host-lan-ip>:18789/`
+- Remote: Tailscale Serve (recommended) — see [docs](https://docs.openclaw.ai/web)
+
+**Token via URL fragment** (what Omni TestFlight uses):
+
+```
+http://<LAN-IP>:18789/#token=<OPENCLAW_GATEWAY_TOKEN>
+```
+
+You can also paste the token into Control UI Settings manually.
 
 ## Fastest phone chat (no Expo rebuild)
 
 1. Create a Telegram bot with [@BotFather](https://t.me/BotFather)
-2. On the host:
+2. On the host (Docker path):
 
 ```bash
 docker compose --profile cli run --rm openclaw-cli \
   channels add --channel telegram --token "<bot-token>"
 ```
+
+Or with npm global: `openclaw channels add --channel telegram --token "<bot-token>"`
 
 3. Message the bot from your iPad. Pairing codes: [Telegram channel docs](https://docs.openclaw.ai/channels/telegram)
 
@@ -67,16 +88,16 @@ docker compose --profile cli run --rm openclaw-cli \
 In **SYS**:
 
 1. Runtime → **OpenClaw**
-2. Control UI URL → your gateway URL (port **18789**)
-3. Gateway token → same as `OPENCLAW_GATEWAY_TOKEN`
-4. **OPEN CONTROL UI** launches Safari with the dashboard
+2. Control UI URL → `http://<LAN-IP>:18789` (not localhost on iPad)
+3. Gateway token → from `~/.openclaw/openclaw.json` (`gateway.auth.token`) or `openclaw/.env`
+4. **OPEN CONTROL UI** launches Safari as `…/#token=…`
 
 Native SSE chat against OpenClaw’s WebSocket protocol is not mirrored 1:1 yet; Control UI + Telegram are the supported operator paths. Legacy Omni SSE remains available under Runtime → **Legacy Omni**.
 
 ## Security
 
 - Never expose `:18789` to the public internet without auth + TLS / Tailscale.
-- Keep `OPENCLAW_GATEWAY_TOKEN` long and private.
+- Keep the gateway token long and private; never commit `.env`.
 - Read [exposure runbook](https://docs.openclaw.ai/gateway/security/exposure-runbook).
 
 ## License
