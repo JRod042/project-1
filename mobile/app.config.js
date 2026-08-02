@@ -16,9 +16,9 @@ const config = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.jrod042.omni",
-    // Bump this before every new App Store / TestFlight upload.
+    // Bump before each new ASC upload if that number was already used.
     // EAS autoIncrement is unsupported with app.config.js.
-    buildNumber: "2",
+    buildNumber: "1",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Omni",
