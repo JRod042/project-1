@@ -7,7 +7,13 @@ import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { z } from "zod";
 import { runAgent } from "./agent.js";
-import { deleteSession, getSession, listSessions } from "./sessions.js";
+import { checkRateLimit } from "./rateLimit.js";
+import {
+  deleteSession,
+  getSession,
+  initSessionStore,
+  listSessions,
+} from "./sessions.js";
 import { TOOLS } from "./tools.js";
 import type { ProviderName, StreamEvent } from "./types.js";
 
@@ -16,8 +22,15 @@ const port = Number(process.env.PORT || 8787);
 const workspaceRoot = path.resolve(
   process.env.WORKSPACE_ROOT || path.join(process.cwd(), "workspace")
 );
+const serverToken = (process.env.OMNI_SERVER_TOKEN || "").trim();
+const MAX_BODY_BYTES = Number(process.env.OMNI_MAX_BODY_BYTES || 256_000);
+const CHAT_RATE_LIMIT = Number(process.env.OMNI_CHAT_RATE_LIMIT || 30);
+const CHAT_RATE_WINDOW_MS = Number(
+  process.env.OMNI_CHAT_RATE_WINDOW_MS || 60_000
+);
 
 await mkdir(workspaceRoot, { recursive: true });
+await initSessionStore(workspaceRoot);
 
 app.use(
   "*",
@@ -25,19 +38,52 @@ app.use(
     origin: "*",
     allowHeaders: [
       "Content-Type",
+      "Authorization",
       "x-api-key",
       "x-provider",
       "x-model",
       "x-auto-approve",
+      "x-omni-token",
     ],
   })
 );
+
+function extractToken(c: {
+  req: { header: (name: string) => string | undefined };
+}): string | undefined {
+  const bearer = c.req.header("authorization");
+  if (bearer?.toLowerCase().startsWith("bearer ")) {
+    return bearer.slice(7).trim();
+  }
+  return c.req.header("x-omni-token")?.trim() || undefined;
+}
+
+function requireAuth(c: {
+  req: { header: (name: string) => string | undefined };
+}): Response | null {
+  if (!serverToken) return null;
+  const provided = extractToken(c);
+  if (provided && provided === serverToken) return null;
+  return new Response(
+    JSON.stringify({
+      error: "Unauthorized",
+      code: "auth_required",
+      message: "Valid OMNI_SERVER_TOKEN required (Bearer or x-omni-token).",
+    }),
+    {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+}
 
 app.get("/health", (c) =>
   c.json({
     ok: true,
     name: "omni-server",
     workspaceRoot,
+    authRequired: Boolean(serverToken),
+    shellMode: process.env.OMNI_SHELL_MODE === "full" ? "full" : "strict",
     providers: {
       xai: Boolean(process.env.XAI_API_KEY),
       openai: Boolean(process.env.OPENAI_API_KEY),
@@ -45,6 +91,13 @@ app.get("/health", (c) =>
     },
   })
 );
+
+app.use("*", async (c, next) => {
+  if (c.req.path === "/health") return next();
+  const denied = requireAuth(c);
+  if (denied) return denied;
+  return next();
+});
 
 app.get("/tools", (c) => c.json({ tools: TOOLS }));
 
@@ -56,6 +109,7 @@ app.get("/sessions", (c) =>
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
       pendingApproval: s.pendingApproval ?? null,
+      pendingQueueLength: s.pendingToolQueue?.length ?? 0,
       messageCount: s.messages.length,
     })),
   })
@@ -87,7 +141,63 @@ const chatSchema = z.object({
 });
 
 app.post("/chat", async (c) => {
-  const body = chatSchema.parse(await c.req.json());
+  const contentLength = Number(c.req.header("content-length") || 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return c.json(
+      {
+        error: "Payload too large",
+        code: "body_too_large",
+        maxBytes: MAX_BODY_BYTES,
+      },
+      413
+    );
+  }
+
+  const clientKey =
+    c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+    c.req.header("x-real-ip") ||
+    "local";
+  const rl = checkRateLimit(
+    `chat:${clientKey}`,
+    CHAT_RATE_LIMIT,
+    CHAT_RATE_WINDOW_MS
+  );
+  if (!rl.ok) {
+    c.header("Retry-After", String(rl.retryAfterSec));
+    return c.json(
+      {
+        error: "Rate limit exceeded",
+        code: "rate_limited",
+        retryAfterSec: rl.retryAfterSec,
+      },
+      429
+    );
+  }
+
+  let raw: unknown;
+  try {
+    const text = await c.req.text();
+    if (Buffer.byteLength(text, "utf8") > MAX_BODY_BYTES) {
+      return c.json(
+        {
+          error: "Payload too large",
+          code: "body_too_large",
+          maxBytes: MAX_BODY_BYTES,
+        },
+        413
+      );
+    }
+    raw = text ? JSON.parse(text) : {};
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const parsed = chatSchema.safeParse(raw);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid body", details: parsed.error.flatten() }, 400);
+  }
+  const body = parsed.data;
+
   const apiKey = c.req.header("x-api-key") || undefined;
   const provider =
     (c.req.header("x-provider") as ProviderName | undefined) || body.provider;
@@ -127,6 +237,9 @@ app.post("/chat", async (c) => {
 
 console.log(`Omni agent server on http://0.0.0.0:${port}`);
 console.log(`Workspace: ${workspaceRoot}`);
+console.log(
+  `Auth: ${serverToken ? "OMNI_SERVER_TOKEN required" : "open (set OMNI_SERVER_TOKEN)"}`
+);
 
 serve({
   fetch: app.fetch,

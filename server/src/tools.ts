@@ -1,4 +1,4 @@
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
   mkdir,
@@ -9,8 +9,16 @@ import {
   appendFile,
 } from "node:fs/promises";
 import path from "node:path";
+import { writeAudit } from "./audit.js";
+import {
+  assertShellAllowed,
+  getShellMode,
+  getShellTimeoutMs,
+  sanitizedShellEnv,
+  type ShellMode,
+} from "./shellPolicy.js";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export type ToolDef = {
   name: string;
@@ -72,7 +80,7 @@ export const TOOLS: ToolDef[] = [
   {
     name: "run_shell",
     description:
-      "Run a shell command in the workspace. Use for builds, git, scripts, installs.",
+      "Run a shell command in the workspace. Blocked patterns depend on OMNI_SHELL_MODE (strict|full).",
     parameters: {
       type: "object",
       properties: {
@@ -155,11 +163,21 @@ export const TOOLS: ToolDef[] = [
   },
 ];
 
-function resolveSafe(root: string, rel: string): string {
-  const cleaned = rel.replace(/^\/+/, "") || ".";
-  const full = path.resolve(root, cleaned);
+/** Resolve a workspace-relative path; throws if it escapes WORKSPACE_ROOT. */
+export function resolveSafe(root: string, rel: string): string {
+  const raw = String(rel ?? ".").trim() || ".";
+  if (path.isAbsolute(raw) || raw.startsWith("~")) {
+    throw new Error("Path escapes workspace");
+  }
+  const cleaned = raw.replace(/^\/+/, "") || ".";
   const rootResolved = path.resolve(root);
-  if (full !== rootResolved && !full.startsWith(rootResolved + path.sep)) {
+  const full = path.resolve(rootResolved, cleaned);
+  const relToRoot = path.relative(rootResolved, full);
+  if (
+    relToRoot === ".." ||
+    relToRoot.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relToRoot)
+  ) {
     throw new Error("Path escapes workspace");
   }
   return full;
@@ -170,10 +188,11 @@ async function ensureWorkspace(root: string) {
   await mkdir(path.join(root, ".omni"), { recursive: true });
 }
 
-export async function executeTool(
+async function executeToolInner(
   name: string,
   args: Record<string, unknown>,
-  workspaceRoot: string
+  workspaceRoot: string,
+  shellMode: ShellMode
 ): Promise<string> {
   await ensureWorkspace(workspaceRoot);
 
@@ -205,7 +224,10 @@ export async function executeTool(
       const buf = await readFile(file);
       const slice = buf.subarray(0, maxBytes);
       const text = slice.toString("utf8");
-      const truncated = buf.length > maxBytes ? `\n\n[truncated ${buf.length - maxBytes} bytes]` : "";
+      const truncated =
+        buf.length > maxBytes
+          ? `\n\n[truncated ${buf.length - maxBytes} bytes]`
+          : "";
       return text + truncated;
     }
     case "write_file": {
@@ -221,25 +243,35 @@ export async function executeTool(
       return `Appended to ${file}`;
     }
     case "run_shell": {
-      const command = String(args.command ?? "");
-      if (!command.trim()) throw new Error("Empty command");
-      const timeoutMs = Math.min(Number(args.timeoutMs ?? 60_000), 180_000);
+      const command = String(args.command ?? "").trim();
+      if (!command) throw new Error("Empty command");
+      assertShellAllowed(command, shellMode);
+      const timeoutMs = getShellTimeoutMs(Number(args.timeoutMs ?? undefined));
       try {
-        const { stdout, stderr } = await execAsync(command, {
-          cwd: workspaceRoot,
-          timeout: timeoutMs,
-          maxBuffer: 2_000_000,
-          env: { ...process.env, FORCE_COLOR: "0" },
-        });
+        const { stdout, stderr } = await execFileAsync(
+          "/bin/bash",
+          ["-lc", command],
+          {
+            cwd: workspaceRoot,
+            timeout: timeoutMs,
+            maxBuffer: 512_000,
+            env: sanitizedShellEnv(),
+          }
+        );
         const out = [stdout, stderr].filter(Boolean).join("\n").trim();
-        return out || "(no output)";
+        return (out || "(no output)").slice(0, 20_000);
       } catch (err) {
-        const e = err as { stdout?: string; stderr?: string; message?: string };
-        return [
-          e.stdout,
-          e.stderr,
-          e.message ?? String(err),
-        ]
+        const e = err as {
+          stdout?: string;
+          stderr?: string;
+          message?: string;
+          killed?: boolean;
+          code?: string;
+        };
+        if (e.killed || e.code === "ETIMEDOUT") {
+          throw new Error(`Shell timed out after ${timeoutMs}ms`);
+        }
+        return [e.stdout, e.stderr, e.message ?? String(err)]
           .filter(Boolean)
           .join("\n")
           .slice(0, 20_000);
@@ -278,12 +310,12 @@ export async function executeTool(
         const href = m[1];
         const title = m[2].replace(/<[^>]+>/g, "").trim();
         const snippet = m[3].replace(/<[^>]+>/g, "").trim();
-        results.push(`${results.length + 1}. ${title}\n   ${href}\n   ${snippet}`);
+        results.push(
+          `${results.length + 1}. ${title}\n   ${href}\n   ${snippet}`
+        );
       }
       if (!results.length) {
-        // Fallback looser parse
-        const loose =
-          /uddg=([^&"]+)[^>]*>\s*([\s\S]*?)<\/a>/gi;
+        const loose = /uddg=([^&"]+)[^>]*>\s*([\s\S]*?)<\/a>/gi;
         let lm: RegExpExecArray | null;
         while ((lm = loose.exec(html)) && results.length < limit) {
           const href = decodeURIComponent(lm[1]);
@@ -332,13 +364,59 @@ export async function executeTool(
       const listed = steps
         .map((s, i) => {
           const step = s as { title?: string; detail?: string };
-          return `${i + 1}. ${step.title ?? "step"}${step.detail ? ` — ${step.detail}` : ""}`;
+          return `${i + 1}. ${step.title ?? "step"}${
+            step.detail ? ` — ${step.detail}` : ""
+          }`;
         })
         .join("\n");
       return `Plan saved.\nGoal: ${goal}\n${listed}`;
     }
     default:
       throw new Error(`Unknown tool: ${name}`);
+  }
+}
+
+export type ExecuteToolOptions = {
+  sessionId?: string;
+  shellMode?: ShellMode;
+};
+
+export async function executeTool(
+  name: string,
+  args: Record<string, unknown>,
+  workspaceRoot: string,
+  options: ExecuteToolOptions = {}
+): Promise<string> {
+  const started = Date.now();
+  const shellMode =
+    options.shellMode ?? getShellMode(process.env.OMNI_SHELL_MODE);
+  try {
+    const output = await executeToolInner(
+      name,
+      args,
+      workspaceRoot,
+      shellMode
+    );
+    await writeAudit(workspaceRoot, {
+      sessionId: options.sessionId,
+      tool: name,
+      ok: true,
+      args,
+      output,
+      durationMs: Date.now() - started,
+    });
+    return output;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await writeAudit(workspaceRoot, {
+      sessionId: options.sessionId,
+      tool: name,
+      ok: false,
+      args,
+      output: message,
+      durationMs: Date.now() - started,
+    });
+    throw err;
   }
 }
 
