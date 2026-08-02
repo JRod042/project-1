@@ -28,7 +28,11 @@ import { ApprovalBar } from "./src/components/ApprovalBar";
 import { SettingsSheet } from "./src/components/SettingsSheet";
 import { SessionDrawer } from "./src/components/SessionDrawer";
 import { ApiError, getSession, streamChat } from "./src/lib/api";
-import { loadSettings, saveSettings } from "./src/lib/storage";
+import {
+  isLoopbackServerUrl,
+  loadSettings,
+  saveSettings,
+} from "./src/lib/storage";
 import { colors, fonts } from "./src/theme";
 import type { AppSettings, TimelineItem } from "./src/types";
 
@@ -254,13 +258,16 @@ export default function App() {
             text: err.message,
           });
         } else {
+          const target = settings.serverUrl;
+          const loopback = isLoopbackServerUrl(target);
           append({
             id: uid("err"),
             kind: "error",
-            text:
-              err instanceof Error
+            text: loopback
+              ? `Cannot reach agent at ${target} — that's this iPad. SYS → set http://YOUR_COMPUTER_LAN_IP:8787 (or tunnel) → TEST LINK → SAVE. Server must be running.`
+              : err instanceof Error
                 ? err.message
-                : "Failed to reach Omni server. Open Systems and set your LAN URL + API key.",
+                : `Failed to reach Omni server at ${target}. Open SYS, TEST LINK, fix URL.`,
           });
         }
       } finally {
@@ -403,6 +410,18 @@ export default function App() {
           </Pressable>
         ) : null}
 
+        {settings && isLoopbackServerUrl(settings.serverUrl) ? (
+          <Pressable
+            style={styles.connectBanner}
+            onPress={() => setSettingsOpen(true)}
+          >
+            <Text style={styles.connectBannerText}>
+              Agent URL is localhost — tap SYS and set your computer LAN IP or
+              tunnel (TestFlight cannot use 127.0.0.1)
+            </Text>
+          </Pressable>
+        ) : null}
+
         <FlatList
           ref={listRef}
           data={items}
@@ -526,6 +545,18 @@ const styles = StyleSheet.create({
   },
   authBannerText: {
     color: colors.danger,
+    fontFamily: fonts.monoMed,
+    fontSize: 11,
+  },
+  connectBanner: {
+    backgroundColor: "#2A2410",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.warn,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  connectBannerText: {
+    color: colors.warn,
     fontFamily: fonts.monoMed,
     fontSize: 11,
   },

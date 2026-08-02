@@ -31,9 +31,18 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
   }, [visible, settings]);
 
   const ping = async () => {
+    const url = draft.serverUrl.trim();
+    const loopback =
+      /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(url);
+    if (loopback) {
+      setStatus(
+        `Unreachable on device: ${url || "(empty)"} is this iPad itself. Use http://YOUR_COMPUTER_LAN_IP:8787 (same Wi‑Fi) or an https tunnel URL, then SAVE.`
+      );
+      return;
+    }
     try {
-      setStatus("Checking…");
-      const h = await healthCheck(draft.serverUrl);
+      setStatus(`Checking ${url}…`);
+      const h = await healthCheck(url);
       const auth = h.authRequired
         ? draft.serverToken
           ? "auth=token set"
@@ -43,7 +52,10 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
         `Online · ${auth} · shell=${h.shellMode ?? "?"} · workspace ${h.workspaceRoot} · keys xai=${h.providers.xai} openai=${h.providers.openai} gemini=${h.providers.gemini}`
       );
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : "Unreachable");
+      const msg = err instanceof Error ? err.message : "Unreachable";
+      setStatus(
+        `${msg} — is omni-server running on that host:8787? Same Wi‑Fi? Firewall allowing 8787?`
+      );
     }
   };
 

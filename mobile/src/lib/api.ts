@@ -197,7 +197,13 @@ function streamViaXhr(
     };
 
     xhr.onerror = () => {
-      finish(() => reject(new Error("Network error talking to Omni server")));
+      finish(() =>
+        reject(
+          new Error(
+            `Network error talking to Omni server (${url}). On TestFlight use your computer LAN IP or a tunnel — not localhost. Open SYS → set URL → TEST LINK → SAVE.`
+          )
+        )
+      );
     };
 
     xhr.onabort = () => {

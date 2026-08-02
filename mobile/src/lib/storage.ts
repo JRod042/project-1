@@ -7,6 +7,21 @@ const SETTINGS_KEY = "omni.settings.v1";
 const API_KEY_SECURE = "omni.apiKey";
 const SERVER_TOKEN_SECURE = "omni.serverToken";
 
+export function isLoopbackServerUrl(url: string): boolean {
+  try {
+    const u = new URL(url.trim());
+    const host = u.hostname.toLowerCase();
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "0.0.0.0" ||
+      host === "::1"
+    );
+  } catch {
+    return /localhost|127\.0\.0\.1/.test(url);
+  }
+}
+
 /** Prefer the Metro/dev-client host so a physical device hits your machine on LAN. */
 export function defaultServerUrl(): string {
   const hostUri = Constants.expoConfig?.hostUri || Constants.linkingUri || "";
@@ -20,7 +35,7 @@ export function defaultServerUrl(): string {
     return `http://${host}:8787`;
   }
 
-  // Loopback only works on Simulator. On a real iPhone/iPad, set SYS → server URL.
+  // TestFlight / store builds have no Metro host — user must set SYS → LAN/tunnel URL.
   return "http://127.0.0.1:8787";
 }
 
@@ -49,13 +64,10 @@ export async function loadSettings(): Promise<AppSettings> {
       serverToken = parsed.serverToken || "";
     }
 
-    // If user never customized server URL, refresh LAN default from current host.
+    // Keep a saved custom URL. Only refresh when unset / still loopback default.
+    const saved = parsed.serverUrl?.trim() || "";
     const serverUrl =
-      !parsed.serverUrl ||
-      parsed.serverUrl === "http://127.0.0.1:8787" ||
-      parsed.serverUrl === "http://localhost:8787"
-        ? base.serverUrl
-        : parsed.serverUrl;
+      !saved || isLoopbackServerUrl(saved) ? base.serverUrl : saved;
 
     return {
       ...base,
