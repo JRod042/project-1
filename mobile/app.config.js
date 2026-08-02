@@ -11,14 +11,14 @@ const config = {
   splash: {
     image: "./assets/splash-icon.png",
     resizeMode: "contain",
-    backgroundColor: "#0B0F0C",
+    backgroundColor: "#070A0F",
   },
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.jrod042.omni",
     // Bump before each new ASC upload if that number was already used.
     // EAS autoIncrement is unsupported with app.config.js.
-    buildNumber: "3",
+    buildNumber: "4",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Omni",
@@ -39,7 +39,7 @@ const config = {
   android: {
     package: "com.jrod042.omni",
     adaptiveIcon: {
-      backgroundColor: "#0B0F0C",
+      backgroundColor: "#070A0F",
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundImage: "./assets/android-icon-background.png",
       monochromeImage: "./assets/android-icon-monochrome.png",
@@ -55,7 +55,7 @@ const config = {
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#0B0F0C",
+        backgroundColor: "#070A0F",
         image: "./assets/splash-icon.png",
         imageWidth: 200,
       },

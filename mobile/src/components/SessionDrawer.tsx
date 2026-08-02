@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   rowActive: {
     borderColor: colors.brand,
-    backgroundColor: "#1C2814",
+    backgroundColor: "rgba(184,255,61,0.08)",
   },
   rowMain: { flex: 1, padding: 12, gap: 4 },
   rowTitle: {
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.line,
   },
   deleteText: {
-    color: "#E57373",
+    color: colors.danger,
     fontFamily: fonts.monoBold,
     fontSize: 11,
   },

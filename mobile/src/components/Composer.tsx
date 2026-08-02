@@ -35,12 +35,17 @@ export function Composer({ busy, onSend, onCancel }: Props) {
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.topRule} />
       <View style={styles.suggestions}>
         {SUGGESTIONS.map((s) => (
           <Pressable
             key={s}
             onPress={() => submit(s)}
-            style={styles.chip}
+            style={({ pressed }) => [
+              styles.chip,
+              pressed && styles.chipPressed,
+              busy && styles.chipDisabled,
+            ]}
             disabled={busy}
           >
             <Text style={styles.chipText} numberOfLines={1}>
@@ -50,17 +55,20 @@ export function Composer({ busy, onSend, onCancel }: Props) {
         ))}
       </View>
       <View style={styles.row}>
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder="Command Omni…"
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          multiline
-          editable={!busy}
-          onSubmitEditing={() => submit()}
-          blurOnSubmit
-        />
+        <View style={styles.inputShell}>
+          <Text style={styles.caret}>{">"}</Text>
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="Issue command…"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            multiline
+            editable={!busy}
+            onSubmitEditing={() => submit()}
+            blurOnSubmit
+          />
+        </View>
         {busy ? (
           <Pressable
             onPress={() => {
@@ -87,13 +95,19 @@ export function Composer({ busy, onSend, onCancel }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    borderTopWidth: 1,
-    borderTopColor: colors.line,
-    backgroundColor: colors.bgElevated,
+    backgroundColor: colors.bgGlass,
     paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 8,
+    paddingBottom: 12,
     gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.lineBright,
+  },
+  topRule: {
+    height: 2,
+    backgroundColor: colors.brand,
+    opacity: 0.35,
+    marginBottom: 2,
   },
   suggestions: {
     flexDirection: "row",
@@ -102,10 +116,18 @@ const styles = StyleSheet.create({
   },
   chip: {
     borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.lineBright,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 7,
     maxWidth: "100%",
+    backgroundColor: "rgba(16,24,32,0.7)",
+  },
+  chipPressed: {
+    borderColor: colors.accent,
+    backgroundColor: "rgba(62,224,197,0.08)",
+  },
+  chipDisabled: {
+    opacity: 0.4,
   },
   chipText: {
     color: colors.textMuted,
@@ -117,48 +139,64 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     gap: 10,
   },
+  inputShell: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    minHeight: 48,
+    maxHeight: 120,
+    backgroundColor: colors.bgPanel,
+    borderWidth: 1,
+    borderColor: colors.lineBright,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  caret: {
+    color: colors.brand,
+    fontFamily: fonts.monoBold,
+    fontSize: 16,
+    lineHeight: 22,
+    marginTop: 1,
+  },
   input: {
     flex: 1,
-    minHeight: 44,
-    maxHeight: 120,
     color: colors.text,
     fontFamily: fonts.mono,
     fontSize: 15,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: colors.bgPanel,
-    borderWidth: 1,
-    borderColor: colors.line,
+    lineHeight: 22,
+    padding: 0,
+    margin: 0,
   },
   send: {
     backgroundColor: colors.brand,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 44,
+    paddingVertical: 14,
+    minHeight: 48,
     justifyContent: "center",
   },
   cancel: {
-    backgroundColor: "#3A1F1F",
+    backgroundColor: "rgba(255,92,106,0.12)",
     borderWidth: 1,
-    borderColor: "#E57373",
+    borderColor: colors.danger,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    minHeight: 44,
+    paddingVertical: 14,
+    minHeight: 48,
     justifyContent: "center",
   },
   cancelText: {
-    color: "#E57373",
+    color: colors.danger,
     fontFamily: fonts.monoBold,
     fontSize: 13,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   sendDisabled: {
     opacity: 0.35,
   },
   sendText: {
-    color: "#0B0F0C",
+    color: colors.brandInk,
     fontFamily: fonts.monoBold,
     fontSize: 13,
-    letterSpacing: 1,
+    letterSpacing: 1.4,
   },
 });

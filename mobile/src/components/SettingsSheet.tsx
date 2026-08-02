@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   providerOn: {
     borderColor: colors.brand,
-    backgroundColor: "#1C2814",
+    backgroundColor: "rgba(184,255,61,0.08)",
   },
   providerText: {
     color: colors.textMuted,
@@ -296,8 +296,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveText: {
-    color: "#0B0F0C",
+    color: colors.brandInk,
     fontFamily: fonts.monoBold,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
 });

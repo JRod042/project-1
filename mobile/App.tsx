@@ -9,8 +9,8 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { Atmosphere } from "./src/components/Atmosphere";
 import {
   useFonts,
   Syne_700Bold,
@@ -46,12 +46,12 @@ const BOOT: TimelineItem[] = [
   {
     id: "boot_1",
     kind: "status",
-    text: "omni online — personal agent ready",
+    text: "uplink established — operator ready",
   },
   {
     id: "boot_2",
     kind: "assistant",
-    text: "I'm Omni. Think Jarvis, but I actually run tools: research, code, shell, files, memory, multi-step missions. Tell me what to do.",
+    text: "Omni online. I plan, research, write, run shell, and finish missions. Issue a command.",
   },
 ];
 
@@ -112,6 +112,7 @@ export default function App() {
   const listRef = useRef<FlatList<TimelineItem>>(null);
   const abortRef = useRef<AbortController | null>(null);
   const pulse = useRef(new Animated.Value(0.35)).current;
+  const pulseScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     loadSettings().then(setSettings);
@@ -123,22 +124,36 @@ export default function App() {
 
   useEffect(() => {
     const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0.35,
-          duration: 900,
-          useNativeDriver: true,
-        }),
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(pulse, {
+            toValue: 1,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulse, {
+            toValue: 0.3,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(pulseScale, {
+            toValue: 1.35,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+        ]),
       ])
     );
     loop.start();
     return () => loop.stop();
-  }, [pulse]);
+  }, [pulse, pulseScale]);
 
   const append = useCallback((item: TimelineItem) => {
     setItems((prev) => [...prev, item]);
@@ -364,19 +379,22 @@ export default function App() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.safe} edges={["top", "left", "right", "bottom"]}>
         <StatusBar style="light" />
-        <LinearGradient
-          colors={["#101A12", "#0B0F0C", "#0E1518"]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+        <Atmosphere />
         <View style={styles.header}>
-          <View>
+          <View style={styles.brandBlock}>
             <Text style={styles.brand}>OMNI</Text>
-            <Text style={styles.tag}>personal agent · always on</Text>
+            <Text style={styles.tag}>OPERATOR LINK · ALWAYS ON</Text>
           </View>
           <View style={styles.headerRight}>
-            <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
+            <View style={styles.liveWrap}>
+              <Animated.View
+                style={[
+                  styles.liveRing,
+                  { opacity: pulse, transform: [{ scale: pulseScale }] },
+                ]}
+              />
+              <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
+            </View>
             <Pressable onPress={() => setSessionsOpen(true)} style={styles.headerBtn}>
               <Text style={styles.headerBtnText}>LOG</Text>
             </Pressable>
@@ -485,44 +503,62 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 10,
+    paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: colors.line,
+    borderBottomColor: colors.lineBright,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    backgroundColor: "rgba(11,15,12,0.92)",
+    backgroundColor: colors.bgGlass,
+  },
+  brandBlock: {
+    gap: 4,
   },
   brand: {
     color: colors.brand,
     fontFamily: fonts.displayExtra,
-    fontSize: 34,
-    letterSpacing: 2,
-    lineHeight: 36,
+    fontSize: 40,
+    letterSpacing: 4,
+    lineHeight: 42,
   },
   tag: {
-    color: colors.textMuted,
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    marginTop: 2,
+    color: colors.accent,
+    fontFamily: fonts.monoMed,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    opacity: 0.85,
   },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  liveDot: {
-    width: 8,
-    height: 8,
-    backgroundColor: colors.brand,
+  liveWrap: {
+    width: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 2,
+  },
+  liveRing: {
+    position: "absolute",
+    width: 14,
+    height: 14,
+    borderWidth: 1,
+    borderColor: colors.brand,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    backgroundColor: colors.brand,
   },
   headerBtn: {
     borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.lineBright,
     paddingHorizontal: 10,
     paddingVertical: 7,
+    backgroundColor: "rgba(16,24,32,0.65)",
   },
   headerBtnWarn: {
     borderColor: colors.danger,
@@ -531,13 +567,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: fonts.monoBold,
     fontSize: 11,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   headerBtnTextWarn: {
     color: colors.danger,
   },
   authBanner: {
-    backgroundColor: "#3A1F1F",
+    backgroundColor: "rgba(58,31,31,0.95)",
     borderBottomWidth: 1,
     borderBottomColor: colors.danger,
     paddingHorizontal: 14,
@@ -549,7 +585,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   connectBanner: {
-    backgroundColor: "#2A2410",
+    backgroundColor: "rgba(42,36,16,0.95)",
     borderBottomWidth: 1,
     borderBottomColor: colors.warn,
     paddingHorizontal: 14,
@@ -562,7 +598,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingTop: 18,
+    paddingBottom: 28,
   },
 });
