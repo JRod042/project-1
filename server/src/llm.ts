@@ -219,7 +219,7 @@ export async function callLlm(
 export function defaultModel(provider: ProviderName): string {
   switch (provider) {
     case "xai":
-      return process.env.OMNI_MODEL || "grok-4";
+      return process.env.OMNI_MODEL || "grok-4.5";
     case "openai":
       return process.env.OMNI_MODEL || "gpt-4.1";
     case "gemini":
