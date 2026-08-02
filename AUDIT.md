@@ -42,6 +42,15 @@ Tools flagged `requiresApproval` (`write_file`, `append_file`, `run_shell`) paus
 
 Each tool run appends one JSON line to `WORKSPACE_ROOT/.omni/audit.log` with tool name, ok flag, duration, and truncated arg/output summaries.
 
+## Agent (P2)
+
+| Control | Status |
+|---------|--------|
+| Token streaming (`text_delta`) for xAI/OpenAI | yes |
+| Improved `web_search` (DDG Instant Answer + HTML) | yes |
+| `OMNI_SHELL_MODE=strict\|full` | yes (P0) |
+| History summarization for long sessions | yes |
+
 ## Mobile (P1)
 
 | Control | Status |
