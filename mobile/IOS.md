@@ -21,15 +21,15 @@ Auto-submit **cannot** run without the numeric App Store Connect **Apple ID**.
    (also in the URL: `appstoreconnect.apple.com/apps/<THIS_NUMBER>/…`)
 
 ### Put it in the repo
-In `mobile/eas.json` under `submit.production.ios`, set:
+In `mobile/eas.json` under `submit.production.ios`:
 
 ```json
-"ascAppId": "6751234567"
+"ascAppId": "6797235230"
 ```
 
-Replace the placeholder `REPLACE_WITH_ASC_APPLE_ID`. Commit to **`main`**, then rebuild with **auto-submit** again.
+This is already set on **`main`**. Rebuild with **auto-submit** enabled.
 
-If Omni doesn’t exist in App Store Connect yet: **Apps → + → New App** with bundle ID **`com.jrod042.omni`**, then copy the Apple ID.
+If you ever create a new ASC app, update `ascAppId` to the new Apple ID.
 
 ---
 
