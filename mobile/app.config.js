@@ -1,7 +1,7 @@
 /** @type {import('expo/config').ExpoConfig} */
 const config = {
   name: "Omni",
-  slug: "omni-agent",
+  slug: "omni",
   version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
