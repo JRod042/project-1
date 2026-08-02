@@ -176,15 +176,17 @@ export default function App() {
               setSessionId(event.sessionId);
             } else if (event.type === "status") {
               append({ id: uid("st"), kind: "status", text: event.status });
-            } else if (event.type === "text") {
+            } else if (event.type === "text" || event.type === "text_delta") {
+              const chunk = event.text;
+              const joiner = event.type === "text" ? (assistantId ? "\n" : "") : "";
               if (!assistantId) {
                 assistantId = uid("as");
-                append({ id: assistantId, kind: "assistant", text: event.text });
+                append({ id: assistantId, kind: "assistant", text: chunk });
               } else {
                 const id = assistantId;
                 patch(id, (it) =>
                   it.kind === "assistant"
-                    ? { ...it, text: `${it.text}\n${event.text}` }
+                    ? { ...it, text: `${it.text}${joiner}${chunk}` }
                     : it
                 );
               }

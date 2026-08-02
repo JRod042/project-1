@@ -188,6 +188,137 @@ async function ensureWorkspace(root: string) {
   await mkdir(path.join(root, ".omni"), { recursive: true });
 }
 
+function stripTags(html: string): string {
+  return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function decodeDuckUrl(href: string): string {
+  try {
+    if (href.includes("uddg=")) {
+      const u = new URL(href, "https://duckduckgo.com");
+      const target = u.searchParams.get("uddg");
+      if (target) return decodeURIComponent(target);
+    }
+    // //duckduckgo.com/l/?uddg=...
+    const m = href.match(/[?&]uddg=([^&]+)/);
+    if (m) return decodeURIComponent(m[1]);
+  } catch {
+    /* keep original */
+  }
+  return href.startsWith("//") ? `https:${href}` : href;
+}
+
+type SearchHit = { title: string; url: string; snippet: string };
+
+async function webSearch(query: string, limitRaw: number): Promise<string> {
+  const limit = Math.min(Math.max(limitRaw || 5, 1), 10);
+  const q = query.trim();
+  if (!q) throw new Error("query required");
+
+  const hits: SearchHit[] = [];
+  const seen = new Set<string>();
+
+  const push = (title: string, url: string, snippet = "") => {
+    const cleanTitle = stripTags(title);
+    const cleanUrl = decodeDuckUrl(url);
+    if (!cleanTitle || !cleanUrl) return;
+    if (seen.has(cleanUrl)) return;
+    seen.add(cleanUrl);
+    hits.push({
+      title: cleanTitle,
+      url: cleanUrl,
+      snippet: stripTags(snippet).slice(0, 280),
+    });
+  };
+
+  // 1) DuckDuckGo Instant Answer API (structured, when available)
+  try {
+    const iaUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(q)}&format=json&no_html=1&skip_disambig=1`;
+    const iaRes = await fetch(iaUrl, {
+      headers: { "User-Agent": "OmniAgent/0.1" },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (iaRes.ok) {
+      const ia = (await iaRes.json()) as {
+        AbstractText?: string;
+        AbstractURL?: string;
+        Heading?: string;
+        RelatedTopics?: Array<{
+          Text?: string;
+          FirstURL?: string;
+          Topics?: Array<{ Text?: string; FirstURL?: string }>;
+        }>;
+        Results?: Array<{ Text?: string; FirstURL?: string }>;
+      };
+      if (ia.AbstractText && ia.AbstractURL) {
+        push(ia.Heading || q, ia.AbstractURL, ia.AbstractText);
+      }
+      for (const r of ia.Results || []) {
+        if (hits.length >= limit) break;
+        if (r.Text && r.FirstURL) push(r.Text, r.FirstURL);
+      }
+      const flatten = (
+        topics: NonNullable<typeof ia.RelatedTopics>
+      ): Array<{ Text?: string; FirstURL?: string }> => {
+        const out: Array<{ Text?: string; FirstURL?: string }> = [];
+        for (const t of topics) {
+          if (t.FirstURL && t.Text) out.push(t);
+          if (t.Topics) out.push(...flatten(t.Topics as typeof topics));
+        }
+        return out;
+      };
+      for (const t of flatten(ia.RelatedTopics || [])) {
+        if (hits.length >= limit) break;
+        if (t.Text && t.FirstURL) push(t.Text, t.FirstURL);
+      }
+    }
+  } catch {
+    /* fall through to HTML */
+  }
+
+  // 2) HTML scrape fallback / supplement
+  if (hits.length < limit) {
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; OmniAgent/0.1; +https://github.com/JRod042/project-1)",
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+    const html = await res.text();
+
+    const blockRe =
+      /class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>([\s\S]*?)(?=class="result__a"|$)/gi;
+    let m: RegExpExecArray | null;
+    while ((m = blockRe.exec(html)) && hits.length < limit) {
+      const href = m[1];
+      const title = m[2];
+      const rest = m[3] || "";
+      const snip =
+        rest.match(/class="result__snippet"[^>]*>([\s\S]*?)<\//i)?.[1] || "";
+      push(title, href, snip);
+    }
+
+    if (hits.length < limit) {
+      const loose = /uddg=([^&"]+)[^>]*>\s*([\s\S]*?)<\/a>/gi;
+      let lm: RegExpExecArray | null;
+      while ((lm = loose.exec(html)) && hits.length < limit) {
+        push(lm[2], `https://duckduckgo.com/l/?uddg=${lm[1]}`);
+      }
+    }
+  }
+
+  if (!hits.length) return "No results found.";
+  return hits
+    .slice(0, limit)
+    .map(
+      (h, i) =>
+        `${i + 1}. ${h.title}\n   ${h.url}${h.snippet ? `\n   ${h.snippet}` : ""}`
+    )
+    .join("\n\n");
+}
+
 async function executeToolInner(
   name: string,
   args: Record<string, unknown>,
@@ -294,36 +425,7 @@ async function executeToolInner(
       return `HTTP ${res.status}\n${stripped.slice(0, maxChars)}`;
     }
     case "web_search": {
-      const query = String(args.query ?? "");
-      const limit = Math.min(Number(args.limit ?? 5), 10);
-      const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-      const res = await fetch(url, {
-        headers: { "User-Agent": "OmniAgent/0.1" },
-        signal: AbortSignal.timeout(15_000),
-      });
-      const html = await res.text();
-      const results: string[] = [];
-      const re =
-        /class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
-      let m: RegExpExecArray | null;
-      while ((m = re.exec(html)) && results.length < limit) {
-        const href = m[1];
-        const title = m[2].replace(/<[^>]+>/g, "").trim();
-        const snippet = m[3].replace(/<[^>]+>/g, "").trim();
-        results.push(
-          `${results.length + 1}. ${title}\n   ${href}\n   ${snippet}`
-        );
-      }
-      if (!results.length) {
-        const loose = /uddg=([^&"]+)[^>]*>\s*([\s\S]*?)<\/a>/gi;
-        let lm: RegExpExecArray | null;
-        while ((lm = loose.exec(html)) && results.length < limit) {
-          const href = decodeURIComponent(lm[1]);
-          const title = lm[2].replace(/<[^>]+>/g, "").trim();
-          if (title) results.push(`${results.length + 1}. ${title}\n   ${href}`);
-        }
-      }
-      return results.join("\n\n") || "No results found.";
+      return await webSearch(String(args.query ?? ""), Number(args.limit ?? 5));
     }
     case "remember": {
       const key = String(args.key ?? "").replace(/[^\w.-]+/g, "_");

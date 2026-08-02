@@ -109,7 +109,13 @@ describe("approval queue", () => {
       })
     );
     assert.ok(afterSecond.some((e) => e.type === "tool_result" && e.id === "t2" && e.ok));
-    assert.ok(afterSecond.some((e) => e.type === "text" && e.text.includes("Done")));
+    assert.ok(
+      afterSecond.some(
+        (e) =>
+          (e.type === "text" || e.type === "text_delta") &&
+          e.text.includes("Done")
+      )
+    );
     assert.ok(afterSecond.some((e) => e.type === "done"));
     assert.equal(getSession(sessionId)?.pendingApproval, undefined);
     await flushSessions();

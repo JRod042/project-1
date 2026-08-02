@@ -1,8 +1,9 @@
 import {
-  callLlm as defaultCallLlm,
   defaultModel,
   resolveApiKey,
+  streamLlm,
   type LlmSettings,
+  type ProviderResponse,
 } from "./llm.js";
 import {
   executeTool,
@@ -17,6 +18,7 @@ import {
   setApprovalQueue,
   touch,
 } from "./sessions.js";
+import { summarizeHistory } from "./summarize.js";
 import type {
   ChatMessage,
   PendingTool,
@@ -151,8 +153,6 @@ export async function* runAgent(
     model: options.model || defaultModel(provider),
     apiKey: resolveApiKey(provider, options.apiKey),
   };
-  const callLlm = options.callLlm ?? defaultCallLlm;
-
   let session = options.sessionId ? getSession(options.sessionId) : undefined;
   if (!session) {
     const title =
@@ -248,28 +248,38 @@ export async function* runAgent(
     touch(session);
   }
 
-  const history: ChatMessage[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    ...session.messages,
-  ];
-
   const maxRounds = 12;
   for (let round = 0; round < maxRounds; round++) {
     yield* emit({ type: "status", status: `thinking (round ${round + 1})` });
 
-    let response;
+    const history: ChatMessage[] = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...summarizeHistory(session.messages),
+    ];
+
+    let response: ProviderResponse;
     try {
-      response = await callLlm(settings, history);
+      if (options.callLlm) {
+        response = await options.callLlm(settings, history);
+        if (response.text) {
+          yield* emit({ type: "text_delta", text: response.text });
+        }
+      } else {
+        response = { text: "", toolCalls: [] };
+        for await (const ev of streamLlm(settings, history)) {
+          if (ev.type === "text_delta") {
+            yield* emit({ type: "text_delta", text: ev.text });
+          } else {
+            response = ev.response;
+          }
+        }
+      }
     } catch (err) {
       yield* emit({
         type: "error",
         message: err instanceof Error ? err.message : String(err),
       });
       return;
-    }
-
-    if (response.text) {
-      yield* emit({ type: "text", text: response.text });
     }
 
     if (!response.toolCalls.length) {
@@ -279,7 +289,6 @@ export async function* runAgent(
           content: response.text,
         };
         session.messages.push(assistantMsg);
-        history.push(assistantMsg);
         touch(session);
       }
       yield* emit({ type: "done", sessionId: session.id });
@@ -292,7 +301,6 @@ export async function* runAgent(
       tool_calls: response.toolCalls,
     };
     session.messages.push(assistantToolMsg);
-    history.push(assistantToolMsg);
     touch(session);
 
     for (let i = 0; i < response.toolCalls.length; i++) {
@@ -321,7 +329,7 @@ export async function* runAgent(
         options.workspaceRoot,
         call,
         session.messages,
-        history
+        session.messages
       );
       touch(session);
     }

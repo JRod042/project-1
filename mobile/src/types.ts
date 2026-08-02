@@ -3,6 +3,7 @@ export type ProviderName = "xai" | "openai" | "gemini";
 export type StreamEvent =
   | { type: "session"; sessionId: string }
   | { type: "text"; text: string }
+  | { type: "text_delta"; text: string }
   | { type: "tool_start"; id: string; name: string; arguments: Record<string, unknown> }
   | { type: "tool_result"; id: string; name: string; ok: boolean; output: string }
   | {
