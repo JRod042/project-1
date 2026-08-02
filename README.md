@@ -34,14 +34,17 @@ npx expo run:ios --device
 
 Or open `mobile/ios/Omni.xcodeproj` in Xcode, pick your Team under Signing, and Run on your iPhone.
 
-### Fastest path without local Xcode compile
+### Fastest path with your Apple Developer account → TestFlight
 
 ```bash
 cd mobile
-npx eas-cli login
-npx eas init
-npx eas build --platform ios --profile development
+npm install
+chmod +x scripts/ship-ios.sh
+./scripts/ship-ios.sh production
 ```
+
+That logs into EAS, builds a signed IPA with your team, and can submit to TestFlight.  
+Details: **[mobile/IOS.md](mobile/IOS.md)**
 
 ## Agent server
 

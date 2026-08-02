@@ -49,14 +49,12 @@
   "submit": {
     "preview": {
       "ios": {
-        "bundleIdentifier": "com.jrod042.omni",
-        "ascAppId": "${ASC_APP_ID}"
+        "bundleIdentifier": "com.jrod042.omni"
       }
     },
     "production": {
       "ios": {
-        "bundleIdentifier": "com.jrod042.omni",
-        "ascAppId": "${ASC_APP_ID}"
+        "bundleIdentifier": "com.jrod042.omni"
       }
     }
   }
