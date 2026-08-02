@@ -7,8 +7,9 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native (android regenerated; ios/ is committed for Xcode)
+# Native (CNG: regenerate with prebuild / EAS)
 .kotlin/
+/ios
 /android
 *.orig.*
 *.jks

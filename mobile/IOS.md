@@ -14,13 +14,19 @@ Bundle ID: **`com.jrod042.omni`** (iPhone + iPad)
 2. Platforms: iOS · Name: **Omni** · Bundle ID: `com.jrod042.omni`  
 3. (If bundle ID missing) create it under [Certificates, IDs & Profiles → Identifiers](https://developer.apple.com/account/resources/identifiers/list)
 
-### 2. Expo (Safari)
-1. Create/login at [expo.dev](https://expo.dev)  
-2. **Create project** → link this GitHub repo (`JRod042/project-1`)  
-3. Open the project → **Credentials** → iOS → set up **App Store** distribution  
-   - Sign in with your Apple Developer account in the browser when prompted  
-4. **Builds** → **Start a build** → iOS → profile `production`  
-5. When the build finishes → **Submit to App Store** / TestFlight  
+### 2. Expo credentials (**required before GitHub builds**)
+GitHub builds are non-interactive. If iOS credentials are missing, you’ll see `build:internal` / credentials errors.
+
+1. [expo.dev](https://expo.dev) → **@jrod42/omni** → **Credentials** → **iOS**
+2. Bundle identifier `com.jrod042.omni` → **App Store** distribution
+3. **Generate** / use Expo-managed credentials
+4. Sign in with your Apple Developer account when prompted and allow access
+
+### 3. Link + build
+1. **Project settings** → **GitHub** → connect `JRod042/project-1`
+2. Set **Base directory** to `mobile`
+3. **Builds** → **Build from GitHub** → branch with the latest fix → iOS → `production`
+4. When the build finishes → **Submit** to TestFlight
 
 ### 3. Install on iPad
 1. Install **TestFlight** from the App Store  
