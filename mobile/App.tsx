@@ -26,7 +26,8 @@ import { TerminalLine } from "./src/components/TerminalLine";
 import { Composer } from "./src/components/Composer";
 import { ApprovalBar } from "./src/components/ApprovalBar";
 import { SettingsSheet } from "./src/components/SettingsSheet";
-import { streamChat } from "./src/lib/api";
+import { SessionDrawer } from "./src/components/SessionDrawer";
+import { ApiError, getSession, streamChat } from "./src/lib/api";
 import { loadSettings, saveSettings } from "./src/lib/storage";
 import { colors, fonts } from "./src/theme";
 import type { AppSettings, TimelineItem } from "./src/types";
@@ -50,6 +51,40 @@ const BOOT: TimelineItem[] = [
   },
 ];
 
+function messagesToTimeline(
+  messages: Array<{
+    role: string;
+    content: string;
+    name?: string;
+    tool_call_id?: string;
+  }>
+): TimelineItem[] {
+  const items: TimelineItem[] = [
+    {
+      id: uid("boot"),
+      kind: "status",
+      text: "session resumed",
+    },
+  ];
+  for (const m of messages) {
+    if (m.role === "user") {
+      items.push({ id: uid("u"), kind: "user", text: m.content });
+    } else if (m.role === "assistant" && m.content) {
+      items.push({ id: uid("as"), kind: "assistant", text: m.content });
+    } else if (m.role === "tool") {
+      items.push({
+        id: m.tool_call_id || uid("tool"),
+        kind: "tool",
+        name: m.name || "tool",
+        output: m.content,
+        ok: !m.content.startsWith("Error:") && m.content !== "User denied this action.",
+        running: false,
+      });
+    }
+  }
+  return items;
+}
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     Syne_700Bold,
@@ -64,11 +99,14 @@ export default function App() {
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [authHint, setAuthHint] = useState(false);
   const [pendingApproval, setPendingApproval] = useState<{
     id: string;
     name: string;
   } | null>(null);
   const listRef = useRef<FlatList<TimelineItem>>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const pulse = useRef(new Animated.Value(0.35)).current;
 
   useEffect(() => {
@@ -102,8 +140,16 @@ export default function App() {
     setItems((prev) => [...prev, item]);
   }, []);
 
-  const patch = useCallback((id: string, updater: (item: TimelineItem) => TimelineItem) => {
-    setItems((prev) => prev.map((it) => (it.id === id ? updater(it) : it)));
+  const patch = useCallback(
+    (id: string, updater: (item: TimelineItem) => TimelineItem) => {
+      setItems((prev) => prev.map((it) => (it.id === id ? updater(it) : it)));
+    },
+    []
+  );
+
+  const cancelRun = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
   }, []);
 
   const run = useCallback(
@@ -112,79 +158,118 @@ export default function App() {
       approvalDecision?: { id: string; approve: boolean };
     }) => {
       if (!settings) return;
+      cancelRun();
+      const controller = new AbortController();
+      abortRef.current = controller;
       setBusy(true);
       setPendingApproval(null);
+      setAuthHint(false);
 
       let assistantId: string | null = null;
 
       try {
-        await streamChat(settings, { ...payload, sessionId }, (event) => {
-          if (event.type === "session") {
-            setSessionId(event.sessionId);
-          } else if (event.type === "status") {
-            append({ id: uid("st"), kind: "status", text: event.status });
-          } else if (event.type === "text") {
-            if (!assistantId) {
-              assistantId = uid("as");
-              append({ id: assistantId, kind: "assistant", text: event.text });
-            } else {
-              const id = assistantId;
-              patch(id, (it) =>
-                it.kind === "assistant"
-                  ? { ...it, text: `${it.text}\n${event.text}` }
+        await streamChat(
+          settings,
+          { ...payload, sessionId },
+          (event) => {
+            if (event.type === "session") {
+              setSessionId(event.sessionId);
+            } else if (event.type === "status") {
+              append({ id: uid("st"), kind: "status", text: event.status });
+            } else if (event.type === "text") {
+              if (!assistantId) {
+                assistantId = uid("as");
+                append({ id: assistantId, kind: "assistant", text: event.text });
+              } else {
+                const id = assistantId;
+                patch(id, (it) =>
+                  it.kind === "assistant"
+                    ? { ...it, text: `${it.text}\n${event.text}` }
+                    : it
+                );
+              }
+            } else if (event.type === "tool_start") {
+              append({
+                id: event.id,
+                kind: "tool",
+                name: event.name,
+                args: event.arguments,
+                running: true,
+              });
+            } else if (event.type === "tool_result") {
+              patch(event.id, (it) =>
+                it.kind === "tool"
+                  ? {
+                      ...it,
+                      running: false,
+                      ok: event.ok,
+                      output: event.output,
+                    }
                   : it
               );
+            } else if (event.type === "approval_required") {
+              const queueNote =
+                event.queueRemaining && event.queueRemaining > 0
+                  ? ` (+${event.queueRemaining} queued)`
+                  : "";
+              append({
+                id: uid("ap"),
+                kind: "approval",
+                toolId: event.id,
+                name: event.name,
+                args: event.arguments,
+                reason: `${event.reason}${queueNote}`,
+              });
+              setPendingApproval({ id: event.id, name: event.name });
+            } else if (event.type === "auth_required") {
+              setAuthHint(true);
+              append({
+                id: uid("auth"),
+                kind: "error",
+                text:
+                  event.message ||
+                  "Server auth required. Open Systems and set Server token.",
+              });
+            } else if (event.type === "error") {
+              if (event.code === "auth_required") setAuthHint(true);
+              append({ id: uid("err"), kind: "error", text: event.message });
             }
-          } else if (event.type === "tool_start") {
-            append({
-              id: event.id,
-              kind: "tool",
-              name: event.name,
-              args: event.arguments,
-              running: true,
-            });
-          } else if (event.type === "tool_result") {
-            patch(event.id, (it) =>
-              it.kind === "tool"
-                ? {
-                    ...it,
-                    running: false,
-                    ok: event.ok,
-                    output: event.output,
-                  }
-                : it
-            );
-          } else if (event.type === "approval_required") {
-            append({
-              id: uid("ap"),
-              kind: "approval",
-              toolId: event.id,
-              name: event.name,
-              args: event.arguments,
-              reason: event.reason,
-            });
-            setPendingApproval({ id: event.id, name: event.name });
-          } else if (event.type === "error") {
-            append({ id: uid("err"), kind: "error", text: event.message });
-          }
-        });
+          },
+          controller.signal
+        );
       } catch (err) {
-        append({
-          id: uid("err"),
-          kind: "error",
-          text:
-            err instanceof Error
-              ? err.message
-              : "Failed to reach Omni server. Open Systems and set your LAN URL + API key.",
-        });
+        if (err instanceof ApiError && err.code === "aborted") {
+          append({
+            id: uid("st"),
+            kind: "status",
+            text: "cancelled",
+          });
+        } else if (err instanceof ApiError && err.status === 401) {
+          setAuthHint(true);
+          append({
+            id: uid("err"),
+            kind: "error",
+            text: err.message,
+          });
+        } else {
+          append({
+            id: uid("err"),
+            kind: "error",
+            text:
+              err instanceof Error
+                ? err.message
+                : "Failed to reach Omni server. Open Systems and set your LAN URL + API key.",
+          });
+        }
       } finally {
+        if (abortRef.current === controller) abortRef.current = null;
         setBusy(false);
         requestAnimationFrame(() =>
           listRef.current?.scrollToEnd({ animated: true })
         );
       }
     },
-    [append, patch, sessionId, settings]
+    [append, cancelRun, patch, sessionId, settings]
   );
 
   const onSend = (text: string) => {
@@ -206,8 +291,10 @@ export default function App() {
   };
 
   const newMission = () => {
+    cancelRun();
     setSessionId(undefined);
     setPendingApproval(null);
+    setAuthHint(false);
     setItems([
       {
         id: uid("boot"),
@@ -220,6 +307,40 @@ export default function App() {
         text: "Fresh session. What are we taking on?",
       },
     ]);
+  };
+
+  const resumeSession = async (id: string) => {
+    if (!settings) return;
+    cancelRun();
+    try {
+      const session = await getSession(settings, id);
+      setSessionId(session.id);
+      const timeline = messagesToTimeline(session.messages);
+      if (session.pendingApproval) {
+        timeline.push({
+          id: uid("ap"),
+          kind: "approval",
+          toolId: session.pendingApproval.id,
+          name: session.pendingApproval.name,
+          args: session.pendingApproval.arguments,
+          reason: session.pendingApproval.reason,
+        });
+        setPendingApproval({
+          id: session.pendingApproval.id,
+          name: session.pendingApproval.name,
+        });
+      } else {
+        setPendingApproval(null);
+      }
+      setItems(timeline);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) setAuthHint(true);
+      append({
+        id: uid("err"),
+        kind: "error",
+        text: err instanceof Error ? err.message : "Could not resume session",
+      });
+    }
   };
 
   if (!fontsLoaded || !settings) {
@@ -247,17 +368,38 @@ export default function App() {
           </View>
           <View style={styles.headerRight}>
             <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
+            <Pressable onPress={() => setSessionsOpen(true)} style={styles.headerBtn}>
+              <Text style={styles.headerBtnText}>LOG</Text>
+            </Pressable>
             <Pressable onPress={newMission} style={styles.headerBtn}>
               <Text style={styles.headerBtnText}>NEW</Text>
             </Pressable>
             <Pressable
               onPress={() => setSettingsOpen(true)}
-              style={styles.headerBtn}
+              style={[styles.headerBtn, authHint && styles.headerBtnWarn]}
             >
-              <Text style={styles.headerBtnText}>SYS</Text>
+              <Text
+                style={[
+                  styles.headerBtnText,
+                  authHint && styles.headerBtnTextWarn,
+                ]}
+              >
+                SYS
+              </Text>
             </Pressable>
           </View>
         </View>
+
+        {authHint ? (
+          <Pressable
+            style={styles.authBanner}
+            onPress={() => setSettingsOpen(true)}
+          >
+            <Text style={styles.authBannerText}>
+              Auth required — tap to set Server token (OMNI_SERVER_TOKEN)
+            </Text>
+          </Pressable>
+        ) : null}
 
         <FlatList
           ref={listRef}
@@ -279,7 +421,7 @@ export default function App() {
           />
         ) : null}
 
-        <Composer busy={busy} onSend={onSend} />
+        <Composer busy={busy} onSend={onSend} onCancel={cancelRun} />
 
         <SettingsSheet
           visible={settingsOpen}
@@ -287,7 +429,21 @@ export default function App() {
           onClose={() => setSettingsOpen(false)}
           onSave={async (next) => {
             setSettings(next);
+            setAuthHint(false);
             await saveSettings(next);
+          }}
+        />
+
+        <SessionDrawer
+          visible={sessionsOpen}
+          settings={settings}
+          activeSessionId={sessionId}
+          onClose={() => setSessionsOpen(false)}
+          onResume={(id) => {
+            void resumeSession(id);
+          }}
+          onDeleted={(id) => {
+            if (id === sessionId) newMission();
           }}
         />
       </SafeAreaView>
@@ -347,11 +503,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
+  headerBtnWarn: {
+    borderColor: colors.danger,
+  },
   headerBtnText: {
     color: colors.text,
     fontFamily: fonts.monoBold,
     fontSize: 11,
     letterSpacing: 1,
+  },
+  headerBtnTextWarn: {
+    color: colors.danger,
+  },
+  authBanner: {
+    backgroundColor: "#3A1F1F",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.danger,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  authBannerText: {
+    color: colors.danger,
+    fontFamily: fonts.monoMed,
+    fontSize: 11,
   },
   list: {
     paddingHorizontal: 16,

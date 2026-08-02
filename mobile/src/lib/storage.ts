@@ -5,6 +5,7 @@ import type { AppSettings, ProviderName } from "../types";
 
 const SETTINGS_KEY = "omni.settings.v1";
 const API_KEY_SECURE = "omni.apiKey";
+const SERVER_TOKEN_SECURE = "omni.serverToken";
 
 /** Prefer the Metro/dev-client host so a physical device hits your machine on LAN. */
 export function defaultServerUrl(): string {
@@ -28,6 +29,7 @@ const defaults = (): AppSettings => ({
   provider: "xai",
   model: "grok-4.5",
   apiKey: "",
+  serverToken: "",
   autoApprove: false,
 });
 
@@ -37,10 +39,14 @@ export async function loadSettings(): Promise<AppSettings> {
     const raw = await AsyncStorage.getItem(SETTINGS_KEY);
     const parsed = raw ? (JSON.parse(raw) as Partial<AppSettings>) : {};
     let apiKey = "";
+    let serverToken = "";
     try {
       apiKey = (await SecureStore.getItemAsync(API_KEY_SECURE)) || "";
+      serverToken =
+        (await SecureStore.getItemAsync(SERVER_TOKEN_SECURE)) || "";
     } catch {
       apiKey = parsed.apiKey || "";
+      serverToken = parsed.serverToken || "";
     }
 
     // If user never customized server URL, refresh LAN default from current host.
@@ -56,6 +62,7 @@ export async function loadSettings(): Promise<AppSettings> {
       ...parsed,
       serverUrl,
       apiKey,
+      serverToken,
       provider: (parsed.provider as ProviderName) || base.provider,
     };
   } catch {
@@ -64,7 +71,7 @@ export async function loadSettings(): Promise<AppSettings> {
 }
 
 export async function saveSettings(settings: AppSettings): Promise<void> {
-  const { apiKey, ...rest } = settings;
+  const { apiKey, serverToken, ...rest } = settings;
   await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(rest));
   try {
     if (apiKey) {
@@ -72,10 +79,15 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
     } else {
       await SecureStore.deleteItemAsync(API_KEY_SECURE);
     }
+    if (serverToken) {
+      await SecureStore.setItemAsync(SERVER_TOKEN_SECURE, serverToken);
+    } else {
+      await SecureStore.deleteItemAsync(SERVER_TOKEN_SECURE);
+    }
   } catch {
     await AsyncStorage.setItem(
       SETTINGS_KEY,
-      JSON.stringify({ ...rest, apiKey })
+      JSON.stringify({ ...rest, apiKey, serverToken })
     );
   }
 }

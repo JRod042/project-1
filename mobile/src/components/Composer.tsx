@@ -19,9 +19,10 @@ const SUGGESTIONS = [
 type Props = {
   busy: boolean;
   onSend: (text: string) => void;
+  onCancel?: () => void;
 };
 
-export function Composer({ busy, onSend }: Props) {
+export function Composer({ busy, onSend, onCancel }: Props) {
   const [text, setText] = useState("");
 
   const submit = async (value?: string) => {
@@ -60,16 +61,25 @@ export function Composer({ busy, onSend }: Props) {
           onSubmitEditing={() => submit()}
           blurOnSubmit
         />
-        <Pressable
-          onPress={() => submit()}
-          disabled={busy || !text.trim()}
-          style={[
-            styles.send,
-            (busy || !text.trim()) && styles.sendDisabled,
-          ]}
-        >
-          <Text style={styles.sendText}>{busy ? "…" : "RUN"}</Text>
-        </Pressable>
+        {busy ? (
+          <Pressable
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onCancel?.();
+            }}
+            style={styles.cancel}
+          >
+            <Text style={styles.cancelText}>STOP</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => submit()}
+            disabled={!text.trim()}
+            style={[styles.send, !text.trim() && styles.sendDisabled]}
+          >
+            <Text style={styles.sendText}>RUN</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -126,6 +136,21 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 44,
     justifyContent: "center",
+  },
+  cancel: {
+    backgroundColor: "#3A1F1F",
+    borderWidth: 1,
+    borderColor: "#E57373",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  cancelText: {
+    color: "#E57373",
+    fontFamily: fonts.monoBold,
+    fontSize: 13,
+    letterSpacing: 1,
   },
   sendDisabled: {
     opacity: 0.35,

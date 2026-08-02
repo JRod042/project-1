@@ -42,6 +42,15 @@ Tools flagged `requiresApproval` (`write_file`, `append_file`, `run_shell`) paus
 
 Each tool run appends one JSON line to `WORKSPACE_ROOT/.omni/audit.log` with tool name, ok flag, duration, and truncated arg/output summaries.
 
+## Mobile (P1)
+
+| Control | Status |
+|---------|--------|
+| Cancel in-flight chat (STOP / AbortController) | yes |
+| Session drawer (list / resume / delete) | yes |
+| Clear 401 + `authRequired` banner + server token in SYS | yes |
+| Robust SSE parser (event/data, chunked, CRLF) | yes |
+
 ## Verify
 
 ```bash
@@ -49,4 +58,7 @@ cd server
 npm install
 npm run typecheck
 npm test
+
+cd ../mobile
+npm run typecheck
 ```
