@@ -79,7 +79,6 @@ const config = {
         },
       },
     ],
-    "expo-dev-client",
   ],
   extra: {
     eas: {
