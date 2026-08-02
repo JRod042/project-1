@@ -71,6 +71,20 @@ async function callOpenAiCompatible(
             name: m.name,
           };
         }
+        if (m.role === "assistant" && m.tool_calls?.length) {
+          return {
+            role: "assistant",
+            content: m.content || null,
+            tool_calls: m.tool_calls.map((c) => ({
+              id: c.id,
+              type: "function",
+              function: {
+                name: c.name,
+                arguments: JSON.stringify(c.arguments ?? {}),
+              },
+            })),
+          };
+        }
         return { role: m.role, content: m.content };
       }),
       tools: openAiCompatibleTools(),

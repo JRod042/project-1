@@ -64,7 +64,8 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
               placeholderTextColor={colors.textMuted}
             />
             <Text style={styles.hint}>
-              On a real phone, use your computer's LAN IP, not localhost.
+              On iPhone/iPad use your computer's LAN IP (e.g. http://192.168.1.20:8787),
+              not localhost. Tap TEST LINK after starting the agent server.
             </Text>
 
             <Text style={styles.label}>Provider</Text>

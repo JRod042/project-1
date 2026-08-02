@@ -1,19 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
-import { Platform } from "react-native";
 import type { AppSettings, ProviderName } from "../types";
 
 const SETTINGS_KEY = "omni.settings.v1";
 const API_KEY_SECURE = "omni.apiKey";
 
-/** Prefer the Metro/dev-client host so a physical iPhone hits your Mac on LAN. */
+/** Prefer the Metro/dev-client host so a physical device hits your machine on LAN. */
 export function defaultServerUrl(): string {
-  const hostUri =
-    Constants.expoConfig?.hostUri ||
-    Constants.linkingUri ||
-    Constants.experienceUrl ||
-    "";
+  const hostUri = Constants.expoConfig?.hostUri || Constants.linkingUri || "";
 
   const match = String(hostUri).match(
     /(?:^|\/\/)((?:\d{1,3}\.){3}\d{1,3}|[a-zA-Z0-9.-]+)(?::\d+)?/
@@ -24,12 +19,7 @@ export function defaultServerUrl(): string {
     return `http://${host}:8787`;
   }
 
-  // Simulator can use loopback; device cannot.
-  if (Platform.OS === "ios" && !Platform.isPad) {
-    // Still ok for Simulator; on device user should set SYS once.
-    return "http://127.0.0.1:8787";
-  }
-
+  // Loopback only works on Simulator. On a real iPhone/iPad, set SYS → server URL.
   return "http://127.0.0.1:8787";
 }
 

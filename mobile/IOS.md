@@ -1,77 +1,78 @@
-# Omni on iPad only (no Mac)
+# Omni — iPad / TestFlight instructions
 
-You can get Omni onto your **iPad via TestFlight** without a Mac.  
-Builds run in the cloud (EAS). You only use Safari + TestFlight.
+Bundle ID: **`com.jrod042.omni`**  
+Expo project: **`@jrod42/omni`**  
+GitHub base directory: **`mobile`**
 
-Bundle ID: **`com.jrod042.omni`** (iPhone + iPad)
-
----
-
-## Path A — easiest on iPad (Expo website)
-
-### 1. Apple (Safari)
-1. [App Store Connect](https://appstoreconnect.apple.com) → **My Apps** → **+** → New App  
-2. Platforms: iOS · Name: **Omni** · Bundle ID: `com.jrod042.omni`  
-3. (If bundle ID missing) create it under [Certificates, IDs & Profiles → Identifiers](https://developer.apple.com/account/resources/identifiers/list)
-
-### 2. Expo credentials (**required before GitHub builds**)
-GitHub builds are non-interactive. If iOS credentials are missing, you’ll see `build:internal` / credentials errors.
-
-1. [expo.dev](https://expo.dev) → **@jrod42/omni** → **Credentials** → **iOS**
-2. Bundle identifier `com.jrod042.omni` → **App Store** distribution
-3. **Generate** / use Expo-managed credentials
-4. Sign in with your Apple Developer account when prompted and allow access
-
-### 3. Link + build
-1. **Project settings** → **GitHub** → connect `JRod042/project-1`
-2. Set **Base directory** to `mobile`
-3. **Builds** → **Build from GitHub** → branch with the latest fix → iOS → `production`
-4. When the build finishes → **Submit** to TestFlight
-
-### 3. Install on iPad
-1. Install **TestFlight** from the App Store  
-2. Accept the Omni invite (email or App Store Connect internal testing)  
-3. Open Omni on your iPad  
+You do **not** need a Mac. Use Safari + TestFlight.
 
 ---
 
-## Path B — one-tap from GitHub Actions (also iPad Safari)
+## Before you build (checklist)
 
-### Secrets (GitHub → Settings → Secrets and variables → Actions)
+1. **App ID** `com.jrod042.omni` in [Apple Identifiers](https://developer.apple.com/account/resources/identifiers/list)
+2. **App** “Omni” in [App Store Connect](https://appstoreconnect.apple.com) with that bundle ID
+3. **Expo credentials** (required — this is what broke earlier builds):
+   - [expo.dev](https://expo.dev) → **@jrod42/omni** → **Credentials** → **iOS**
+   - Select `com.jrod042.omni` → **App Store** distribution
+   - **Generate** Expo-managed credentials
+   - Sign in with your Apple Developer account when asked
+4. **GitHub link**
+   - Project settings → **GitHub** → repo `JRod042/project-1`
+   - **Base directory** = `mobile`
 
-| Secret | Where to get it |
-|--------|------------------|
-| `EXPO_TOKEN` | [expo.dev](https://expo.dev) → Account → Access tokens → Create |
-| `APPLE_API_KEY_P8` | App Store Connect → Users and Access → Integrations → App Store Connect API → create key → paste **full .p8 text** |
-| `APPLE_API_KEY_ID` | Key ID shown when you create the key |
-| `APPLE_API_ISSUER_ID` | Issuer ID at the top of the API keys page |
-
-Also complete **Expo → Credentials → iOS** once in Safari (Path A step 2.3) so EAS can sign builds non-interactively.
-
-### Run the workflow
-1. iPad Safari → this repo → **Actions** → **iOS TestFlight**  
-2. **Run workflow** → profile `production` → submit `true`  
-3. Wait for the green check, then install from **TestFlight**
+Do **not** merge the old revert PR (#2) if it is still open.
 
 ---
 
-## After install
+## Build + TestFlight (Safari)
 
-Omni still needs the **agent server** running somewhere (home PC, VPS, cloud).  
-On first launch, open **SYS** and set the server URL (not `localhost` — use a public HTTPS URL or your LAN IP if the iPad is on the same Wi‑Fi as the server).
+1. Expo → **@jrod42/omni** → **Builds** → **Build from GitHub**
+2. Branch: **`main`** (latest)
+3. Platform: **iOS** · Profile: **production**
+4. Wait for a green build (~10–20 min)
+5. Open the finished build → **Submit** to App Store / TestFlight (if not auto-submitted)
+6. App Store Connect → **TestFlight** → wait until status is **Ready to Test**
+7. On iPad: install **TestFlight** → install **Omni**
 
+---
+
+## After Omni is on your iPad
+
+Omni is the **control surface**. It needs the **agent server** running somewhere.
+
+### Option A — same Wi‑Fi as a computer/VPS
 ```bash
-# on any always-on machine / VPS
 cd server
-cp .env.example .env   # add XAI_API_KEY etc
-npm install && npm run dev
+cp .env.example .env
+# set at least one: XAI_API_KEY or OPENAI_API_KEY or GEMINI_API_KEY
+npm install
+npm run start
 ```
+In the app → **SYS**:
+- Agent server URL = `http://YOUR_COMPUTER_LAN_IP:8787`
+- Tap **TEST LINK**
+- Set provider/model/API key if not in `.env`
+
+### Option B — server on the public internet
+Deploy `server/` to any host, use HTTPS if possible, put that URL in **SYS**.
 
 ---
 
-## What you cannot do on iPad alone
+## Optional: GitHub Actions one-tap
 
-- Run Xcode  
-- Compile the IPA locally  
+Repo → **Settings** → **Secrets** → add `EXPO_TOKEN`  
+(optional ASC API key secrets — see earlier docs)
 
-Cloud build (Expo/EAS or this GitHub Action) replaces that.
+Then **Actions** → **iOS TestFlight** → **Run workflow**.
+
+---
+
+## If a build fails again
+
+Open the failed build → copy the **red error text** (not just `build:internal`) and share it.
+
+Common fixes:
+- Missing **Credentials → iOS → App Store**
+- Base directory not set to `mobile`
+- Building an old branch instead of latest `main`

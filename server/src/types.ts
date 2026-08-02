@@ -1,16 +1,18 @@
 export type Role = "system" | "user" | "assistant" | "tool";
 
+export type ToolCall = {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+};
+
 export type ChatMessage = {
   role: Role;
   content: string;
   name?: string;
   tool_call_id?: string;
-};
-
-export type ToolCall = {
-  id: string;
-  name: string;
-  arguments: Record<string, unknown>;
+  /** OpenAI-compatible assistant tool call payloads. */
+  tool_calls?: ToolCall[];
 };
 
 export type StreamEvent =
