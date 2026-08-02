@@ -1,0 +1,12 @@
+{
+  "name": "omni",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Omni — Jarvis-class personal AI agent for your phone",
+  "scripts": {
+    "mobile": "npm --prefix mobile start",
+    "server": "npm --prefix server dev",
+    "server:start": "npm --prefix server start",
+    "typecheck": "npm --prefix server typecheck"
+  }
+}
