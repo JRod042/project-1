@@ -28,6 +28,8 @@ export type TimelineItem =
 
 export type AppSettings = {
   serverUrl: string;
+  /** Shared secret matching server OMNI_SERVER_TOKEN (optional). */
+  serverToken: string;
   provider: ProviderName;
   model: string;
   apiKey: string;

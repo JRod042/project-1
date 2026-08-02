@@ -123,24 +123,46 @@ async function callGemini(
     .map((m) => m.content)
     .join("\n\n");
 
-  const contents = messages
-    .filter((m) => m.role !== "system")
-    .map((m) => {
-      if (m.role === "tool") {
-        return {
-          role: "user" as const,
-          parts: [
-            {
-              text: `Tool result (${m.name}):\n${m.content}`,
+  const contents: Array<{
+    role: "user" | "model";
+    parts: Array<Record<string, unknown>>;
+  }> = [];
+
+  for (const m of messages) {
+    if (m.role === "system") continue;
+    if (m.role === "tool") {
+      contents.push({
+        role: "user",
+        parts: [
+          {
+            functionResponse: {
+              name: m.name || "tool",
+              response: { content: m.content },
             },
-          ],
-        };
+          },
+        ],
+      });
+      continue;
+    }
+    if (m.role === "assistant" && m.tool_calls?.length) {
+      const parts: Array<Record<string, unknown>> = [];
+      if (m.content?.trim()) parts.push({ text: m.content });
+      for (const call of m.tool_calls) {
+        parts.push({
+          functionCall: {
+            name: call.name,
+            args: call.arguments ?? {},
+          },
+        });
       }
-      return {
-        role: m.role === "assistant" ? ("model" as const) : ("user" as const),
-        parts: [{ text: m.content }],
-      };
+      contents.push({ role: "model", parts });
+      continue;
+    }
+    contents.push({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
     });
+  }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent?key=${settings.apiKey}`;
   const res = await fetch(url, {

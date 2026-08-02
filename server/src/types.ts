@@ -20,12 +20,25 @@ export type StreamEvent =
   | { type: "text"; text: string }
   | { type: "tool_start"; id: string; name: string; arguments: Record<string, unknown> }
   | { type: "tool_result"; id: string; name: string; ok: boolean; output: string }
-  | { type: "approval_required"; id: string; name: string; arguments: Record<string, unknown>; reason: string }
+  | {
+      type: "approval_required";
+      id: string;
+      name: string;
+      arguments: Record<string, unknown>;
+      reason: string;
+    }
   | { type: "status"; status: string }
   | { type: "error"; message: string }
   | { type: "done"; sessionId: string };
 
 export type ProviderName = "xai" | "openai" | "gemini";
+
+export type PendingApproval = {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+  reason: string;
+};
 
 export type Session = {
   id: string;
@@ -33,10 +46,8 @@ export type Session = {
   updatedAt: number;
   title: string;
   messages: ChatMessage[];
-  pendingApproval?: {
-    id: string;
-    name: string;
-    arguments: Record<string, unknown>;
-    reason: string;
-  };
+  /** Head of approval queue (current tool waiting on user). */
+  pendingApproval?: PendingApproval;
+  /** Remaining tools from the same assistant turn that still need execution/approval. */
+  pendingToolQueue?: ToolCall[];
 };

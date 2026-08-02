@@ -10,7 +10,33 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 
+
 const execAsync = promisify(exec);
+
+/** Block obvious host-escape / destructive patterns. Not a full sandbox. */
+const SHELL_BLOCKLIST: RegExp[] = [
+  /\brm\s+-rf\s+[/'"]?\s*(\/|~|\$HOME)\b/i,
+  /\bmkfs\b/i,
+  /\bdd\s+if=/i,
+  /:\(\)\s*\{\s*:\|:\s*&\s*\}\s*;\s*:/,
+  /\bshutdown\b/i,
+  /\breboot\b/i,
+  /\bcurl\b[^|]*\|\s*(ba)?sh\b/i,
+  /\bwget\b[^|]*\|\s*(ba)?sh\b/i,
+  /\b(chmod|chown)\s+-R\s+.*\s+\/(bin|etc|usr|System)/i,
+];
+
+function assertShellSafe(command: string) {
+  const trimmed = command.trim();
+  if (!trimmed) throw new Error("Empty command");
+  if (trimmed.length > 4000) throw new Error("Command too long");
+  for (const re of SHELL_BLOCKLIST) {
+    if (re.test(trimmed)) {
+      throw new Error("Command blocked by safety policy");
+    }
+  }
+}
+
 
 export type ToolDef = {
   name: string;
@@ -222,14 +248,21 @@ export async function executeTool(
     }
     case "run_shell": {
       const command = String(args.command ?? "");
-      if (!command.trim()) throw new Error("Empty command");
+      assertShellSafe(command);
       const timeoutMs = Math.min(Number(args.timeoutMs ?? 60_000), 180_000);
       try {
         const { stdout, stderr } = await execAsync(command, {
           cwd: workspaceRoot,
           timeout: timeoutMs,
           maxBuffer: 2_000_000,
-          env: { ...process.env, FORCE_COLOR: "0" },
+          env: {
+            ...process.env,
+            FORCE_COLOR: "0",
+            // Soft containment hint — tools should stay in workspace.
+            OMNI_WORKSPACE: workspaceRoot,
+          },
+          // Prevent runaway process groups where possible
+          killSignal: "SIGKILL",
         });
         const out = [stdout, stderr].filter(Boolean).join("\n").trim();
         return out || "(no output)";

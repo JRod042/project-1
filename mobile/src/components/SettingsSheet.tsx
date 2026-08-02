@@ -33,9 +33,9 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
   const ping = async () => {
     try {
       setStatus("Checking…");
-      const h = await healthCheck(draft.serverUrl);
+      const h = await healthCheck(draft.serverUrl, draft.serverToken);
       setStatus(
-        `Online · workspace ${h.workspaceRoot} · keys xai=${h.providers.xai} openai=${h.providers.openai} gemini=${h.providers.gemini}`
+        `Online · workspace ${h.workspace || h.workspaceRoot || "?"} · auth=${h.authRequired ? "required" : "open"} · keys xai=${h.providers.xai} openai=${h.providers.openai} gemini=${h.providers.gemini}`
       );
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Unreachable");
@@ -66,6 +66,21 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
             <Text style={styles.hint}>
               On iPhone/iPad use your computer's LAN IP (e.g. http://192.168.1.20:8787),
               not localhost. Tap TEST LINK after starting the agent server.
+            </Text>
+
+            <Text style={styles.label}>Server token (if OMNI_SERVER_TOKEN set)</Text>
+            <TextInput
+              style={styles.input}
+              value={draft.serverToken}
+              onChangeText={(serverToken) => setDraft((d) => ({ ...d, serverToken }))}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+              placeholder="shared secret"
+              placeholderTextColor={colors.textMuted}
+            />
+            <Text style={styles.hint}>
+              Required when the agent server sets OMNI_SERVER_TOKEN. Keep auto-approve off on untrusted networks.
             </Text>
 
             <Text style={styles.label}>Provider</Text>

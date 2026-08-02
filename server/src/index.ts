@@ -7,7 +7,12 @@ import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import { z } from "zod";
 import { runAgent } from "./agent.js";
-import { deleteSession, getSession, listSessions } from "./sessions.js";
+import {
+  deleteSession,
+  getSession,
+  initSessionStore,
+  listSessions,
+} from "./sessions.js";
 import { TOOLS } from "./tools.js";
 import type { ProviderName, StreamEvent } from "./types.js";
 
@@ -16,8 +21,21 @@ const port = Number(process.env.PORT || 8787);
 const workspaceRoot = path.resolve(
   process.env.WORKSPACE_ROOT || path.join(process.cwd(), "workspace")
 );
+/** Optional shared secret. When set, clients must send it as x-omni-token or Authorization: Bearer. */
+const serverToken = (process.env.OMNI_SERVER_TOKEN || "").trim();
 
 await mkdir(workspaceRoot, { recursive: true });
+await initSessionStore(workspaceRoot);
+
+function extractToken(c: {
+  req: { header: (name: string) => string | undefined };
+}): string {
+  const header = c.req.header("x-omni-token") || "";
+  if (header) return header.trim();
+  const auth = c.req.header("authorization") || "";
+  const m = auth.match(/^Bearer\s+(.+)$/i);
+  return m?.[1]?.trim() || "";
+}
 
 app.use(
   "*",
@@ -25,19 +43,39 @@ app.use(
     origin: "*",
     allowHeaders: [
       "Content-Type",
+      "Authorization",
       "x-api-key",
       "x-provider",
       "x-model",
       "x-auto-approve",
+      "x-omni-token",
     ],
   })
 );
+
+app.use("*", async (c, next) => {
+  // Health stays public so the app can discover reachability before auth is configured.
+  if (c.req.path === "/health") return next();
+  if (!serverToken) return next();
+  if (extractToken(c) !== serverToken) {
+    return c.json(
+      {
+        error:
+          "Unauthorized. Set OMNI_SERVER_TOKEN on the server and the same token in the app (SYS → Server token).",
+      },
+      401
+    );
+  }
+  return next();
+});
 
 app.get("/health", (c) =>
   c.json({
     ok: true,
     name: "omni-server",
-    workspaceRoot,
+    authRequired: Boolean(serverToken),
+    // Do not leak absolute host paths in health — only basename-ish hint
+    workspace: path.basename(workspaceRoot),
     providers: {
       xai: Boolean(process.env.XAI_API_KEY),
       openai: Boolean(process.env.OPENAI_API_KEY),
@@ -87,7 +125,16 @@ const chatSchema = z.object({
 });
 
 app.post("/chat", async (c) => {
-  const body = chatSchema.parse(await c.req.json());
+  let body: z.infer<typeof chatSchema>;
+  try {
+    body = chatSchema.parse(await c.req.json());
+  } catch (err) {
+    return c.json(
+      { error: err instanceof Error ? err.message : "Invalid body" },
+      400
+    );
+  }
+
   const apiKey = c.req.header("x-api-key") || undefined;
   const provider =
     (c.req.header("x-provider") as ProviderName | undefined) || body.provider;
@@ -127,6 +174,11 @@ app.post("/chat", async (c) => {
 
 console.log(`Omni agent server on http://0.0.0.0:${port}`);
 console.log(`Workspace: ${workspaceRoot}`);
+console.log(
+  serverToken
+    ? "Auth: OMNI_SERVER_TOKEN is set (requests require x-omni-token)"
+    : "Auth: OPEN — set OMNI_SERVER_TOKEN before exposing beyond localhost/LAN"
+);
 
 serve({
   fetch: app.fetch,

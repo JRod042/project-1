@@ -49,3 +49,10 @@ npm start              # http://0.0.0.0:8787
 ## License
 
 MIT (see `mobile/LICENSE`).
+
+## Cursor / Grok follow-up
+
+- Product north star: [docs/NORTH_STAR.md](docs/NORTH_STAR.md)
+- Audit: [docs/AUDIT.md](docs/AUDIT.md)
+- Sequential Cursor prompts: [cursor-prompts/](cursor-prompts/)
+- Set `OMNI_SERVER_TOKEN` in `server/.env` and the same value in app **SYS**

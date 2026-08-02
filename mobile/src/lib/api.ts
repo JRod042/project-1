@@ -4,12 +4,16 @@ function base(url: string) {
   return url.replace(/\/+$/, "");
 }
 
-export async function healthCheck(serverUrl: string) {
-  const res = await fetch(`${base(serverUrl)}/health`);
+export async function healthCheck(serverUrl: string, serverToken?: string) {
+  const headers: Record<string, string> = {};
+  if (serverToken) headers["x-omni-token"] = serverToken;
+  const res = await fetch(`${base(serverUrl)}/health`, { headers });
   if (!res.ok) throw new Error(`Health ${res.status}`);
   return res.json() as Promise<{
     ok: boolean;
-    workspaceRoot: string;
+    workspace?: string;
+    workspaceRoot?: string;
+    authRequired?: boolean;
     providers: Record<string, boolean>;
   }>;
 }
@@ -95,6 +99,7 @@ export async function streamChat(
     "x-model": settings.model,
   };
   if (settings.apiKey) headers["x-api-key"] = settings.apiKey;
+  if (settings.serverToken) headers["x-omni-token"] = settings.serverToken;
   if (settings.autoApprove) headers["x-auto-approve"] = "1";
 
   const payload = JSON.stringify({

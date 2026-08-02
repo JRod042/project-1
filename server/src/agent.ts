@@ -5,7 +5,7 @@ import {
   toolsForPrompt,
 } from "./tools.js";
 import { createSession, getSession, touch } from "./sessions.js";
-import type { ChatMessage, ProviderName, StreamEvent } from "./types.js";
+import type { ChatMessage, ProviderName, StreamEvent, ToolCall } from "./types.js";
 
 const SYSTEM_PROMPT = `You are Omni — the user's personal AI, Jarvis-class and better:
 always available, proactive when useful, precise under pressure, and actually able to act.
@@ -28,7 +28,8 @@ Rules:
 3. Keep replies tight on mobile: short status, then results.
 4. If blocked (missing info/key/permission), say exactly what's needed.
 5. You can code, research the web, remember facts, run commands, and manage workspace files.
-6. Never claim you accessed the user's personal phone data unless a tool result proves it.`;
+6. Never claim you accessed the user's personal phone data unless a tool result proves it.
+7. Prefer one risky tool call at a time when approval is likely.`;
 
 export type RunOptions = {
   sessionId?: string;
@@ -48,6 +49,98 @@ async function* emit(event: StreamEvent): AsyncGenerator<StreamEvent> {
   yield event;
 }
 
+async function* runOneTool(
+  session: ReturnType<typeof createSession>,
+  call: ToolCall,
+  workspaceRoot: string,
+  history: ChatMessage[]
+): AsyncGenerator<StreamEvent, void, unknown> {
+  yield* emit({
+    type: "tool_start",
+    id: call.id,
+    name: call.name,
+    arguments: call.arguments,
+  });
+
+  try {
+    const output = await executeTool(call.name, call.arguments, workspaceRoot);
+    const toolMsg: ChatMessage = {
+      role: "tool",
+      tool_call_id: call.id,
+      name: call.name,
+      content: output,
+    };
+    session.messages.push(toolMsg);
+    history.push(toolMsg);
+    yield* emit({
+      type: "tool_result",
+      id: call.id,
+      name: call.name,
+      ok: true,
+      output,
+    });
+  } catch (err) {
+    const output = err instanceof Error ? err.message : String(err);
+    const toolMsg: ChatMessage = {
+      role: "tool",
+      tool_call_id: call.id,
+      name: call.name,
+      content: `Error: ${output}`,
+    };
+    session.messages.push(toolMsg);
+    history.push(toolMsg);
+    yield* emit({
+      type: "tool_result",
+      id: call.id,
+      name: call.name,
+      ok: false,
+      output,
+    });
+  }
+  touch(session);
+}
+
+/**
+ * Execute a list of tool calls, pausing on first approval-gated tool.
+ * Remaining tools stay in session.pendingToolQueue.
+ */
+async function* executeToolList(
+  session: ReturnType<typeof createSession>,
+  tools: ToolCall[],
+  workspaceRoot: string,
+  history: ChatMessage[],
+  autoApprove: boolean
+): AsyncGenerator<StreamEvent, "paused" | "done", unknown> {
+  for (let i = 0; i < tools.length; i++) {
+    const call = tools[i];
+    const needsApproval = toolRequiresApproval(call.name) && !autoApprove;
+
+    if (needsApproval) {
+      session.pendingApproval = {
+        id: call.id,
+        name: call.name,
+        arguments: call.arguments,
+        reason: `${call.name} can change your system/workspace`,
+      };
+      session.pendingToolQueue = tools.slice(i + 1);
+      touch(session);
+      yield* emit({
+        type: "approval_required",
+        id: call.id,
+        name: call.name,
+        arguments: call.arguments,
+        reason: session.pendingApproval.reason,
+      });
+      return "paused";
+    }
+
+    yield* runOneTool(session, call, workspaceRoot, history);
+  }
+  session.pendingToolQueue = undefined;
+  touch(session);
+  return "done";
+}
+
 export async function* runAgent(
   options: RunOptions
 ): AsyncGenerator<StreamEvent> {
@@ -63,13 +156,15 @@ export async function* runAgent(
 
   let session = options.sessionId ? getSession(options.sessionId) : undefined;
   if (!session) {
-    const title =
-      options.message.trim().slice(0, 48) || "New mission";
+    const title = options.message.trim().slice(0, 48) || "New mission";
     session = createSession(title);
   }
 
   yield* emit({ type: "session", sessionId: session.id });
-  yield* emit({ type: "status", status: `provider=${settings.provider} model=${settings.model}` });
+  yield* emit({
+    type: "status",
+    status: `provider=${settings.provider} model=${settings.model}`,
+  });
 
   // Resume from pending approval
   if (options.approvalDecision && session.pendingApproval) {
@@ -86,6 +181,24 @@ export async function* runAgent(
         content: "User denied this action.",
       });
       session.pendingApproval = undefined;
+      // Deny remaining queued tools as well so tool_call results stay consistent
+      const rest = session.pendingToolQueue ?? [];
+      for (const call of rest) {
+        session.messages.push({
+          role: "tool",
+          tool_call_id: call.id,
+          name: call.name,
+          content: "Skipped because a prior action was denied by the user.",
+        });
+        yield* emit({
+          type: "tool_result",
+          id: call.id,
+          name: call.name,
+          ok: false,
+          output: "Skipped (prior denial)",
+        });
+      }
+      session.pendingToolQueue = undefined;
       touch(session);
       yield* emit({
         type: "tool_result",
@@ -95,53 +208,57 @@ export async function* runAgent(
         output: "Denied by user",
       });
     } else {
-      yield* emit({
-        type: "tool_start",
-        id: pending.id,
-        name: pending.name,
-        arguments: pending.arguments,
-      });
-      try {
-        const output = await executeTool(
-          pending.name,
-          pending.arguments,
-          options.workspaceRoot
-        );
-        session.messages.push({
-          role: "tool",
-          tool_call_id: pending.id,
-          name: pending.name,
-          content: output,
-        });
-        yield* emit({
-          type: "tool_result",
+      const historySeed: ChatMessage[] = [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...session.messages,
+      ];
+      yield* runOneTool(
+        session,
+        {
           id: pending.id,
           name: pending.name,
-          ok: true,
-          output,
-        });
-      } catch (err) {
-        const output = err instanceof Error ? err.message : String(err);
-        session.messages.push({
-          role: "tool",
-          tool_call_id: pending.id,
-          name: pending.name,
-          content: `Error: ${output}`,
-        });
-        yield* emit({
-          type: "tool_result",
-          id: pending.id,
-          name: pending.name,
-          ok: false,
-          output,
-        });
-      }
+          arguments: pending.arguments,
+        },
+        options.workspaceRoot,
+        historySeed
+      );
       session.pendingApproval = undefined;
+      const queued = session.pendingToolQueue ?? [];
+      session.pendingToolQueue = undefined;
       touch(session);
+      if (queued.length) {
+        const result = yield* executeToolList(
+          session,
+          queued,
+          options.workspaceRoot,
+          historySeed,
+          Boolean(options.autoApprove)
+        );
+        if (result === "paused") {
+          yield* emit({ type: "done", sessionId: session.id });
+          return;
+        }
+      }
     }
   } else if (options.message.trim()) {
+    if (session.pendingApproval) {
+      yield* emit({
+        type: "error",
+        message:
+          "A tool is waiting for approval. Approve or deny it before sending a new message.",
+      });
+      yield* emit({ type: "done", sessionId: session.id });
+      return;
+    }
     session.messages.push({ role: "user", content: options.message.trim() });
     touch(session);
+  } else if (!options.approvalDecision) {
+    yield* emit({
+      type: "error",
+      message: "Empty message. Send a command or an approval decision.",
+    });
+    yield* emit({ type: "done", sessionId: session.id });
+    return;
   }
 
   const history: ChatMessage[] = [
@@ -182,7 +299,6 @@ export async function* runAgent(
       return;
     }
 
-    // Persist assistant tool-call turn with proper tool_calls for API continuity
     const assistantToolMsg: ChatMessage = {
       role: "assistant",
       content: response.text || "",
@@ -192,76 +308,16 @@ export async function* runAgent(
     history.push(assistantToolMsg);
     touch(session);
 
-    for (const call of response.toolCalls) {
-      const needsApproval =
-        toolRequiresApproval(call.name) && !options.autoApprove;
-
-      if (needsApproval) {
-        session.pendingApproval = {
-          id: call.id,
-          name: call.name,
-          arguments: call.arguments,
-          reason: `${call.name} can change your system/workspace`,
-        };
-        touch(session);
-        yield* emit({
-          type: "approval_required",
-          id: call.id,
-          name: call.name,
-          arguments: call.arguments,
-          reason: session.pendingApproval.reason,
-        });
-        yield* emit({ type: "done", sessionId: session.id });
-        return;
-      }
-
-      yield* emit({
-        type: "tool_start",
-        id: call.id,
-        name: call.name,
-        arguments: call.arguments,
-      });
-
-      try {
-        const output = await executeTool(
-          call.name,
-          call.arguments,
-          options.workspaceRoot
-        );
-        const toolMsg: ChatMessage = {
-          role: "tool",
-          tool_call_id: call.id,
-          name: call.name,
-          content: output,
-        };
-        session.messages.push(toolMsg);
-        history.push(toolMsg);
-        yield* emit({
-          type: "tool_result",
-          id: call.id,
-          name: call.name,
-          ok: true,
-          output,
-        });
-      } catch (err) {
-        const output = err instanceof Error ? err.message : String(err);
-        const toolMsg: ChatMessage = {
-          role: "tool",
-          tool_call_id: call.id,
-          name: call.name,
-          content: `Error: ${output}`,
-        };
-        session.messages.push(toolMsg);
-        history.push(toolMsg);
-        yield* emit({
-          type: "tool_result",
-          id: call.id,
-          name: call.name,
-          ok: false,
-          output,
-        });
-      }
-      touch(session);
+    const result = yield* executeToolList(
+      session,
+      response.toolCalls,
+      options.workspaceRoot,
+      history,
+      Boolean(options.autoApprove)
+    );
+    if (result === "paused") {
+      yield* emit({ type: "done", sessionId: session.id });
+      return;
     }
   }
 
