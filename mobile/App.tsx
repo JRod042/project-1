@@ -28,6 +28,7 @@ import { Composer } from "./src/components/Composer";
 import { ApprovalBar } from "./src/components/ApprovalBar";
 import { SettingsSheet } from "./src/components/SettingsSheet";
 import { SessionDrawer } from "./src/components/SessionDrawer";
+import { UplinkBar } from "./src/components/UplinkBar";
 import { ApiError, getSession, streamChat } from "./src/lib/api";
 import { controlUiUrl, normalizeOpenclawBaseUrl } from "./src/lib/openclaw";
 import {
@@ -35,6 +36,11 @@ import {
   loadSettings,
   saveSettings,
 } from "./src/lib/storage";
+import {
+  initialUplink,
+  probeUplink,
+  type UplinkSnapshot,
+} from "./src/lib/uplink";
 import { colors, fonts } from "./src/theme";
 import type { AppSettings, TimelineItem } from "./src/types";
 
@@ -123,6 +129,9 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [authHint, setAuthHint] = useState(false);
+  const [uplink, setUplink] = useState<UplinkSnapshot>(() =>
+    initialUplink(null)
+  );
   const [pendingApproval, setPendingApproval] = useState<{
     id: string;
     name: string;
@@ -136,8 +145,62 @@ export default function App() {
     loadSettings().then((s) => {
       setSettings(s);
       setItems(bootFor(s));
+      setUplink(initialUplink(s));
     });
   }, []);
+
+  useEffect(() => {
+    if (!settings) return;
+    let cancelled = false;
+    const run = async () => {
+      const seed = initialUplink(settings);
+      setUplink(seed);
+      if (
+        seed.level === "loopback" ||
+        seed.level === "unset"
+      ) {
+        return;
+      }
+      const snap = await probeUplink(settings);
+      if (!cancelled) setUplink(snap);
+    };
+    void run();
+    const id = setInterval(() => {
+      void run();
+    }, 12000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [settings]);
+
+  const refreshUplink = useCallback(async () => {
+    if (!settings) return;
+    const seed = initialUplink(settings);
+    setUplink(seed);
+    if (seed.level === "loopback" || seed.level === "unset") {
+      setSettingsOpen(true);
+      return;
+    }
+    const snap = await probeUplink(settings);
+    setUplink(snap);
+    if (
+      snap.level === "offline" ||
+      snap.level === "unset" ||
+      snap.level === "loopback"
+    ) {
+      setSettingsOpen(true);
+    }
+  }, [settings]);
+
+  const linkColor =
+    uplink.level === "online"
+      ? colors.brand
+      : uplink.level === "offline"
+        ? colors.danger
+        : uplink.level === "probing"
+          ? colors.accent
+          : colors.warn;
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync().catch(() => undefined);
@@ -463,10 +526,19 @@ export default function App() {
               <Animated.View
                 style={[
                   styles.liveRing,
-                  { opacity: pulse, transform: [{ scale: pulseScale }] },
+                  {
+                    opacity: pulse,
+                    transform: [{ scale: pulseScale }],
+                    borderColor: linkColor,
+                  },
                 ]}
               />
-              <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
+              <Animated.View
+                style={[
+                  styles.liveDot,
+                  { opacity: pulse, backgroundColor: linkColor },
+                ]}
+              />
             </View>
             {settings.runtimeMode === "legacy" ? (
               <Pressable
@@ -502,6 +574,16 @@ export default function App() {
           </View>
         </View>
 
+        <UplinkBar
+          snap={uplink}
+          modeLabel={
+            settings.runtimeMode === "openclaw" ? "OPENCLAW" : "LEGACY"
+          }
+          onPress={() => {
+            void refreshUplink();
+          }}
+        />
+
         {authHint ? (
           <Pressable
             style={styles.authBanner}
@@ -513,12 +595,7 @@ export default function App() {
           </Pressable>
         ) : null}
 
-        {settings &&
-        ((settings.runtimeMode === "legacy" &&
-          isLoopbackServerUrl(settings.serverUrl)) ||
-          (settings.runtimeMode === "openclaw" &&
-            (!settings.openclawUrl.trim() ||
-              isLoopbackServerUrl(settings.openclawUrl)))) ? (
+        {uplink.level === "loopback" || uplink.level === "unset" ? (
           <Pressable
             style={styles.connectBanner}
             onPress={() => setSettingsOpen(true)}
@@ -562,6 +639,7 @@ export default function App() {
             setSettings(next);
             setAuthHint(false);
             await saveSettings(next);
+            setUplink(initialUplink(next));
             if (modeChanged) {
               cancelRun();
               setSessionId(undefined);
@@ -646,12 +724,10 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderWidth: 1,
-    borderColor: colors.brand,
   },
   liveDot: {
     width: 6,
     height: 6,
-    backgroundColor: colors.brand,
   },
   headerBtn: {
     borderWidth: 1,

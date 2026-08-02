@@ -36,6 +36,11 @@ export function Composer({ busy, onSend, onCancel }: Props) {
   return (
     <View style={styles.wrap}>
       <View style={styles.topRule} />
+      <View style={styles.bracketRow}>
+        <View style={[styles.composerBracket, styles.composerBracketL]} />
+        <Text style={styles.channel}>CMD CHANNEL</Text>
+        <View style={[styles.composerBracket, styles.composerBracketR]} />
+      </View>
       <View style={styles.suggestions}>
         {SUGGESTIONS.map((s) => (
           <Pressable
@@ -108,6 +113,31 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand,
     opacity: 0.35,
     marginBottom: 2,
+  },
+  bracketRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
+  composerBracket: {
+    width: 14,
+    height: 10,
+    borderColor: colors.accentDim,
+  },
+  composerBracketL: {
+    borderLeftWidth: 2,
+    borderTopWidth: 2,
+  },
+  composerBracketR: {
+    borderRightWidth: 2,
+    borderTopWidth: 2,
+  },
+  channel: {
+    color: colors.accentDim,
+    fontFamily: fonts.monoMed,
+    fontSize: 10,
+    letterSpacing: 1.8,
   },
   suggestions: {
     flexDirection: "row",

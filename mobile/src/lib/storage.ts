@@ -2,26 +2,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import type { AppSettings, ProviderName, RuntimeMode } from "../types";
+export { isLoopbackServerUrl } from "./urls";
+import { isLoopbackServerUrl } from "./urls";
 
 const SETTINGS_KEY = "omni.settings.v1";
 const API_KEY_SECURE = "omni.apiKey";
 const SERVER_TOKEN_SECURE = "omni.serverToken";
 const OPENCLAW_TOKEN_SECURE = "omni.openclawToken";
-
-export function isLoopbackServerUrl(url: string): boolean {
-  try {
-    const u = new URL(url.trim());
-    const host = u.hostname.toLowerCase();
-    return (
-      host === "localhost" ||
-      host === "127.0.0.1" ||
-      host === "0.0.0.0" ||
-      host === "::1"
-    );
-  } catch {
-    return /localhost|127\.0\.0\.1/.test(url);
-  }
-}
 
 function lanHost(): string | null {
   const hostUri = Constants.expoConfig?.hostUri || Constants.linkingUri || "";
