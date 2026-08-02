@@ -26,7 +26,7 @@ export function defaultServerUrl(): string {
 const defaults = (): AppSettings => ({
   serverUrl: defaultServerUrl(),
   provider: "xai",
-  model: "grok-4",
+  model: "grok-4.5",
   apiKey: "",
   autoApprove: false,
 });
