@@ -35,7 +35,8 @@
     "production": {
       "ios": {
         "appleTeamId": "FY5H9V76QL",
-        "bundleIdentifier": "com.jrod042.omni"
+        "bundleIdentifier": "com.jrod042.omni",
+        "ascAppId": "6797235230"
       }
     }
   }
