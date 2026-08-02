@@ -1,19 +1,48 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import type { AppSettings, ProviderName } from "../types";
 
 const SETTINGS_KEY = "omni.settings.v1";
 const API_KEY_SECURE = "omni.apiKey";
 
-const defaults: AppSettings = {
-  serverUrl: "http://127.0.0.1:8787",
+/** Prefer the Metro/dev-client host so a physical iPhone hits your Mac on LAN. */
+export function defaultServerUrl(): string {
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    Constants.linkingUri ||
+    Constants.experienceUrl ||
+    "";
+
+  const match = String(hostUri).match(
+    /(?:^|\/\/)((?:\d{1,3}\.){3}\d{1,3}|[a-zA-Z0-9.-]+)(?::\d+)?/
+  );
+  const host = match?.[1];
+
+  if (host && host !== "localhost" && host !== "127.0.0.1") {
+    return `http://${host}:8787`;
+  }
+
+  // Simulator can use loopback; device cannot.
+  if (Platform.OS === "ios" && !Platform.isPad) {
+    // Still ok for Simulator; on device user should set SYS once.
+    return "http://127.0.0.1:8787";
+  }
+
+  return "http://127.0.0.1:8787";
+}
+
+const defaults = (): AppSettings => ({
+  serverUrl: defaultServerUrl(),
   provider: "xai",
   model: "grok-4",
   apiKey: "",
   autoApprove: false,
-};
+});
 
 export async function loadSettings(): Promise<AppSettings> {
+  const base = defaults();
   try {
     const raw = await AsyncStorage.getItem(SETTINGS_KEY);
     const parsed = raw ? (JSON.parse(raw) as Partial<AppSettings>) : {};
@@ -23,14 +52,24 @@ export async function loadSettings(): Promise<AppSettings> {
     } catch {
       apiKey = parsed.apiKey || "";
     }
+
+    // If user never customized server URL, refresh LAN default from current host.
+    const serverUrl =
+      !parsed.serverUrl ||
+      parsed.serverUrl === "http://127.0.0.1:8787" ||
+      parsed.serverUrl === "http://localhost:8787"
+        ? base.serverUrl
+        : parsed.serverUrl;
+
     return {
-      ...defaults,
+      ...base,
       ...parsed,
+      serverUrl,
       apiKey,
-      provider: (parsed.provider as ProviderName) || defaults.provider,
+      provider: (parsed.provider as ProviderName) || base.provider,
     };
   } catch {
-    return { ...defaults };
+    return base;
   }
 }
 
@@ -44,7 +83,6 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
       await SecureStore.deleteItemAsync(API_KEY_SECURE);
     }
   } catch {
-    // SecureStore unavailable (web/dev) — fall back to async storage
     await AsyncStorage.setItem(
       SETTINGS_KEY,
       JSON.stringify({ ...rest, apiKey })

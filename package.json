@@ -5,8 +5,11 @@
   "description": "Omni — Jarvis-class personal AI agent for your phone",
   "scripts": {
     "mobile": "npm --prefix mobile start",
+    "ios": "npm --prefix mobile run ios",
+    "ios:prebuild": "npm --prefix mobile run prebuild:ios",
+    "eas:ios": "npm --prefix mobile run eas:build:ios",
     "server": "npm --prefix server dev",
     "server:start": "npm --prefix server start",
-    "typecheck": "npm --prefix server typecheck"
+    "typecheck": "npm --prefix server typecheck && npm --prefix mobile run typecheck"
   }
 }

@@ -1,77 +1,75 @@
 # Omni
 
-**Jarvis for your phone — but it actually does the work.**
+**Jarvis for your iPhone — but it actually does the work.**
 
-Omni is a personal AI super-app: agent-first like [Grok Build](https://x.ai/cli) / [Google Antigravity](https://antigravity.google), available as a mobile command surface that can plan, research, code, run shell, manage files, and keep memory.
+Omni is a personal AI iOS app (native project under `mobile/ios`) plus an agent server that can plan, research, code, run shell, manage files, and keep memory.
 
 ```
-┌─────────────┐       ┌──────────────────┐       ┌─────────────┐
-│  Omni app   │  SSE  │  Omni agent      │ tools │  Workspace  │
-│  (Expo)     │──────▶│  server          │──────▶│  + web      │
-└─────────────┘       └──────────────────┘       └─────────────┘
+┌──────────────┐      SSE       ┌────────────────┐  tools  ┌───────────┐
+│ Omni iOS app │ ─────────────▶ │ Omni agent     │ ──────▶ │ Workspace │
+│ (Xcode/EAS)  │                │ server         │         │ + web     │
+└──────────────┘                └────────────────┘         └───────────┘
 ```
 
-## What you get
+## iOS app (what you asked for)
 
-- **Terminal-style mission feed** on iOS/Android (Expo)
-- **Tool-using agent** — files, shell, web search/fetch, memory, mission plans
-- **Approval gates** for risky actions (shell / writes), or auto-approve
-- **Bring your brain** — xAI Grok, OpenAI, or Gemini
-- **Always-on personal agent framing** — command it like Jarvis, not a chatbot toy
+| Item | Value |
+|------|-------|
+| Display name | **Omni** |
+| Bundle ID | `com.jrod042.omni` |
+| Native project | `mobile/ios/Omni.xcodeproj` |
+| Min iOS | 16.4 |
+| Build paths | Mac + Xcode **or** EAS Build → TestFlight |
 
-## Quick start
+Full install / build steps: **[mobile/IOS.md](mobile/IOS.md)**
 
-### 1. Agent server
-
-```bash
-cd server
-cp .env.example .env
-# put XAI_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY in .env
-npm install
-npm run dev
-```
-
-Server listens on `http://0.0.0.0:8787`.
-
-### 2. Phone app
+### Fastest path on a Mac
 
 ```bash
 cd mobile
 npm install
-npm start
+npx pod-install
+npx expo run:ios --device
 ```
 
-Scan the QR with **Expo Go**.
+Or open `mobile/ios/Omni.xcodeproj` in Xcode, pick your Team under Signing, and Run on your iPhone.
 
-In the app, open **SYS** and set:
+### Fastest path without local Xcode compile
 
-- **Agent server URL** → your computer's LAN IP, e.g. `http://192.168.1.20:8787`  
-  (phones cannot reach `127.0.0.1` on your laptop)
-- Provider + model (default `xai` / `grok-4`)
-- API key if you didn't put it in `server/.env`
+```bash
+cd mobile
+npx eas-cli login
+npx eas init
+npx eas build --platform ios --profile development
+```
 
-### 3. Talk to it
+## Agent server
 
-Try:
+```bash
+cd server
+cp .env.example .env   # add XAI_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY
+npm install
+npm run dev            # http://0.0.0.0:8787
+```
 
-- “Research the best way to automate my inbox and write a plan”
-- “Create a Node script that renames photos by date, then run a dry test”
-- “Remember that I prefer brief status updates”
+On the phone, open **SYS** if needed and confirm the server URL is your Mac’s LAN IP (`http://192.168.x.x:8787`). The app tries to auto-detect this from the Metro/dev-client host.
 
 ## Repo layout
 
 | Path | Role |
 |------|------|
-| `mobile/` | Expo React Native command center |
-| `server/` | Hono agent runtime + tools + SSE chat |
+| `mobile/` | Expo React Native → **native iOS app** |
+| `mobile/ios/` | Generated Xcode project |
+| `mobile/eas.json` | EAS iOS build profiles |
+| `server/` | Tool-using agent runtime |
 
 ## Roadmap (Jarvis-class)
 
 - Voice in / voice out
-- Device skills (calendar, messages, reminders) via OS permissions + shortcuts
+- Device skills (calendar, messages, reminders)
 - Parallel missions / subagents
-- Home/cloud computer bridge so Omni can act on your real machines
-- Proactive briefings (“good morning” ops report)
+- Home/cloud computer bridge
+- Proactive briefings
 
 ## License
 
