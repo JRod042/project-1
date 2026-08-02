@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Linking,
   Modal,
   Pressable,
   StyleSheet,
@@ -10,10 +11,14 @@ import {
   ScrollView,
 } from "react-native";
 import { colors, fonts } from "../theme";
-import type { AppSettings, ProviderName } from "../types";
+import type { AppSettings, ProviderName, RuntimeMode } from "../types";
 import { healthCheck } from "../lib/api";
 
 const PROVIDERS: ProviderName[] = ["xai", "openai", "gemini"];
+const RUNTIMES: { id: RuntimeMode; label: string }[] = [
+  { id: "openclaw", label: "OpenClaw" },
+  { id: "legacy", label: "Legacy Omni" },
+];
 
 type Props = {
   visible: boolean;
@@ -21,6 +26,10 @@ type Props = {
   onClose: () => void;
   onSave: (next: AppSettings) => void;
 };
+
+function normalizeBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, "");
+}
 
 export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
   const [draft, setDraft] = useState(settings);
@@ -33,6 +42,16 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
   const ping = async () => {
     try {
       setStatus("Checking…");
+      if (draft.runtimeMode === "openclaw") {
+        const base = normalizeBaseUrl(draft.openclawUrl);
+        const res = await fetch(base, { method: "GET" });
+        setStatus(
+          res.ok || res.status === 401 || res.status === 403
+            ? `OpenClaw reachable · HTTP ${res.status} · paste gateway token in Control UI Settings`
+            : `HTTP ${res.status} from ${base}`
+        );
+        return;
+      }
       const h = await healthCheck(draft.serverUrl);
       const auth = h.authRequired
         ? draft.serverToken
@@ -47,6 +66,29 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
     }
   };
 
+  const openControlUi = async () => {
+    const base = normalizeBaseUrl(draft.openclawUrl);
+    if (!base) {
+      setStatus("Set OpenClaw Control UI URL first");
+      return;
+    }
+    try {
+      const ok = await Linking.canOpenURL(base);
+      if (!ok) {
+        setStatus(`Cannot open ${base}`);
+        return;
+      }
+      await Linking.openURL(base);
+      setStatus(
+        draft.openclawToken
+          ? "Opened Control UI — paste gateway token in Settings if prompted"
+          : "Opened Control UI — set gateway token above if auth is required"
+      );
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Failed to open URL");
+    }
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.backdrop}>
@@ -58,98 +100,169 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.body}>
-            <Text style={styles.label}>Agent server URL</Text>
-            <TextInput
-              style={styles.input}
-              value={draft.serverUrl}
-              onChangeText={(serverUrl) => setDraft((d) => ({ ...d, serverUrl }))}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="http://YOUR_LAN_IP:8787"
-              placeholderTextColor={colors.textMuted}
-            />
-            <Text style={styles.hint}>
-              On iPhone/iPad use your computer's LAN IP (e.g. http://192.168.1.20:8787),
-              not localhost. Tap TEST LINK after starting the agent server.
-            </Text>
-
-            <Text style={styles.label}>Provider</Text>
+            <Text style={styles.label}>Runtime</Text>
             <View style={styles.row}>
-              {PROVIDERS.map((p) => (
+              {RUNTIMES.map((r) => (
                 <Pressable
-                  key={p}
-                  onPress={() => setDraft((d) => ({ ...d, provider: p }))}
+                  key={r.id}
+                  onPress={() => setDraft((d) => ({ ...d, runtimeMode: r.id }))}
                   style={[
                     styles.provider,
-                    draft.provider === p && styles.providerOn,
+                    draft.runtimeMode === r.id && styles.providerOn,
                   ]}
                 >
                   <Text
                     style={[
                       styles.providerText,
-                      draft.provider === p && styles.providerTextOn,
+                      draft.runtimeMode === r.id && styles.providerTextOn,
                     ]}
                   >
-                    {p}
+                    {r.label}
                   </Text>
                 </Pressable>
               ))}
             </View>
-
-            <Text style={styles.label}>Model</Text>
-            <TextInput
-              style={styles.input}
-              value={draft.model}
-              onChangeText={(model) => setDraft((d) => ({ ...d, model }))}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <Text style={styles.label}>API key (optional if set on server)</Text>
-            <TextInput
-              style={styles.input}
-              value={draft.apiKey}
-              onChangeText={(apiKey) => setDraft((d) => ({ ...d, apiKey }))}
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry
-              placeholder="sk-… / xai-…"
-              placeholderTextColor={colors.textMuted}
-            />
-
-            <Text style={styles.label}>Server token (OMNI_SERVER_TOKEN)</Text>
-            <TextInput
-              style={styles.input}
-              value={draft.serverToken}
-              onChangeText={(serverToken) =>
-                setDraft((d) => ({ ...d, serverToken }))
-              }
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry
-              placeholder="Required when server auth is enabled"
-              placeholderTextColor={colors.textMuted}
-            />
             <Text style={styles.hint}>
-              If /health reports authRequired, chat and sessions need this token.
+              OpenClaw is the primary Jarvis runtime (Docker :18789). Legacy Omni
+              is the old SSE agent on :8787.
             </Text>
 
-            <View style={styles.switchRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Auto-approve tools</Text>
+            {draft.runtimeMode === "openclaw" ? (
+              <>
+                <Text style={styles.label}>OpenClaw Control UI URL</Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.openclawUrl}
+                  onChangeText={(openclawUrl) =>
+                    setDraft((d) => ({ ...d, openclawUrl }))
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="http://YOUR_LAN_IP:18789"
+                  placeholderTextColor={colors.textMuted}
+                />
                 <Text style={styles.hint}>
-                  Shell and file writes skip the confirm step.
+                  Use your VPS/LAN/Tailscale URL — not localhost on a physical
+                  iPad. Default port is 18789.
                 </Text>
-              </View>
-              <Switch
-                value={draft.autoApprove}
-                onValueChange={(autoApprove) =>
-                  setDraft((d) => ({ ...d, autoApprove }))
-                }
-                trackColor={{ true: colors.brandDim, false: colors.line }}
-                thumbColor={draft.autoApprove ? colors.brand : "#ccc"}
-              />
-            </View>
+
+                <Text style={styles.label}>
+                  Gateway token (OPENCLAW_GATEWAY_TOKEN)
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.openclawToken}
+                  onChangeText={(openclawToken) =>
+                    setDraft((d) => ({ ...d, openclawToken }))
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  placeholder="From openclaw/.env"
+                  placeholderTextColor={colors.textMuted}
+                />
+
+                <Pressable style={styles.secondary} onPress={openControlUi}>
+                  <Text style={styles.secondaryText}>OPEN CONTROL UI</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.label}>Agent server URL</Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.serverUrl}
+                  onChangeText={(serverUrl) =>
+                    setDraft((d) => ({ ...d, serverUrl }))
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="http://YOUR_LAN_IP:8787"
+                  placeholderTextColor={colors.textMuted}
+                />
+                <Text style={styles.hint}>
+                  On iPhone/iPad use your computer's LAN IP (e.g.
+                  http://192.168.1.20:8787), not localhost.
+                </Text>
+
+                <Text style={styles.label}>Provider</Text>
+                <View style={styles.row}>
+                  {PROVIDERS.map((p) => (
+                    <Pressable
+                      key={p}
+                      onPress={() => setDraft((d) => ({ ...d, provider: p }))}
+                      style={[
+                        styles.provider,
+                        draft.provider === p && styles.providerOn,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.providerText,
+                          draft.provider === p && styles.providerTextOn,
+                        ]}
+                      >
+                        {p}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text style={styles.label}>Model</Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.model}
+                  onChangeText={(model) => setDraft((d) => ({ ...d, model }))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+
+                <Text style={styles.label}>
+                  API key (optional if set on server)
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.apiKey}
+                  onChangeText={(apiKey) => setDraft((d) => ({ ...d, apiKey }))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  placeholder="sk-… / xai-…"
+                  placeholderTextColor={colors.textMuted}
+                />
+
+                <Text style={styles.label}>Server token (OMNI_SERVER_TOKEN)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.serverToken}
+                  onChangeText={(serverToken) =>
+                    setDraft((d) => ({ ...d, serverToken }))
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  placeholder="Required when server auth is enabled"
+                  placeholderTextColor={colors.textMuted}
+                />
+
+                <View style={styles.switchRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.label}>Auto-approve tools</Text>
+                    <Text style={styles.hint}>
+                      Shell and file writes skip the confirm step.
+                    </Text>
+                  </View>
+                  <Switch
+                    value={draft.autoApprove}
+                    onValueChange={(autoApprove) =>
+                      setDraft((d) => ({ ...d, autoApprove }))
+                    }
+                    trackColor={{ true: colors.brandDim, false: colors.line }}
+                    thumbColor={draft.autoApprove ? colors.brand : "#ccc"}
+                  />
+                </View>
+              </>
+            )}
 
             <Pressable style={styles.secondary} onPress={ping}>
               <Text style={styles.secondaryText}>TEST LINK</Text>

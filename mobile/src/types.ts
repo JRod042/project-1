@@ -43,12 +43,20 @@ export type TimelineItem =
       resolved?: "approved" | "denied";
     };
 
+/** openclaw = Control UI / gateway; legacy = Omni SSE server */
+export type RuntimeMode = "openclaw" | "legacy";
+
 export type AppSettings = {
+  runtimeMode: RuntimeMode;
   serverUrl: string;
+  /** OpenClaw Control UI / gateway base URL (default port 18789) */
+  openclawUrl: string;
+  /** Shared secret matching OPENCLAW_GATEWAY_TOKEN */
+  openclawToken: string;
   provider: ProviderName;
   model: string;
   apiKey: string;
-  /** Shared secret matching server OMNI_SERVER_TOKEN */
+  /** Shared secret matching server OMNI_SERVER_TOKEN (legacy) */
   serverToken: string;
   autoApprove: boolean;
 };

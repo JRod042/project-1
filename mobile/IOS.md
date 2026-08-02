@@ -137,6 +137,26 @@ Omni is the **control surface**. It needs the **agent server** running somewhere
 ### Same Wi‑Fi as a computer/VPS
 ```bash
 cd server
+### Primary: OpenClaw gateway
+
+```bash
+cd ../openclaw
+cp .env.example .env   # XAI_API_KEY + OPENCLAW_GATEWAY_TOKEN
+./up.sh                # http://HOST:18789
+```
+
+In the app → **SYS**:
+- Runtime = **OpenClaw**
+- Control UI URL = `http://YOUR_HOST_LAN_IP:18789` (or Tailscale URL)
+- Gateway token = same as `OPENCLAW_GATEWAY_TOKEN`
+- Tap **OPEN CONTROL UI** / **TEST LINK**
+
+Full notes: **[openclaw/README.md](../openclaw/README.md)**
+
+### Legacy Omni SSE (optional)
+
+```bash
+cd ../server
 cp .env.example .env
 # set XAI_API_KEY (Grok 4.5) or another provider key
 # optional: OMNI_SERVER_TOKEN=
@@ -144,13 +164,15 @@ npm install
 npm run start
 ```
 In the app → **SYS**:
+- Runtime = **Legacy Omni**
 - Agent server URL = `http://YOUR_COMPUTER_LAN_IP:8787`
 - Server token = same as `OMNI_SERVER_TOKEN` if set
 - Tap **TEST LINK**
 - Provider `xai`, model `grok-4.5` (default)
 
 ### Public / tunnel
-See **[server/DEPLOY.md](../server/DEPLOY.md)** (Docker, Cloudflare, ngrok).
+- OpenClaw: Tailscale Serve (recommended) — see [OpenClaw web docs](https://docs.openclaw.ai/web)
+- Legacy server: **[server/DEPLOY.md](../server/DEPLOY.md)** (Docker, Cloudflare, ngrok).
 
 ---
 

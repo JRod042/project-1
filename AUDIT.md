@@ -1,6 +1,8 @@
 # Omni security audit (P0)
 
-Hardening baseline for the Jarvis-class operator (`server/` + `mobile/`).
+Hardening baseline for the Jarvis-class operator.
+
+**Runtime note:** Primary brain is **OpenClaw** (`openclaw/`). Follow [OpenClaw security](https://docs.openclaw.ai/gateway/security) + keep `OPENCLAW_GATEWAY_TOKEN` private. Below applies to the **legacy** Omni `server/` + mobile SYS.
 
 ## Guarantees
 

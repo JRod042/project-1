@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -38,18 +39,34 @@ function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-const BOOT: TimelineItem[] = [
-  {
-    id: "boot_1",
-    kind: "status",
-    text: "omni online — personal agent ready",
-  },
-  {
-    id: "boot_2",
-    kind: "assistant",
-    text: "I'm Omni. Think Jarvis, but I actually run tools: research, code, shell, files, memory, multi-step missions. Tell me what to do.",
-  },
-];
+function bootFor(settings: AppSettings | null): TimelineItem[] {
+  if (!settings || settings.runtimeMode === "openclaw") {
+    return [
+      {
+        id: "boot_1",
+        kind: "status",
+        text: "omni online — openclaw runtime",
+      },
+      {
+        id: "boot_2",
+        kind: "assistant",
+        text: "I'm Omni, fronting OpenClaw — the Jarvis-class gateway. Open SYS → set Control UI URL + token → OPEN CONTROL UI. Or message your Telegram bot if you linked a channel. Type anything here to launch the Control UI.",
+      },
+    ];
+  }
+  return [
+    {
+      id: "boot_1",
+      kind: "status",
+      text: "omni online — legacy SSE agent",
+    },
+    {
+      id: "boot_2",
+      kind: "assistant",
+      text: "Legacy mode: research, code, shell, files via the Omni server on :8787. Prefer OpenClaw in SYS for the full operator stack.",
+    },
+  ];
+}
 
 function messagesToTimeline(
   messages: Array<{
@@ -95,7 +112,7 @@ export default function App() {
   });
 
   const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [items, setItems] = useState<TimelineItem[]>(BOOT);
+  const [items, setItems] = useState<TimelineItem[]>(bootFor(null));
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -110,7 +127,10 @@ export default function App() {
   const pulse = useRef(new Animated.Value(0.35)).current;
 
   useEffect(() => {
-    loadSettings().then(setSettings);
+    loadSettings().then((s) => {
+      setSettings(s);
+      setItems(bootFor(s));
+    });
   }, []);
 
   useEffect(() => {
@@ -146,6 +166,37 @@ export default function App() {
     },
     []
   );
+
+  const openOpenclawUi = useCallback(async () => {
+    if (!settings) return;
+    const base = settings.openclawUrl.trim().replace(/\/+$/, "");
+    if (!base) {
+      append({
+        id: uid("err"),
+        kind: "error",
+        text: "Set OpenClaw Control UI URL in SYS first.",
+      });
+      setSettingsOpen(true);
+      return;
+    }
+    try {
+      await Linking.openURL(base);
+      append({
+        id: uid("st"),
+        kind: "status",
+        text: `opened control ui · ${base}`,
+      });
+    } catch (err) {
+      append({
+        id: uid("err"),
+        kind: "error",
+        text:
+          err instanceof Error
+            ? err.message
+            : `Could not open ${base}. Check SYS URL.`,
+      });
+    }
+  }, [append, settings]);
 
   const cancelRun = useCallback(() => {
     abortRef.current?.abort();
@@ -276,6 +327,15 @@ export default function App() {
 
   const onSend = (text: string) => {
     append({ id: uid("u"), kind: "user", text });
+    if (settings?.runtimeMode === "openclaw") {
+      append({
+        id: uid("st"),
+        kind: "status",
+        text: "openclaw mode — launching control ui (chat + tools live there / telegram)",
+      });
+      void openOpenclawUi();
+      return;
+    }
     run({ message: text });
   };
 
@@ -297,6 +357,10 @@ export default function App() {
     setSessionId(undefined);
     setPendingApproval(null);
     setAuthHint(false);
+    if (settings?.runtimeMode === "openclaw") {
+      setItems(bootFor(settings));
+      return;
+    }
     setItems([
       {
         id: uid("boot"),
@@ -366,13 +430,26 @@ export default function App() {
         <View style={styles.header}>
           <View>
             <Text style={styles.brand}>OMNI</Text>
-            <Text style={styles.tag}>personal agent · always on</Text>
+            <Text style={styles.tag}>
+              {settings.runtimeMode === "openclaw"
+                ? "openclaw · personal operator"
+                : "legacy sse · personal agent"}
+            </Text>
           </View>
           <View style={styles.headerRight}>
             <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
-            <Pressable onPress={() => setSessionsOpen(true)} style={styles.headerBtn}>
-              <Text style={styles.headerBtnText}>LOG</Text>
-            </Pressable>
+            {settings.runtimeMode === "legacy" ? (
+              <Pressable
+                onPress={() => setSessionsOpen(true)}
+                style={styles.headerBtn}
+              >
+                <Text style={styles.headerBtnText}>LOG</Text>
+              </Pressable>
+            ) : (
+              <Pressable onPress={() => void openOpenclawUi()} style={styles.headerBtn}>
+                <Text style={styles.headerBtnText}>UI</Text>
+              </Pressable>
+            )}
             <Pressable onPress={newMission} style={styles.headerBtn}>
               <Text style={styles.headerBtnText}>NEW</Text>
             </Pressable>
@@ -398,7 +475,7 @@ export default function App() {
             onPress={() => setSettingsOpen(true)}
           >
             <Text style={styles.authBannerText}>
-              Auth required — tap to set Server token (OMNI_SERVER_TOKEN)
+              Auth required — tap SYS and set the server / gateway token
             </Text>
           </Pressable>
         ) : null}
@@ -430,24 +507,33 @@ export default function App() {
           settings={settings}
           onClose={() => setSettingsOpen(false)}
           onSave={async (next) => {
+            const modeChanged = next.runtimeMode !== settings.runtimeMode;
             setSettings(next);
             setAuthHint(false);
             await saveSettings(next);
+            if (modeChanged) {
+              cancelRun();
+              setSessionId(undefined);
+              setPendingApproval(null);
+              setItems(bootFor(next));
+            }
           }}
         />
 
-        <SessionDrawer
-          visible={sessionsOpen}
-          settings={settings}
-          activeSessionId={sessionId}
-          onClose={() => setSessionsOpen(false)}
-          onResume={(id) => {
-            void resumeSession(id);
-          }}
-          onDeleted={(id) => {
-            if (id === sessionId) newMission();
-          }}
-        />
+        {settings.runtimeMode === "legacy" ? (
+          <SessionDrawer
+            visible={sessionsOpen}
+            settings={settings}
+            activeSessionId={sessionId}
+            onClose={() => setSessionsOpen(false)}
+            onResume={(id) => {
+              void resumeSession(id);
+            }}
+            onDeleted={(id) => {
+              if (id === sessionId) newMission();
+            }}
+          />
+        ) : null}
       </SafeAreaView>
     </SafeAreaProvider>
   );
