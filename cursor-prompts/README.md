@@ -2,11 +2,13 @@
 
 Use these **in order** in Cursor Agent mode on `https://github.com/JRod042/project-1`.
 
+**Runtime decision:** primary agent = **OpenClaw** (`openclaw/`). See `docs/REPO_DECISION.md`. Legacy Omni `server/` prompts below still apply when touching SSE.
+
 | Order | File | Purpose |
 |------:|------|---------|
-| ★ | `NORTH_STAR.md` | Product identity: terminal agent on iPhone |
+| ★ | `NORTH_STAR.md` | Product identity: terminal agent on iPhone (OpenClaw) |
 | 0 | `00_CONTEXT_AND_RULES.md` | Pin this every session (rules of engagement) |
-| 1 | `01_AUDIT_HARDENING.md` | Server security + multi-tool approval + sessions |
+| 1 | `01_AUDIT_HARDENING.md` | Legacy server security + multi-tool approval + sessions |
 | 2 | `02_EXPO_IOS_BUILD_LOCKDOWN.md` | Stop Expo/TestFlight breakage |
 | 3 | `03_MOBILE_SYS_AND_SSE.md` | iPhone SYS + SSE reliability |
 | 4 | `04_COMMS_TOOLS_CALLS_TEXTS_EMAIL.md` | Calls / SMS / email tools |

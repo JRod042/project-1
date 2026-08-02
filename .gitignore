@@ -5,6 +5,8 @@ dist/
 .env
 .DS_Store
 server/workspace/
+openclaw/data/
+openclaw/workspace/
 mobile/.expo/
 *.jks
 *.p8

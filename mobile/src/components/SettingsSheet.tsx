@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  Linking,
   Modal,
   Pressable,
   StyleSheet,
@@ -10,10 +11,20 @@ import {
   ScrollView,
 } from "react-native";
 import { colors, fonts } from "../theme";
-import type { AppSettings, ProviderName } from "../types";
+import type { AppSettings, ProviderName, RuntimeMode } from "../types";
 import { healthCheck } from "../lib/api";
+import {
+  controlUiUrl,
+  maskTokenHint,
+  normalizeOpenclawBaseUrl,
+} from "../lib/openclaw";
+import { isLoopbackServerUrl } from "../lib/storage";
 
 const PROVIDERS: ProviderName[] = ["xai", "openai", "gemini"];
+const RUNTIMES: { id: RuntimeMode; label: string }[] = [
+  { id: "openclaw", label: "OpenClaw" },
+  { id: "legacy", label: "Legacy Omni" },
+];
 
 type Props = {
   visible: boolean;
@@ -31,10 +42,40 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
   }, [visible, settings]);
 
   const ping = async () => {
+    if (draft.runtimeMode === "openclaw") {
+      const base = normalizeOpenclawBaseUrl(draft.openclawUrl);
+      if (!base) {
+        setStatus("Set Control UI URL (e.g. http://192.168.x.x:18789)");
+        return;
+      }
+      if (isLoopbackServerUrl(base)) {
+        setStatus(
+          `Unreachable on device: ${base} is this iPad itself. Use http://YOUR_COMPUTER_LAN_IP:18789 (same Wi‑Fi / Tailscale), then SAVE.`
+        );
+        return;
+      }
+      try {
+        setStatus(`Checking ${base}…`);
+        const res = await fetch(base, { method: "GET" });
+        const tokenHint = draft.openclawToken.trim()
+          ? `token ${maskTokenHint(draft.openclawToken)} · OPEN CONTROL UI uses #token=`
+          : "no token saved — OPEN CONTROL UI will ask you to paste it";
+        setStatus(
+          res.ok || res.status === 401 || res.status === 403
+            ? `OpenClaw reachable · HTTP ${res.status} · ${tokenHint}`
+            : `HTTP ${res.status} from ${base}`
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unreachable";
+        setStatus(
+          `${msg} — is OpenClaw running on that host:18789? Same Wi‑Fi / Tailscale?`
+        );
+      }
+      return;
+    }
+
     const url = draft.serverUrl.trim();
-    const loopback =
-      /^(https?:\/\/)?(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(url);
-    if (loopback) {
+    if (!url || isLoopbackServerUrl(url)) {
       setStatus(
         `Unreachable on device: ${url || "(empty)"} is this iPad itself. Use http://YOUR_COMPUTER_LAN_IP:8787 (same Wi‑Fi) or an https tunnel URL, then SAVE.`
       );
@@ -59,6 +100,39 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
     }
   };
 
+  const openControlUi = async () => {
+    const base = normalizeOpenclawBaseUrl(draft.openclawUrl);
+    if (!base) {
+      setStatus(
+        "Set OpenClaw Control UI URL first (LAN/Tailscale IP:18789 — not localhost)"
+      );
+      return;
+    }
+    if (isLoopbackServerUrl(base)) {
+      setStatus(
+        "localhost will not work on iPad — set your host LAN/Tailscale URL first"
+      );
+      return;
+    }
+    const url = controlUiUrl(base, draft.openclawToken);
+    const hasToken = Boolean(draft.openclawToken.trim());
+    try {
+      const ok = await Linking.canOpenURL(url);
+      if (!ok) {
+        setStatus(`Cannot open ${base}`);
+        return;
+      }
+      await Linking.openURL(url);
+      setStatus(
+        hasToken
+          ? `Opened Control UI with #token= (${maskTokenHint(draft.openclawToken)})`
+          : "Opened Control UI — set gateway token above to auto-auth via #token="
+      );
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : "Failed to open URL");
+    }
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.backdrop}>
@@ -70,98 +144,174 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.body}>
-            <Text style={styles.label}>Agent server URL</Text>
-            <TextInput
-              style={styles.input}
-              value={draft.serverUrl}
-              onChangeText={(serverUrl) => setDraft((d) => ({ ...d, serverUrl }))}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="http://YOUR_LAN_IP:8787"
-              placeholderTextColor={colors.textMuted}
-            />
-            <Text style={styles.hint}>
-              On iPhone/iPad use your computer's LAN IP (e.g. http://192.168.1.20:8787),
-              not localhost. Tap TEST LINK after starting the agent server.
-            </Text>
-
-            <Text style={styles.label}>Provider</Text>
+            <Text style={styles.label}>Runtime</Text>
             <View style={styles.row}>
-              {PROVIDERS.map((p) => (
+              {RUNTIMES.map((r) => (
                 <Pressable
-                  key={p}
-                  onPress={() => setDraft((d) => ({ ...d, provider: p }))}
+                  key={r.id}
+                  onPress={() => setDraft((d) => ({ ...d, runtimeMode: r.id }))}
                   style={[
                     styles.provider,
-                    draft.provider === p && styles.providerOn,
+                    draft.runtimeMode === r.id && styles.providerOn,
                   ]}
                 >
                   <Text
                     style={[
                       styles.providerText,
-                      draft.provider === p && styles.providerTextOn,
+                      draft.runtimeMode === r.id && styles.providerTextOn,
                     ]}
                   >
-                    {p}
+                    {r.label}
                   </Text>
                 </Pressable>
               ))}
             </View>
-
-            <Text style={styles.label}>Model</Text>
-            <TextInput
-              style={styles.input}
-              value={draft.model}
-              onChangeText={(model) => setDraft((d) => ({ ...d, model }))}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <Text style={styles.label}>API key (optional if set on server)</Text>
-            <TextInput
-              style={styles.input}
-              value={draft.apiKey}
-              onChangeText={(apiKey) => setDraft((d) => ({ ...d, apiKey }))}
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry
-              placeholder="sk-… / xai-…"
-              placeholderTextColor={colors.textMuted}
-            />
-
-            <Text style={styles.label}>Server token (OMNI_SERVER_TOKEN)</Text>
-            <TextInput
-              style={styles.input}
-              value={draft.serverToken}
-              onChangeText={(serverToken) =>
-                setDraft((d) => ({ ...d, serverToken }))
-              }
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry
-              placeholder="Required when server auth is enabled"
-              placeholderTextColor={colors.textMuted}
-            />
             <Text style={styles.hint}>
-              If /health reports authRequired, chat and sessions need this token.
+              OpenClaw is the primary Jarvis runtime (Docker/npm :18789). Legacy
+              Omni is the old SSE agent on :8787.
             </Text>
 
-            <View style={styles.switchRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>Auto-approve tools</Text>
+            {draft.runtimeMode === "openclaw" ? (
+              <>
+                <Text style={styles.label}>OpenClaw Control UI URL</Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.openclawUrl}
+                  onChangeText={(openclawUrl) =>
+                    setDraft((d) => ({ ...d, openclawUrl }))
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="http://YOUR_LAN_IP:18789"
+                  placeholderTextColor={colors.textMuted}
+                />
                 <Text style={styles.hint}>
-                  Shell and file writes skip the confirm step.
+                  On a physical iPad use your host LAN IP or Tailscale MagicDNS
+                  (e.g. http://192.168.1.20:18789) — not localhost / 127.0.0.1.
+                  Port is 18789.
                 </Text>
-              </View>
-              <Switch
-                value={draft.autoApprove}
-                onValueChange={(autoApprove) =>
-                  setDraft((d) => ({ ...d, autoApprove }))
-                }
-                trackColor={{ true: colors.brandDim, false: colors.line }}
-                thumbColor={draft.autoApprove ? colors.brand : "#ccc"}
-              />
-            </View>
+
+                <Text style={styles.label}>
+                  Gateway token (OPENCLAW_GATEWAY_TOKEN)
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.openclawToken}
+                  onChangeText={(openclawToken) =>
+                    setDraft((d) => ({ ...d, openclawToken }))
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  placeholder="From ~/.openclaw/openclaw.json or openclaw/.env"
+                  placeholderTextColor={colors.textMuted}
+                />
+                <Text style={styles.hint}>
+                  Token {maskTokenHint(draft.openclawToken)}. OPEN CONTROL UI
+                  appends #token=… so Safari can authenticate.
+                </Text>
+
+                <Pressable style={styles.secondary} onPress={openControlUi}>
+                  <Text style={styles.secondaryText}>OPEN CONTROL UI</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.label}>Agent server URL</Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.serverUrl}
+                  onChangeText={(serverUrl) =>
+                    setDraft((d) => ({ ...d, serverUrl }))
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  placeholder="http://YOUR_LAN_IP:8787"
+                  placeholderTextColor={colors.textMuted}
+                />
+                <Text style={styles.hint}>
+                  On iPhone/iPad use your computer's LAN IP (e.g.
+                  http://192.168.1.20:8787), not localhost.
+                </Text>
+
+                <Text style={styles.label}>Provider</Text>
+                <View style={styles.row}>
+                  {PROVIDERS.map((p) => (
+                    <Pressable
+                      key={p}
+                      onPress={() => setDraft((d) => ({ ...d, provider: p }))}
+                      style={[
+                        styles.provider,
+                        draft.provider === p && styles.providerOn,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.providerText,
+                          draft.provider === p && styles.providerTextOn,
+                        ]}
+                      >
+                        {p}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text style={styles.label}>Model</Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.model}
+                  onChangeText={(model) => setDraft((d) => ({ ...d, model }))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+
+                <Text style={styles.label}>
+                  API key (optional if set on server)
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.apiKey}
+                  onChangeText={(apiKey) => setDraft((d) => ({ ...d, apiKey }))}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  placeholder="sk-… / xai-…"
+                  placeholderTextColor={colors.textMuted}
+                />
+
+                <Text style={styles.label}>Server token (OMNI_SERVER_TOKEN)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.serverToken}
+                  onChangeText={(serverToken) =>
+                    setDraft((d) => ({ ...d, serverToken }))
+                  }
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  placeholder="Required when server auth is enabled"
+                  placeholderTextColor={colors.textMuted}
+                />
+
+                <View style={styles.switchRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.label}>Auto-approve tools</Text>
+                    <Text style={styles.hint}>
+                      Shell and file writes skip the confirm step.
+                    </Text>
+                  </View>
+                  <Switch
+                    value={draft.autoApprove}
+                    onValueChange={(autoApprove) =>
+                      setDraft((d) => ({ ...d, autoApprove }))
+                    }
+                    trackColor={{ true: colors.brandDim, false: colors.line }}
+                    thumbColor={draft.autoApprove ? colors.brand : "#ccc"}
+                  />
+                </View>
+              </>
+            )}
 
             <Pressable style={styles.secondary} onPress={ping}>
               <Text style={styles.secondaryText}>TEST LINK</Text>

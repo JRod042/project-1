@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -28,6 +29,7 @@ import { ApprovalBar } from "./src/components/ApprovalBar";
 import { SettingsSheet } from "./src/components/SettingsSheet";
 import { SessionDrawer } from "./src/components/SessionDrawer";
 import { ApiError, getSession, streamChat } from "./src/lib/api";
+import { controlUiUrl, normalizeOpenclawBaseUrl } from "./src/lib/openclaw";
 import {
   isLoopbackServerUrl,
   loadSettings,
@@ -42,18 +44,34 @@ function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-const BOOT: TimelineItem[] = [
-  {
-    id: "boot_1",
-    kind: "status",
-    text: "uplink established — operator ready",
-  },
-  {
-    id: "boot_2",
-    kind: "assistant",
-    text: "Omni online. I plan, research, write, run shell, and finish missions. Issue a command.",
-  },
-];
+function bootFor(settings: AppSettings | null): TimelineItem[] {
+  if (!settings || settings.runtimeMode === "openclaw") {
+    return [
+      {
+        id: "boot_1",
+        kind: "status",
+        text: "uplink established — openclaw runtime",
+      },
+      {
+        id: "boot_2",
+        kind: "assistant",
+        text: "Omni online, fronting OpenClaw. SYS → Control UI URL + token → OPEN CONTROL UI. Type here to launch the dashboard, or use Telegram if linked.",
+      },
+    ];
+  }
+  return [
+    {
+      id: "boot_1",
+      kind: "status",
+      text: "uplink established — legacy sse",
+    },
+    {
+      id: "boot_2",
+      kind: "assistant",
+      text: "Legacy Omni SSE on :8787. Prefer OpenClaw in SYS for the full operator stack.",
+    },
+  ];
+}
 
 function messagesToTimeline(
   messages: Array<{
@@ -99,7 +117,7 @@ export default function App() {
   });
 
   const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [items, setItems] = useState<TimelineItem[]>(BOOT);
+  const [items, setItems] = useState<TimelineItem[]>(bootFor(null));
   const [sessionId, setSessionId] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -115,7 +133,10 @@ export default function App() {
   const pulseScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    loadSettings().then(setSettings);
+    loadSettings().then((s) => {
+      setSettings(s);
+      setItems(bootFor(s));
+    });
   }, []);
 
   useEffect(() => {
@@ -165,6 +186,41 @@ export default function App() {
     },
     []
   );
+
+  const openOpenclawUi = useCallback(async () => {
+    if (!settings) return;
+    const base = normalizeOpenclawBaseUrl(settings.openclawUrl);
+    if (!base) {
+      append({
+        id: uid("err"),
+        kind: "error",
+        text: "Set OpenClaw Control UI URL in SYS (LAN/Tailscale IP:18789 — not localhost).",
+      });
+      setSettingsOpen(true);
+      return;
+    }
+    const url = controlUiUrl(base, settings.openclawToken);
+    const hasToken = Boolean(settings.openclawToken.trim());
+    try {
+      await Linking.openURL(url);
+      append({
+        id: uid("st"),
+        kind: "status",
+        text: hasToken
+          ? `opened control ui · ${base} · token via #token=`
+          : `opened control ui · ${base} · set gateway token in SYS for auto-auth`,
+      });
+    } catch (err) {
+      append({
+        id: uid("err"),
+        kind: "error",
+        text:
+          err instanceof Error
+            ? err.message
+            : `Could not open ${base}. Check SYS URL.`,
+      });
+    }
+  }, [append, settings]);
 
   const cancelRun = useCallback(() => {
     abortRef.current?.abort();
@@ -298,6 +354,15 @@ export default function App() {
 
   const onSend = (text: string) => {
     append({ id: uid("u"), kind: "user", text });
+    if (settings?.runtimeMode === "openclaw") {
+      append({
+        id: uid("st"),
+        kind: "status",
+        text: "openclaw mode — launching control ui (chat + tools live there / telegram)",
+      });
+      void openOpenclawUi();
+      return;
+    }
     run({ message: text });
   };
 
@@ -319,6 +384,10 @@ export default function App() {
     setSessionId(undefined);
     setPendingApproval(null);
     setAuthHint(false);
+    if (settings?.runtimeMode === "openclaw") {
+      setItems(bootFor(settings));
+      return;
+    }
     setItems([
       {
         id: uid("boot"),
@@ -383,7 +452,11 @@ export default function App() {
         <View style={styles.header}>
           <View style={styles.brandBlock}>
             <Text style={styles.brand}>OMNI</Text>
-            <Text style={styles.tag}>OPERATOR LINK · ALWAYS ON</Text>
+            <Text style={styles.tag}>
+              {settings.runtimeMode === "openclaw"
+                ? "OPENCLAW · OPERATOR LINK"
+                : "LEGACY SSE · OPERATOR LINK"}
+            </Text>
           </View>
           <View style={styles.headerRight}>
             <View style={styles.liveWrap}>
@@ -395,9 +468,21 @@ export default function App() {
               />
               <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
             </View>
-            <Pressable onPress={() => setSessionsOpen(true)} style={styles.headerBtn}>
-              <Text style={styles.headerBtnText}>LOG</Text>
-            </Pressable>
+            {settings.runtimeMode === "legacy" ? (
+              <Pressable
+                onPress={() => setSessionsOpen(true)}
+                style={styles.headerBtn}
+              >
+                <Text style={styles.headerBtnText}>LOG</Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={() => void openOpenclawUi()}
+                style={styles.headerBtn}
+              >
+                <Text style={styles.headerBtnText}>UI</Text>
+              </Pressable>
+            )}
             <Pressable onPress={newMission} style={styles.headerBtn}>
               <Text style={styles.headerBtnText}>NEW</Text>
             </Pressable>
@@ -423,19 +508,25 @@ export default function App() {
             onPress={() => setSettingsOpen(true)}
           >
             <Text style={styles.authBannerText}>
-              Auth required — tap to set Server token (OMNI_SERVER_TOKEN)
+              Auth required — tap SYS and set the server / gateway token
             </Text>
           </Pressable>
         ) : null}
 
-        {settings && isLoopbackServerUrl(settings.serverUrl) ? (
+        {settings &&
+        ((settings.runtimeMode === "legacy" &&
+          isLoopbackServerUrl(settings.serverUrl)) ||
+          (settings.runtimeMode === "openclaw" &&
+            (!settings.openclawUrl.trim() ||
+              isLoopbackServerUrl(settings.openclawUrl)))) ? (
           <Pressable
             style={styles.connectBanner}
             onPress={() => setSettingsOpen(true)}
           >
             <Text style={styles.connectBannerText}>
-              Agent URL is localhost — tap SYS and set your computer LAN IP or
-              tunnel (TestFlight cannot use 127.0.0.1)
+              {settings.runtimeMode === "openclaw"
+                ? "OpenClaw URL missing/localhost — tap SYS and set LAN/Tailscale http://IP:18789 (TestFlight cannot use 127.0.0.1)"
+                : "Agent URL is localhost — tap SYS and set your computer LAN IP or tunnel (TestFlight cannot use 127.0.0.1)"}
             </Text>
           </Pressable>
         ) : null}
@@ -467,24 +558,33 @@ export default function App() {
           settings={settings}
           onClose={() => setSettingsOpen(false)}
           onSave={async (next) => {
+            const modeChanged = next.runtimeMode !== settings.runtimeMode;
             setSettings(next);
             setAuthHint(false);
             await saveSettings(next);
+            if (modeChanged) {
+              cancelRun();
+              setSessionId(undefined);
+              setPendingApproval(null);
+              setItems(bootFor(next));
+            }
           }}
         />
 
-        <SessionDrawer
-          visible={sessionsOpen}
-          settings={settings}
-          activeSessionId={sessionId}
-          onClose={() => setSessionsOpen(false)}
-          onResume={(id) => {
-            void resumeSession(id);
-          }}
-          onDeleted={(id) => {
-            if (id === sessionId) newMission();
-          }}
-        />
+        {settings.runtimeMode === "legacy" ? (
+          <SessionDrawer
+            visible={sessionsOpen}
+            settings={settings}
+            activeSessionId={sessionId}
+            onClose={() => setSessionsOpen(false)}
+            onResume={(id) => {
+              void resumeSession(id);
+            }}
+            onDeleted={(id) => {
+              if (id === sessionId) newMission();
+            }}
+          />
+        ) : null}
       </SafeAreaView>
     </SafeAreaProvider>
   );
