@@ -34,17 +34,16 @@ npx expo run:ios --device
 
 Or open `mobile/ios/Omni.xcodeproj` in Xcode, pick your Team under Signing, and Run on your iPhone.
 
-### Fastest path with your Apple Developer account → TestFlight
+### iPad only (no Mac) → TestFlight
 
-```bash
-cd mobile
-npm install
-chmod +x scripts/ship-ios.sh
-./scripts/ship-ios.sh production
-```
+You don’t need a Mac. Build in the cloud, install with TestFlight:
 
-That logs into EAS, builds a signed IPA with your team, and can submit to TestFlight.  
-Details: **[mobile/IOS.md](mobile/IOS.md)**
+1. Create the app in [App Store Connect](https://appstoreconnect.apple.com) (bundle `com.jrod042.omni`)
+2. On [expo.dev](https://expo.dev) (Safari): link the repo → Credentials → start an iOS `production` build → submit to TestFlight  
+   **or** add GitHub Action secrets and run **Actions → iOS TestFlight**
+3. Install **TestFlight** on your iPad and open Omni
+
+Step-by-step: **[mobile/IOS.md](mobile/IOS.md)**
 
 ## Agent server
 

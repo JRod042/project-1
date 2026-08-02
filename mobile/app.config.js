@@ -1,7 +1,7 @@
 /** @type {import('expo/config').ExpoConfig} */
 const config = {
   name: "Omni",
-  slug: "omni-agent",
+  slug: "omni",
   version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
@@ -83,11 +83,10 @@ const config = {
   ],
   extra: {
     eas: {
-      // Set after `eas init` / first EAS login on your machine.
-      projectId: process.env.EAS_PROJECT_ID || undefined,
+      projectId: process.env.EAS_PROJECT_ID || "b7896713-f57d-4303-850d-b4985ade82ab",
     },
   },
-  owner: process.env.EAS_OWNER || undefined,
+  owner: "jrod42",
 };
 
 module.exports = config;
