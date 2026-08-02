@@ -48,7 +48,16 @@ Deploy / tunnel / Docker: **[server/DEPLOY.md](server/DEPLOY.md)**
 |------|------|
 | `mobile/` | Expo app (EAS prebuilds iOS) |
 | `server/` | Tool-using agent runtime (SSE) |
+| `docs/` | North star + integration notes |
+| `cursor-prompts/` | Sequential Cursor follow-up prompts |
 | `.github/workflows/ios-testflight.yml` | Optional one-tap TestFlight build |
+
+## North star & prompts
+
+- Product intent: **[docs/NORTH_STAR.md](docs/NORTH_STAR.md)** — pocket operator terminal, not a chatbot
+- Security checklist: **[AUDIT.md](AUDIT.md)** (canonical; also under `docs/`)
+- Cursor prompt pack: **[cursor-prompts/](cursor-prompts/)**
+- Set `OMNI_SERVER_TOKEN` in `server/.env` and the same value in app **SYS**
 
 ## License
 

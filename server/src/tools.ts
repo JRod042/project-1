@@ -386,7 +386,11 @@ async function executeToolInner(
             cwd: workspaceRoot,
             timeout: timeoutMs,
             maxBuffer: 512_000,
-            env: sanitizedShellEnv(),
+            env: {
+              ...sanitizedShellEnv(),
+              OMNI_WORKSPACE: workspaceRoot,
+            },
+            killSignal: "SIGKILL",
           }
         );
         const out = [stdout, stderr].filter(Boolean).join("\n").trim();
