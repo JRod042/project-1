@@ -92,6 +92,11 @@ Then **Actions** → **iOS TestFlight** → **Run workflow**.
 
 ---
 
+## Notes
+
+- `autoIncrement` is **not** used (unsupported with `app.config.js`). Bump `ios.buildNumber` in `mobile/app.config.js` when you need a new TestFlight build number.
+- Credentials must show **Distribution Certificate + App Store Provisioning Profile** for `com.jrod042.omni`.
+
 ## If a build fails again
 
 Paste the **full red error block** (credentials / Xcode / pod lines), not only `build:internal`.
