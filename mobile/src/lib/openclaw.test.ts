@@ -14,10 +14,10 @@ describe("openclaw control UI helpers", () => {
     );
   });
 
-  it("appends encoded #token= when token present", () => {
+  it("appends encoded #token= when token present (no slash before hash)", () => {
     assert.equal(
       controlUiUrl("http://192.168.1.20:18789", "abc/def=+"),
-      "http://192.168.1.20:18789/#token=abc%2Fdef%3D%2B"
+      "http://192.168.1.20:18789#token=abc%2Fdef%3D%2B"
     );
   });
 

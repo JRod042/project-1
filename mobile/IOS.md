@@ -149,7 +149,8 @@ In the app → **SYS**:
 - Runtime = **OpenClaw**
 - Control UI URL = `http://YOUR_HOST_LAN_IP:18789` (or Tailscale URL — **not** localhost)
 - Gateway token = `gateway.auth.token` from `~/.openclaw/openclaw.json`, or `OPENCLAW_GATEWAY_TOKEN` in `openclaw/.env`
-- Tap **OPEN CONTROL UI** — Safari opens `http://…:18789/#token=…`
+- Tap **OPEN CONTROL UI** — in-app browser opens `http://…:18789#token=…`
+  (uses `expo-web-browser` so iOS does not break the `#token=` fragment)
 - Tap **TEST LINK** to verify reachability
 
 Full notes: **[openclaw/README.md](../openclaw/README.md)**

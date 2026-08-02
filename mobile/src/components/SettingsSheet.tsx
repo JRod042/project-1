@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Linking,
   Modal,
   Pressable,
   StyleSheet,
@@ -13,11 +12,8 @@ import {
 import { colors, fonts } from "../theme";
 import type { AppSettings, ProviderName, RuntimeMode } from "../types";
 import { healthCheck } from "../lib/api";
-import {
-  controlUiUrl,
-  maskTokenHint,
-  normalizeOpenclawBaseUrl,
-} from "../lib/openclaw";
+import { maskTokenHint, normalizeOpenclawBaseUrl } from "../lib/openclaw";
+import { openControlUi } from "../lib/openclawLaunch";
 import { isLoopbackServerUrl } from "../lib/storage";
 
 const PROVIDERS: ProviderName[] = ["xai", "openai", "gemini"];
@@ -100,37 +96,17 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
     }
   };
 
-  const openControlUi = async () => {
-    const base = normalizeOpenclawBaseUrl(draft.openclawUrl);
-    if (!base) {
-      setStatus(
-        "Set OpenClaw Control UI URL first (LAN/Tailscale IP:18789 — not localhost)"
-      );
+  const launchControlUi = async () => {
+    const result = await openControlUi(draft.openclawUrl, draft.openclawToken);
+    if (!result.ok) {
+      setStatus(result.detail);
       return;
     }
-    if (isLoopbackServerUrl(base)) {
-      setStatus(
-        "localhost will not work on iPad — set your host LAN/Tailscale URL first"
-      );
-      return;
-    }
-    const url = controlUiUrl(base, draft.openclawToken);
-    const hasToken = Boolean(draft.openclawToken.trim());
-    try {
-      const ok = await Linking.canOpenURL(url);
-      if (!ok) {
-        setStatus(`Cannot open ${base}`);
-        return;
-      }
-      await Linking.openURL(url);
-      setStatus(
-        hasToken
-          ? `Opened Control UI with #token= (${maskTokenHint(draft.openclawToken)})`
-          : "Opened Control UI — set gateway token above to auto-auth via #token="
-      );
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : "Failed to open URL");
-    }
+    setStatus(
+      result.usedToken
+        ? `Opened Control UI with #token= (${maskTokenHint(draft.openclawToken)})`
+        : "Opened Control UI — set gateway token above to auto-auth via #token="
+    );
   };
 
   return (
@@ -211,7 +187,7 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
                   appends #token=… so Safari can authenticate.
                 </Text>
 
-                <Pressable style={styles.secondary} onPress={openControlUi}>
+                <Pressable style={styles.secondary} onPress={launchControlUi}>
                   <Text style={styles.secondaryText}>OPEN CONTROL UI</Text>
                 </Pressable>
               </>
