@@ -232,7 +232,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+      <SafeAreaView style={styles.safe} edges={["top", "left", "right", "bottom"]}>
         <StatusBar style="light" />
         <LinearGradient
           colors={["#101A12", "#0B0F0C", "#0E1518"]}

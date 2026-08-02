@@ -1,49 +1,33 @@
 # Omni
 
-**Jarvis for your iPhone — but it actually does the work.**
-
-Omni is a personal AI iOS app (native project under `mobile/ios`) plus an agent server that can plan, research, code, run shell, manage files, and keep memory.
+**Jarvis for your iPad/iPhone — an agent that actually runs tools.**
 
 ```
 ┌──────────────┐      SSE       ┌────────────────┐  tools  ┌───────────┐
 │ Omni iOS app │ ─────────────▶ │ Omni agent     │ ──────▶ │ Workspace │
-│ (Xcode/EAS)  │                │ server         │         │ + web     │
+│ (TestFlight) │                │ server         │         │ + web     │
 └──────────────┘                └────────────────┘         └───────────┘
 ```
 
-## iOS app (what you asked for)
-
 | Item | Value |
 |------|-------|
-| Display name | **Omni** |
+| App | **Omni** |
 | Bundle ID | `com.jrod042.omni` |
-| Native project | `mobile/ios/Omni.xcodeproj` |
+| Expo | `@jrod42/omni` |
 | Min iOS | 16.4 |
-| Build paths | Mac + Xcode **or** EAS Build → TestFlight |
+| Install path | EAS → **TestFlight** (no Mac required) |
 
-Full install / build steps: **[mobile/IOS.md](mobile/IOS.md)**
+## iPad / TestFlight
 
-### Fastest path on a Mac
+Full steps: **[mobile/IOS.md](mobile/IOS.md)**
 
-```bash
-cd mobile
-npm install
-npx pod-install
-npx expo run:ios --device
-```
+Short version:
 
-Or open `mobile/ios/Omni.xcodeproj` in Xcode, pick your Team under Signing, and Run on your iPhone.
-
-### iPad only (no Mac) → TestFlight
-
-You don’t need a Mac. Build in the cloud, install with TestFlight:
-
-1. Create the app in [App Store Connect](https://appstoreconnect.apple.com) (bundle `com.jrod042.omni`)
-2. On [expo.dev](https://expo.dev) (Safari): link the repo → Credentials → start an iOS `production` build → submit to TestFlight  
-   **or** add GitHub Action secrets and run **Actions → iOS TestFlight**
-3. Install **TestFlight** on your iPad and open Omni
-
-Step-by-step: **[mobile/IOS.md](mobile/IOS.md)**
+1. Expo → Credentials → iOS → App Store for `com.jrod042.omni`
+2. GitHub base directory = `mobile`
+3. Builds → Build from GitHub → `main` → iOS → `production`
+4. Submit → TestFlight → install on iPad
+5. Run `server/` somewhere and set **SYS** server URL in the app
 
 ## Agent server
 
@@ -51,28 +35,17 @@ Step-by-step: **[mobile/IOS.md](mobile/IOS.md)**
 cd server
 cp .env.example .env   # add XAI_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY
 npm install
-npm run dev            # http://0.0.0.0:8787
+npm start              # http://0.0.0.0:8787
 ```
-
-On the phone, open **SYS** if needed and confirm the server URL is your Mac’s LAN IP (`http://192.168.x.x:8787`). The app tries to auto-detect this from the Metro/dev-client host.
 
 ## Repo layout
 
 | Path | Role |
 |------|------|
-| `mobile/` | Expo React Native → **native iOS app** |
-| `mobile/ios/` | Generated Xcode project |
-| `mobile/eas.json` | EAS iOS build profiles |
-| `server/` | Tool-using agent runtime |
-
-## Roadmap (Jarvis-class)
-
-- Voice in / voice out
-- Device skills (calendar, messages, reminders)
-- Parallel missions / subagents
-- Home/cloud computer bridge
-- Proactive briefings
+| `mobile/` | Expo app (EAS prebuilds iOS) |
+| `server/` | Tool-using agent runtime (SSE) |
+| `.github/workflows/ios-testflight.yml` | Optional one-tap TestFlight build |
 
 ## License
 
-MIT (see `mobile/LICENSE` for Expo template license text).
+MIT (see `mobile/LICENSE`).

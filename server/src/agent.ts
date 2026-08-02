@@ -166,31 +166,31 @@ export async function* runAgent(
 
     if (response.text) {
       yield* emit({ type: "text", text: response.text });
-      const assistantMsg: ChatMessage = {
-        role: "assistant",
-        content: response.text,
-      };
-      session.messages.push(assistantMsg);
-      history.push(assistantMsg);
-      touch(session);
     }
 
     if (!response.toolCalls.length) {
+      if (response.text) {
+        const assistantMsg: ChatMessage = {
+          role: "assistant",
+          content: response.text,
+        };
+        session.messages.push(assistantMsg);
+        history.push(assistantMsg);
+        touch(session);
+      }
       yield* emit({ type: "done", sessionId: session.id });
       return;
     }
 
-    // Persist assistant tool-call turn for OpenAI-compatible providers
-    if (!response.text) {
-      const stub: ChatMessage = {
-        role: "assistant",
-        content: response.toolCalls
-          .map((c) => `Calling ${c.name}...`)
-          .join(" "),
-      };
-      session.messages.push(stub);
-      history.push(stub);
-    }
+    // Persist assistant tool-call turn with proper tool_calls for API continuity
+    const assistantToolMsg: ChatMessage = {
+      role: "assistant",
+      content: response.text || "",
+      tool_calls: response.toolCalls,
+    };
+    session.messages.push(assistantToolMsg);
+    history.push(assistantToolMsg);
+    touch(session);
 
     for (const call of response.toolCalls) {
       const needsApproval =
