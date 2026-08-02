@@ -33,19 +33,6 @@ const config = {
       NSBonjourServices: ["_http._tcp."],
       ITSAppUsesNonExemptEncryption: false,
     },
-    privacyManifests: {
-      NSPrivacyAccessedAPITypes: [
-        {
-          NSPrivacyAccessedAPIType:
-            "NSPrivacyAccessedAPICategoryUserDefaults",
-          NSPrivacyAccessedAPIReasons: ["CA92.1"],
-        },
-        {
-          NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryFileTimestamp",
-          NSPrivacyAccessedAPIReasons: ["C617.1"],
-        },
-      ],
-    },
   },
   android: {
     package: "com.jrod042.omni",
@@ -76,6 +63,9 @@ const config = {
       {
         ios: {
           deploymentTarget: "16.4",
+          // Avoid RN privacy_manifest_utils.rb crash:
+          // "no implicit conversion of nil into Array" during pod post_install.
+          privacyManifestAggregationEnabled: false,
         },
       },
     ],
