@@ -83,9 +83,7 @@ const config = {
   ],
   extra: {
     eas: {
-      // Paste your Expo Project ID here (Project settings → General).
-      // Example: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-      projectId: process.env.EAS_PROJECT_ID || undefined,
+      projectId: process.env.EAS_PROJECT_ID || "b7896713-f57d-4303-850d-b4985ade82ab",
     },
   },
   owner: "jrod42",
