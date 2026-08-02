@@ -18,7 +18,7 @@ const config = {
     bundleIdentifier: "com.jrod042.omni",
     // Bump before each new ASC upload if that number was already used.
     // EAS autoIncrement is unsupported with app.config.js.
-    buildNumber: "4",
+    buildNumber: "5",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Omni",
