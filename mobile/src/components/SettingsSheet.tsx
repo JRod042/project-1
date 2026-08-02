@@ -18,6 +18,7 @@ import {
   maskTokenHint,
   normalizeOpenclawBaseUrl,
 } from "../lib/openclaw";
+import { isLoopbackServerUrl } from "../lib/storage";
 
 const PROVIDERS: ProviderName[] = ["xai", "openai", "gemini"];
 const RUNTIMES: { id: RuntimeMode; label: string }[] = [
@@ -41,14 +42,20 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
   }, [visible, settings]);
 
   const ping = async () => {
-    try {
-      setStatus("Checking…");
-      if (draft.runtimeMode === "openclaw") {
-        const base = normalizeOpenclawBaseUrl(draft.openclawUrl);
-        if (!base) {
-          setStatus("Set Control UI URL (e.g. http://192.168.x.x:18789)");
-          return;
-        }
+    if (draft.runtimeMode === "openclaw") {
+      const base = normalizeOpenclawBaseUrl(draft.openclawUrl);
+      if (!base) {
+        setStatus("Set Control UI URL (e.g. http://192.168.x.x:18789)");
+        return;
+      }
+      if (isLoopbackServerUrl(base)) {
+        setStatus(
+          `Unreachable on device: ${base} is this iPad itself. Use http://YOUR_COMPUTER_LAN_IP:18789 (same Wi‑Fi / Tailscale), then SAVE.`
+        );
+        return;
+      }
+      try {
+        setStatus(`Checking ${base}…`);
         const res = await fetch(base, { method: "GET" });
         const tokenHint = draft.openclawToken.trim()
           ? `token ${maskTokenHint(draft.openclawToken)} · OPEN CONTROL UI uses #token=`
@@ -58,9 +65,25 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
             ? `OpenClaw reachable · HTTP ${res.status} · ${tokenHint}`
             : `HTTP ${res.status} from ${base}`
         );
-        return;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Unreachable";
+        setStatus(
+          `${msg} — is OpenClaw running on that host:18789? Same Wi‑Fi / Tailscale?`
+        );
       }
-      const h = await healthCheck(draft.serverUrl);
+      return;
+    }
+
+    const url = draft.serverUrl.trim();
+    if (!url || isLoopbackServerUrl(url)) {
+      setStatus(
+        `Unreachable on device: ${url || "(empty)"} is this iPad itself. Use http://YOUR_COMPUTER_LAN_IP:8787 (same Wi‑Fi) or an https tunnel URL, then SAVE.`
+      );
+      return;
+    }
+    try {
+      setStatus(`Checking ${url}…`);
+      const h = await healthCheck(url);
       const auth = h.authRequired
         ? draft.serverToken
           ? "auth=token set"
@@ -70,7 +93,10 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
         `Online · ${auth} · shell=${h.shellMode ?? "?"} · workspace ${h.workspaceRoot} · keys xai=${h.providers.xai} openai=${h.providers.openai} gemini=${h.providers.gemini}`
       );
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : "Unreachable");
+      const msg = err instanceof Error ? err.message : "Unreachable";
+      setStatus(
+        `${msg} — is omni-server running on that host:8787? Same Wi‑Fi? Firewall allowing 8787?`
+      );
     }
   };
 
@@ -79,6 +105,12 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
     if (!base) {
       setStatus(
         "Set OpenClaw Control UI URL first (LAN/Tailscale IP:18789 — not localhost)"
+      );
+      return;
+    }
+    if (isLoopbackServerUrl(base)) {
+      setStatus(
+        "localhost will not work on iPad — set your host LAN/Tailscale URL first"
       );
       return;
     }
@@ -135,8 +167,8 @@ export function SettingsSheet({ visible, settings, onClose, onSave }: Props) {
               ))}
             </View>
             <Text style={styles.hint}>
-              OpenClaw is the primary Jarvis runtime (Docker :18789). Legacy Omni
-              is the old SSE agent on :8787.
+              OpenClaw is the primary Jarvis runtime (Docker/npm :18789). Legacy
+              Omni is the old SSE agent on :8787.
             </Text>
 
             {draft.runtimeMode === "openclaw" ? (
@@ -373,7 +405,7 @@ const styles = StyleSheet.create({
   },
   providerOn: {
     borderColor: colors.brand,
-    backgroundColor: "#1C2814",
+    backgroundColor: "rgba(184,255,61,0.08)",
   },
   providerText: {
     color: colors.textMuted,
@@ -414,8 +446,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveText: {
-    color: "#0B0F0C",
+    color: colors.brandInk,
     fontFamily: fonts.monoBold,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
 });

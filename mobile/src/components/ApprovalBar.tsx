@@ -12,7 +12,7 @@ type Props = {
 export function ApprovalBar({ name, onApprove, onDeny, busy }: Props) {
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>Authorize {name}?</Text>
+      <Text style={styles.label}>AUTHORIZATION REQUIRED // {name}</Text>
       <View style={styles.row}>
         <Pressable
           style={[styles.btn, styles.deny]}
@@ -45,7 +45,7 @@ export function ApprovalBar({ name, onApprove, onDeny, busy }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: "#2A2110",
+    backgroundColor: "rgba(42, 34, 12, 0.95)",
     borderTopWidth: 1,
     borderTopColor: colors.warn,
     paddingHorizontal: 14,
@@ -55,7 +55,8 @@ const styles = StyleSheet.create({
   label: {
     color: colors.warn,
     fontFamily: fonts.monoMed,
-    fontSize: 13,
+    fontSize: 12,
+    letterSpacing: 0.8,
   },
   row: {
     flexDirection: "row",
@@ -63,12 +64,13 @@ const styles = StyleSheet.create({
   },
   btn: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 13,
     alignItems: "center",
   },
   deny: {
     borderWidth: 1,
     borderColor: colors.danger,
+    backgroundColor: "rgba(255,92,106,0.08)",
   },
   approve: {
     backgroundColor: colors.brand,
@@ -76,11 +78,11 @@ const styles = StyleSheet.create({
   denyText: {
     color: colors.danger,
     fontFamily: fonts.monoBold,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   approveText: {
-    color: "#0B0F0C",
+    color: colors.brandInk,
     fontFamily: fonts.monoBold,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
 });

@@ -10,8 +10,8 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { Atmosphere } from "./src/components/Atmosphere";
 import {
   useFonts,
   Syne_700Bold,
@@ -30,7 +30,11 @@ import { SettingsSheet } from "./src/components/SettingsSheet";
 import { SessionDrawer } from "./src/components/SessionDrawer";
 import { ApiError, getSession, streamChat } from "./src/lib/api";
 import { controlUiUrl, normalizeOpenclawBaseUrl } from "./src/lib/openclaw";
-import { loadSettings, saveSettings } from "./src/lib/storage";
+import {
+  isLoopbackServerUrl,
+  loadSettings,
+  saveSettings,
+} from "./src/lib/storage";
 import { colors, fonts } from "./src/theme";
 import type { AppSettings, TimelineItem } from "./src/types";
 
@@ -46,12 +50,12 @@ function bootFor(settings: AppSettings | null): TimelineItem[] {
       {
         id: "boot_1",
         kind: "status",
-        text: "omni online — openclaw runtime",
+        text: "uplink established — openclaw runtime",
       },
       {
         id: "boot_2",
         kind: "assistant",
-        text: "I'm Omni, fronting OpenClaw — the Jarvis-class gateway. Open SYS → set Control UI URL + token → OPEN CONTROL UI. Or message your Telegram bot if you linked a channel. Type anything here to launch the Control UI.",
+        text: "Omni online, fronting OpenClaw. SYS → Control UI URL + token → OPEN CONTROL UI. Type here to launch the dashboard, or use Telegram if linked.",
       },
     ];
   }
@@ -59,12 +63,12 @@ function bootFor(settings: AppSettings | null): TimelineItem[] {
     {
       id: "boot_1",
       kind: "status",
-      text: "omni online — legacy SSE agent",
+      text: "uplink established — legacy sse",
     },
     {
       id: "boot_2",
       kind: "assistant",
-      text: "Legacy mode: research, code, shell, files via the Omni server on :8787. Prefer OpenClaw in SYS for the full operator stack.",
+      text: "Legacy Omni SSE on :8787. Prefer OpenClaw in SYS for the full operator stack.",
     },
   ];
 }
@@ -126,6 +130,7 @@ export default function App() {
   const listRef = useRef<FlatList<TimelineItem>>(null);
   const abortRef = useRef<AbortController | null>(null);
   const pulse = useRef(new Animated.Value(0.35)).current;
+  const pulseScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     loadSettings().then((s) => {
@@ -140,22 +145,36 @@ export default function App() {
 
   useEffect(() => {
     const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0.35,
-          duration: 900,
-          useNativeDriver: true,
-        }),
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(pulse, {
+            toValue: 1,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulse, {
+            toValue: 0.3,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(pulseScale, {
+            toValue: 1.35,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseScale, {
+            toValue: 1,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+        ]),
       ])
     );
     loop.start();
     return () => loop.stop();
-  }, [pulse]);
+  }, [pulse, pulseScale]);
 
   const append = useCallback((item: TimelineItem) => {
     setItems((prev) => [...prev, item]);
@@ -310,13 +329,16 @@ export default function App() {
             text: err.message,
           });
         } else {
+          const target = settings.serverUrl;
+          const loopback = isLoopbackServerUrl(target);
           append({
             id: uid("err"),
             kind: "error",
-            text:
-              err instanceof Error
+            text: loopback
+              ? `Cannot reach agent at ${target} — that's this iPad. SYS → set http://YOUR_COMPUTER_LAN_IP:8787 (or tunnel) → TEST LINK → SAVE. Server must be running.`
+              : err instanceof Error
                 ? err.message
-                : "Failed to reach Omni server. Open Systems and set your LAN URL + API key.",
+                : `Failed to reach Omni server at ${target}. Open SYS, TEST LINK, fix URL.`,
           });
         }
       } finally {
@@ -426,23 +448,26 @@ export default function App() {
     <SafeAreaProvider>
       <SafeAreaView style={styles.safe} edges={["top", "left", "right", "bottom"]}>
         <StatusBar style="light" />
-        <LinearGradient
-          colors={["#101A12", "#0B0F0C", "#0E1518"]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+        <Atmosphere />
         <View style={styles.header}>
-          <View>
+          <View style={styles.brandBlock}>
             <Text style={styles.brand}>OMNI</Text>
             <Text style={styles.tag}>
               {settings.runtimeMode === "openclaw"
-                ? "openclaw · personal operator"
-                : "legacy sse · personal agent"}
+                ? "OPENCLAW · OPERATOR LINK"
+                : "LEGACY SSE · OPERATOR LINK"}
             </Text>
           </View>
           <View style={styles.headerRight}>
-            <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
+            <View style={styles.liveWrap}>
+              <Animated.View
+                style={[
+                  styles.liveRing,
+                  { opacity: pulse, transform: [{ scale: pulseScale }] },
+                ]}
+              />
+              <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
+            </View>
             {settings.runtimeMode === "legacy" ? (
               <Pressable
                 onPress={() => setSessionsOpen(true)}
@@ -451,7 +476,10 @@ export default function App() {
                 <Text style={styles.headerBtnText}>LOG</Text>
               </Pressable>
             ) : (
-              <Pressable onPress={() => void openOpenclawUi()} style={styles.headerBtn}>
+              <Pressable
+                onPress={() => void openOpenclawUi()}
+                style={styles.headerBtn}
+              >
                 <Text style={styles.headerBtnText}>UI</Text>
               </Pressable>
             )}
@@ -481,6 +509,24 @@ export default function App() {
           >
             <Text style={styles.authBannerText}>
               Auth required — tap SYS and set the server / gateway token
+            </Text>
+          </Pressable>
+        ) : null}
+
+        {settings &&
+        ((settings.runtimeMode === "legacy" &&
+          isLoopbackServerUrl(settings.serverUrl)) ||
+          (settings.runtimeMode === "openclaw" &&
+            (!settings.openclawUrl.trim() ||
+              isLoopbackServerUrl(settings.openclawUrl)))) ? (
+          <Pressable
+            style={styles.connectBanner}
+            onPress={() => setSettingsOpen(true)}
+          >
+            <Text style={styles.connectBannerText}>
+              {settings.runtimeMode === "openclaw"
+                ? "OpenClaw URL missing/localhost — tap SYS and set LAN/Tailscale http://IP:18789 (TestFlight cannot use 127.0.0.1)"
+                : "Agent URL is localhost — tap SYS and set your computer LAN IP or tunnel (TestFlight cannot use 127.0.0.1)"}
             </Text>
           </Pressable>
         ) : null}
@@ -557,44 +603,62 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 10,
+    paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: colors.line,
+    borderBottomColor: colors.lineBright,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    backgroundColor: "rgba(11,15,12,0.92)",
+    backgroundColor: colors.bgGlass,
+  },
+  brandBlock: {
+    gap: 4,
   },
   brand: {
     color: colors.brand,
     fontFamily: fonts.displayExtra,
-    fontSize: 34,
-    letterSpacing: 2,
-    lineHeight: 36,
+    fontSize: 40,
+    letterSpacing: 4,
+    lineHeight: 42,
   },
   tag: {
-    color: colors.textMuted,
-    fontFamily: fonts.mono,
-    fontSize: 11,
-    marginTop: 2,
+    color: colors.accent,
+    fontFamily: fonts.monoMed,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    opacity: 0.85,
   },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
-  liveDot: {
-    width: 8,
-    height: 8,
-    backgroundColor: colors.brand,
+  liveWrap: {
+    width: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 2,
+  },
+  liveRing: {
+    position: "absolute",
+    width: 14,
+    height: 14,
+    borderWidth: 1,
+    borderColor: colors.brand,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    backgroundColor: colors.brand,
   },
   headerBtn: {
     borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.lineBright,
     paddingHorizontal: 10,
     paddingVertical: 7,
+    backgroundColor: "rgba(16,24,32,0.65)",
   },
   headerBtnWarn: {
     borderColor: colors.danger,
@@ -603,13 +667,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: fonts.monoBold,
     fontSize: 11,
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   headerBtnTextWarn: {
     color: colors.danger,
   },
   authBanner: {
-    backgroundColor: "#3A1F1F",
+    backgroundColor: "rgba(58,31,31,0.95)",
     borderBottomWidth: 1,
     borderBottomColor: colors.danger,
     paddingHorizontal: 14,
@@ -620,9 +684,21 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMed,
     fontSize: 11,
   },
+  connectBanner: {
+    backgroundColor: "rgba(42,36,16,0.95)",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.warn,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  connectBannerText: {
+    color: colors.warn,
+    fontFamily: fonts.monoMed,
+    fontSize: 11,
+  },
   list: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingTop: 18,
+    paddingBottom: 28,
   },
 });

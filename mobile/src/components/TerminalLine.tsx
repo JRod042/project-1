@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, type ReactNode } from "react";
+import { Animated, StyleSheet, Text, View } from "react-native";
 import { colors, fonts } from "../theme";
 import type { TimelineItem } from "../types";
 
@@ -11,70 +12,112 @@ function prettyArgs(args?: Record<string, unknown>) {
   }
 }
 
+function FadeIn({ children }: { children: ReactNode }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const y = useRef(new Animated.Value(6)).current;
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+      Animated.timing(y, {
+        toValue: 0,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [opacity, y]);
+  return (
+    <Animated.View style={{ opacity, transform: [{ translateY: y }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
 export function TerminalLine({ item }: { item: TimelineItem }) {
   if (item.kind === "user") {
     return (
-      <View style={styles.block}>
-        <Text style={styles.prompt}>you ›</Text>
-        <Text style={styles.user}>{item.text}</Text>
-      </View>
+      <FadeIn>
+        <View style={styles.block}>
+          <Text style={styles.prompt}>YOU //</Text>
+          <Text style={styles.user}>{item.text}</Text>
+        </View>
+      </FadeIn>
     );
   }
 
   if (item.kind === "assistant") {
     return (
-      <View style={styles.block}>
-        <Text style={styles.promptBrand}>omni ›</Text>
-        <Text style={styles.assistant}>{item.text}</Text>
-      </View>
+      <FadeIn>
+        <View style={styles.block}>
+          <Text style={styles.promptBrand}>OMNI //</Text>
+          <Text style={styles.assistant}>{item.text}</Text>
+        </View>
+      </FadeIn>
     );
   }
 
   if (item.kind === "status") {
-    return <Text style={styles.status}>// {item.text}</Text>;
+    return (
+      <FadeIn>
+        <Text style={styles.status}>∷ {item.text}</Text>
+      </FadeIn>
+    );
   }
 
   if (item.kind === "error") {
     return (
-      <View style={styles.block}>
-        <Text style={styles.errorLabel}>error ›</Text>
-        <Text style={styles.error}>{item.text}</Text>
-      </View>
+      <FadeIn>
+        <View style={[styles.rail, styles.railDanger]}>
+          <Text style={styles.errorLabel}>FAULT //</Text>
+          <Text style={styles.error}>{item.text}</Text>
+        </View>
+      </FadeIn>
     );
   }
 
   if (item.kind === "tool") {
+    const mark = item.running ? "RUN" : item.ok === false ? "ERR" : "OK";
     return (
-      <View style={styles.toolBox}>
-        <Text style={styles.toolHeader}>
-          {item.running ? "⟳" : item.ok === false ? "✗" : "✓"} tool::{item.name}
-        </Text>
-        {item.args ? (
-          <Text style={styles.toolMeta} numberOfLines={3}>
-            {prettyArgs(item.args)}
-          </Text>
-        ) : null}
-        {item.output ? (
-          <Text style={styles.toolOut} numberOfLines={12}>
-            {item.output}
-          </Text>
-        ) : null}
-      </View>
+      <FadeIn>
+        <View style={[styles.rail, styles.railTool]}>
+          <View style={styles.toolHead}>
+            <Text style={styles.toolMark}>[{mark}]</Text>
+            <Text style={styles.toolHeader}>tool::{item.name}</Text>
+          </View>
+          {item.args ? (
+            <Text style={styles.toolMeta} numberOfLines={3}>
+              {prettyArgs(item.args)}
+            </Text>
+          ) : null}
+          {item.output ? (
+            <Text style={styles.toolOut} numberOfLines={12}>
+              {item.output}
+            </Text>
+          ) : null}
+        </View>
+      </FadeIn>
     );
   }
 
   if (item.kind === "approval") {
     return (
-      <View style={[styles.toolBox, styles.approvalBox]}>
-        <Text style={styles.approvalHeader}>needs approval › {item.name}</Text>
-        <Text style={styles.toolMeta}>{item.reason}</Text>
-        <Text style={styles.toolOut} numberOfLines={8}>
-          {prettyArgs(item.args)}
-        </Text>
-        {item.resolved ? (
-          <Text style={styles.status}>// {item.resolved}</Text>
-        ) : null}
-      </View>
+      <FadeIn>
+        <View style={[styles.rail, styles.railWarn]}>
+          <Text style={styles.approvalHeader}>
+            HOLD // authorize {item.name}
+          </Text>
+          <Text style={styles.toolMeta}>{item.reason}</Text>
+          <Text style={styles.toolOut} numberOfLines={8}>
+            {prettyArgs(item.args)}
+          </Text>
+          {item.resolved ? (
+            <Text style={styles.status}>∷ {item.resolved}</Text>
+          ) : null}
+        </View>
+      </FadeIn>
     );
   }
 
@@ -83,70 +126,84 @@ export function TerminalLine({ item }: { item: TimelineItem }) {
 
 const styles = StyleSheet.create({
   block: {
-    marginBottom: 14,
-    gap: 4,
+    marginBottom: 16,
+    gap: 6,
   },
   prompt: {
     color: colors.textMuted,
     fontFamily: fonts.monoMed,
-    fontSize: 12,
-    letterSpacing: 0.4,
+    fontSize: 11,
+    letterSpacing: 1.2,
   },
   promptBrand: {
-    color: colors.brandDim,
-    fontFamily: fonts.monoMed,
-    fontSize: 12,
-    letterSpacing: 0.4,
+    color: colors.brand,
+    fontFamily: fonts.monoBold,
+    fontSize: 11,
+    letterSpacing: 1.4,
   },
   user: {
     color: colors.user,
     fontFamily: fonts.mono,
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 23,
   },
   assistant: {
-    color: colors.text,
+    color: colors.assistant,
     fontFamily: fonts.mono,
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 23,
   },
   status: {
-    color: colors.textMuted,
+    color: colors.accentDim,
     fontFamily: fonts.mono,
-    fontSize: 12,
-    marginBottom: 8,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    marginBottom: 10,
   },
+  rail: {
+    borderLeftWidth: 2,
+    paddingLeft: 12,
+    marginBottom: 14,
+    gap: 5,
+    paddingVertical: 2,
+  },
+  railTool: { borderLeftColor: colors.tool },
+  railWarn: { borderLeftColor: colors.warn },
+  railDanger: { borderLeftColor: colors.danger },
   errorLabel: {
     color: colors.danger,
-    fontFamily: fonts.monoMed,
-    fontSize: 12,
+    fontFamily: fonts.monoBold,
+    fontSize: 11,
+    letterSpacing: 1.2,
   },
   error: {
     color: colors.danger,
     fontFamily: fonts.mono,
-    fontSize: 14,
+    fontSize: 13,
     lineHeight: 20,
   },
-  toolBox: {
-    borderLeftWidth: 2,
-    borderLeftColor: colors.tool,
-    paddingLeft: 10,
-    marginBottom: 12,
-    gap: 4,
+  toolHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
-  approvalBox: {
-    borderLeftColor: colors.warn,
+  toolMark: {
+    color: colors.accent,
+    fontFamily: fonts.monoBold,
+    fontSize: 11,
+    letterSpacing: 0.8,
   },
   toolHeader: {
     color: colors.tool,
     fontFamily: fonts.monoBold,
     fontSize: 12,
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
   },
   approvalHeader: {
     color: colors.warn,
     fontFamily: fonts.monoBold,
     fontSize: 12,
+    letterSpacing: 0.6,
   },
   toolMeta: {
     color: colors.textMuted,

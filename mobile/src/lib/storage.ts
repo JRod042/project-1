@@ -8,6 +8,21 @@ const API_KEY_SECURE = "omni.apiKey";
 const SERVER_TOKEN_SECURE = "omni.serverToken";
 const OPENCLAW_TOKEN_SECURE = "omni.openclawToken";
 
+export function isLoopbackServerUrl(url: string): boolean {
+  try {
+    const u = new URL(url.trim());
+    const host = u.hostname.toLowerCase();
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "0.0.0.0" ||
+      host === "::1"
+    );
+  } catch {
+    return /localhost|127\.0\.0\.1/.test(url);
+  }
+}
+
 function lanHost(): string | null {
   const hostUri = Constants.expoConfig?.hostUri || Constants.linkingUri || "";
   const match = String(hostUri).match(
@@ -22,7 +37,7 @@ function lanHost(): string | null {
 export function defaultServerUrl(): string {
   const host = lanHost();
   if (host) return `http://${host}:8787`;
-  // Loopback only works on Simulator. On a real iPhone/iPad, set SYS → server URL.
+  // TestFlight / store builds have no Metro host — user must set SYS → LAN/tunnel URL.
   return "http://127.0.0.1:8787";
 }
 
@@ -68,21 +83,19 @@ export async function loadSettings(): Promise<AppSettings> {
       openclawToken = parsed.openclawToken || "";
     }
 
-    // If user never customized server URL, refresh LAN default from current host.
+    // Keep a saved custom URL. Only refresh when unset / still loopback default.
+    const savedServer = parsed.serverUrl?.trim() || "";
     const serverUrl =
-      !parsed.serverUrl ||
-      parsed.serverUrl === "http://127.0.0.1:8787" ||
-      parsed.serverUrl === "http://localhost:8787"
+      !savedServer || isLoopbackServerUrl(savedServer)
         ? base.serverUrl
-        : parsed.serverUrl;
+        : savedServer;
 
-    // Migrate stale loopback defaults; physical devices need LAN/Tailscale.
+    // Migrate stale loopback OpenClaw defaults; physical devices need LAN/Tailscale.
+    const savedOpenclaw = parsed.openclawUrl?.trim() || "";
     const openclawUrl =
-      !parsed.openclawUrl ||
-      parsed.openclawUrl === "http://127.0.0.1:18789" ||
-      parsed.openclawUrl === "http://localhost:18789"
+      !savedOpenclaw || isLoopbackServerUrl(savedOpenclaw)
         ? base.openclawUrl
-        : parsed.openclawUrl;
+        : savedOpenclaw;
 
     return {
       ...base,
