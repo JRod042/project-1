@@ -2,7 +2,7 @@
 
 Canonical live checklist: **[../AUDIT.md](../AUDIT.md)**
 
-That document reflects the merged P0–P2 hardening (auth, shell policy, approvals, rate limits, tests, mobile cancel/sessions/SSE, streaming, deploy docs).
+Primary runtime is **OpenClaw** — see **[REPO_DECISION.md](REPO_DECISION.md)** and OpenClaw’s own [security guide](https://docs.openclaw.ai/gateway/security). The checklist in `AUDIT.md` covers the **legacy** Omni `server/` + mobile SYS.
 
 Historical scorecard / pre-fix findings from the Grok integration pass are preserved below for context.
 
