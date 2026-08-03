@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
-  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -30,7 +29,7 @@ import { SettingsSheet } from "./src/components/SettingsSheet";
 import { SessionDrawer } from "./src/components/SessionDrawer";
 import { UplinkBar } from "./src/components/UplinkBar";
 import { ApiError, getSession, streamChat } from "./src/lib/api";
-import { controlUiUrl, normalizeOpenclawBaseUrl } from "./src/lib/openclaw";
+import { openControlUi } from "./src/lib/openclawLaunch";
 import {
   isLoopbackServerUrl,
   loadSettings,
@@ -252,37 +251,24 @@ export default function App() {
 
   const openOpenclawUi = useCallback(async () => {
     if (!settings) return;
-    const base = normalizeOpenclawBaseUrl(settings.openclawUrl);
-    if (!base) {
-      append({
-        id: uid("err"),
-        kind: "error",
-        text: "Set OpenClaw Control UI URL in SYS (LAN/Tailscale IP:18789 — not localhost).",
-      });
-      setSettingsOpen(true);
+    const result = await openControlUi(
+      settings.openclawUrl,
+      settings.openclawToken
+    );
+    if (!result.ok) {
+      append({ id: uid("err"), kind: "error", text: result.detail });
+      if (result.reason === "missing_url" || result.reason === "loopback") {
+        setSettingsOpen(true);
+      }
       return;
     }
-    const url = controlUiUrl(base, settings.openclawToken);
-    const hasToken = Boolean(settings.openclawToken.trim());
-    try {
-      await Linking.openURL(url);
-      append({
-        id: uid("st"),
-        kind: "status",
-        text: hasToken
-          ? `opened control ui · ${base} · token via #token=`
-          : `opened control ui · ${base} · set gateway token in SYS for auto-auth`,
-      });
-    } catch (err) {
-      append({
-        id: uid("err"),
-        kind: "error",
-        text:
-          err instanceof Error
-            ? err.message
-            : `Could not open ${base}. Check SYS URL.`,
-      });
-    }
+    append({
+      id: uid("st"),
+      kind: "status",
+      text: result.usedToken
+        ? `opened control ui · ${result.url} · token via #token=`
+        : `opened control ui · ${result.url} · set gateway token in SYS for auto-auth`,
+    });
   }, [append, settings]);
 
   const cancelRun = useCallback(() => {

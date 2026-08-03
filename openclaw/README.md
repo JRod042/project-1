@@ -90,7 +90,8 @@ In **SYS**:
 1. Runtime → **OpenClaw**
 2. Control UI URL → `http://<LAN-IP>:18789` (not localhost on iPad)
 3. Gateway token → from `~/.openclaw/openclaw.json` (`gateway.auth.token`) or `openclaw/.env`
-4. **OPEN CONTROL UI** launches Safari as `…/#token=…`
+4. **OPEN CONTROL UI** launches an in-app browser as `…#token=…`
+   (avoids iOS `Linking` escaping `#` → `%23`, which breaks OpenClaw auth)
 
 Native SSE chat against OpenClaw’s WebSocket protocol is not mirrored 1:1 yet; Control UI + Telegram are the supported operator paths. Legacy Omni SSE remains available under Runtime → **Legacy Omni**.
 

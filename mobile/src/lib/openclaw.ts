@@ -6,13 +6,17 @@ export function normalizeOpenclawBaseUrl(url: string): string {
 /**
  * OpenClaw Control UI reads gateway token from the URL fragment key `token`:
  *   https://HOST:18789/#token=THE_TOKEN
+ *
+ * Prefer `#token=` (not sent to the server). Legacy `?token=` is a one-time
+ * fallback in current OpenClaw UI, but fragment is the supported form.
  */
 export function controlUiUrl(baseUrl: string, token?: string): string {
   const base = normalizeOpenclawBaseUrl(baseUrl);
   if (!base) return "";
   const trimmed = token?.trim();
   if (!trimmed) return base;
-  return `${base}/#token=${encodeURIComponent(trimmed)}`;
+  // No slash before '#' — some iOS URL serializers are picky about "/#".
+  return `${base}#token=${encodeURIComponent(trimmed)}`;
 }
 
 export function maskTokenHint(token: string): string {
