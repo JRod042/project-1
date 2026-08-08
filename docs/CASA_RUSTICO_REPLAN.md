@@ -1,25 +1,40 @@
-# Casa Rustico — product replan
+# Casa Rustico — system replan (cloud-only)
 
-Replaces the Omni personal-operator north star with an **all-around business app** for Casa Rustico.
+All-around business app for Casa Rustico.  
+**Revised:** no Linux computer, no Mac, no home server, no OpenClaw.
 
-> Assumption: Casa Rustico is a hospitality house (restaurant / events / catering). If the business mix differs (café-only, multi-location, retail), adjust module priority in §7 — the shell stays the same.
+> Assumption: hospitality house (restaurant / events / catering). Adjust modules in §8 if the mix differs.
 
 ---
 
-## 1. Why pivot
+## 0. Constraint that rewrites the system
 
-Omni solved “agent on my phone.” Casa Rustico needs “**run my business on my phone/iPad**.”
+| Gone | Implication |
+|------|-------------|
+| Linux PC / always-on host | Cannot run Docker, Omni server, OpenClaw, local Postgres |
+| Mac | Cannot local Xcode; **EAS only** |
+| LAN / Tailscale to a house machine | App must use **public HTTPS cloud** only |
 
-| Omni (old) | Casa Rustico (new) |
-|------------|--------------------|
-| Operator terminal + tools | Business HQ + service workflows |
-| OpenClaw / SSE agent brain | Business data + roles + optional house assistant |
-| Dark cyber HUD | Warm rustic hospitality brand |
-| Single timeline chat | Tabbed ops surfaces (Today, Book, Floor, House, More) |
+**Allowed infrastructure**
 
-**Keep:** Expo mobile, EAS/TestFlight, Apple team wiring, SecureStore secrets pattern, typecheck discipline.  
-**Scrap as product UI:** Atmosphere HUD, TerminalLine timeline-as-home, SYS-as-gateway console, OpenClaw-as-primary surface.  
-**Optional reuse:** thin assistant that can query house data / draft messages — never the home screen.
+1. Jorge’s iPhone / iPad (TestFlight)  
+2. Expo Application Services (build + submit)  
+3. Hosted backend (Supabase cloud default)  
+4. Optional: cloud LLM via Edge Functions  
+5. Optional later: Twilio / Stripe cloud APIs  
+
+**Setup Jorge should never need again:** install Docker, copy `.env` on a PC, set `http://192.168.x.x:18789`, leave a computer powered for the app to work.
+
+---
+
+## 1. Why this product
+
+| Omni (dead path) | Casa Rustico (live path) |
+|------------------|--------------------------|
+| Agent on a server you own | Business HQ in the cloud |
+| Gateway URL + token in SYS | Sign-in → house data |
+| Breaks without Linux host | Works anywhere with internet |
+| Cyber terminal | Warm hospitality ops UI |
 
 ---
 
@@ -27,187 +42,178 @@ Omni solved “agent on my phone.” Casa Rustico needs “**run my business on 
 
 | Persona | Primary jobs |
 |---------|----------------|
-| **Owner** | Today P&L pulse, reservations health, staff coverage, daily close, promos |
-| **Manager / maître d’** | Book table, seat party, waitlist, floor notes, comps |
-| **Kitchen** | Ticket rail, 86 items, prep lists, low-stock flags |
-| **Floor staff** | Assigned tables, course timing, guest notes |
-| **Catering / events** | Leads, menus, deposits, event day checklist |
-| **Guest** (later) | Reserve, view menu, pay deposit — separate light surface |
+| **Owner** | Today pulse, books health, coverage, daily close, promos |
+| **Manager** | Reserve, seat, waitlist, comps, floor notes |
+| **Kitchen** | Ticket rail, 86, prep, low stock |
+| **Floor** | Tables, courses, guest notes |
+| **Catering** | Leads → deposit → event day |
+| **Guest** (later) | Public booking page (hosted web), not a home server |
 
 ---
 
 ## 3. Information architecture
 
-Five roots (iPad-first; phone collapses to same tabs):
+Tabs (iPad-first):
 
-1. **Today** — one composition: date, covers booked, open tickets, staff on, money pulse, one CTA (“Seat next” / “New reservation”)
-2. **Book** — reservations, waitlist, parties, private dining
-3. **Floor** — table map / sections, open tickets, course status, 86 board
-4. **House** — menu, inventory, staff schedule, vendors, events
-5. **More** — guests CRM, reports, settings, house assistant
+1. **Today** — brand hero + today’s headline + one CTA + one real image  
+2. **Book** — reservations / waitlist / parties  
+3. **Floor** — tickets, 86, (P1) table map  
+4. **House** — menu, inventory, staff, vendors, events  
+5. **More** — guests, reports, settings, (P2) house assistant  
 
-Hero rule: first viewport of **Today** = brand + today’s headline number + one sentence + one CTA group + one real visual (dining room / plate / patio). No stat strips of six KPIs in the hero.
+**Removed forever from IA:** SYS gateway console, uplink-to-LAN bar, Open Control UI, legacy SSE mode switch.
 
 ---
 
-## 4. Module map (all-around)
+## 4. Module map
 
-### P0 — MVP (shippable house)
+### P0 — MVP (ship without any PC)
 | Module | Must have |
 |--------|-----------|
-| **Auth & roles** | Owner / manager / staff; PIN or Apple ID + role |
-| **Today board** | Covers, next arrivals, open tickets count, who is on |
-| **Reservations** | Create / edit / seat / no-show / cancel; party size; notes |
-| **Menu** | Categories, items, price, 86 toggle, allergens |
-| **Tickets (lite)** | Open ticket → items → send → fire → close (no full POS fiscal yet) |
-| **Staff roster** | Who works today; simple shift list |
-| **Daily close** | Covers, sales total (manual or import), notes, cash tip pool |
-| **Settings** | House name, hours, timezone, service periods |
+| **Cloud auth & roles** | Owner / manager / staff via Supabase Auth (email magic link or password); optional floor PIN later |
+| **Today board** | Covers, next arrivals, open tickets, who’s on — from cloud DB |
+| **Reservations** | CRUD + seat / no-show / cancel |
+| **Menu + 86** | Categories, items, price, allergens; 86 syncs realtime to all devices |
+| **Tickets lite** | Open → items → send → fire → close |
+| **Staff today** | Shift list for the date |
+| **Daily close** | Covers, sales total (manual entry OK), notes |
+| **House settings** | Name, hours, timezone, service periods — in cloud |
 
-### P1 — Operations depth
-| Module | Adds |
-|--------|------|
-| **Table map** | Sections + seats; assign reservation → table |
-| **Waitlist** | Quote time, SMS/link later |
-| **Inventory** | Par levels, low stock, receive delivery |
-| **Vendors** | Contacts + last order |
-| **Schedule** | Week view; claim / swap (manager approve) |
-| **Guests CRM** | Preferences, allergies, visit history, VIP |
-| **Events / catering** | Lead → proposal → deposit → event day |
+### P1 — Depth (still cloud-only)
+Table map, waitlist, inventory, vendors, week schedule, guests CRM, events/catering.
 
-### P2 — Growth & money
-| Module | Adds |
-|--------|------|
-| **Reports** | Sales by day/item, labor vs covers, no-show rate |
-| **Promos** | House specials, push/share cards |
-| **Payments hooks** | Stripe Terminal / Square / Toast import (choose one integration lane) |
-| **Guest reserve web** | Public booking page → same Book DB |
-| **House assistant** | “What’s 86’d?”, “Cover count Saturday?”, draft guest SMS — data-scoped |
+### P2 — Growth
+Reports, promos, Stripe/Square cloud hooks, **hosted** public booking (Vercel/Netlify/Supabase), house assistant via **Edge Function + LLM API**.
 
-Out of scope for v1: full certified POS, payroll tax engine, multi-brand franchise console.
+Out of scope v1: certified POS, payroll engine, anything needing an on-prem bridge.
 
 ---
 
-## 5. Brand & design direction
+## 5. Brand & design
 
-**Name:** Casa Rustico  
-**Signal:** rustic Italian house — wood, linen, olive, terracotta clay *used carefully* (avoid the generic “cream + terracotta AI landing” look by pairing with real photography of the room/food and a distinctive display face).
-
-| Token | Direction |
-|-------|-----------|
-| Display | Expressive serif or humanist display (e.g. Fraunces / Literata) — not Inter |
-| Body / UI | Clean grotesque for ops density (e.g. Source Sans 3) |
-| Base | Deep olive-ink / warm charcoal night for service mode; light linen day mode optional later |
-| Accent | Aged brass + leaf green (not acid lime, not purple) |
-| Imagery | Real dining room, plate, patio — full-bleed on marketing/Today hero only |
-| Motion | Soft cover reveal, ticket slide-in, reservation confirm — 2–3 intentional motions |
-
-**Do not** port Omni’s CRT/scanline/cyber brackets into Casa Rustico chrome.
+Warm rustic Italian house. Expressive display font (Fraunces / Literata), clean UI sans, olive-ink / linen / brass — not acid lime cyber HUD.  
+Real photography on Today hero. No Omni CRT/scanlines/brackets.
 
 ---
 
-## 6. Technical plan
+## 6. Technical system (revised)
 
-### Keep from this repo
-- `mobile/` Expo 57 + EAS + `mobile/IOS.md` ship path
-- Apple team `FY5H9V76QL` / existing Expo project (rebrand in place **or** new ASC app — decide in §7)
-- SecureStore / settings patterns
-- Typecheck + small pure lib tests
+### Client
+- Expo 57 app in `mobile/`
+- React Navigation tabs
+- Supabase JS client (anon key + RLS); session in SecureStore
+- **No** `serverUrl`, `openclawUrl`, `openclawToken`, uplink probes
 
-### Replace
-- `mobile/App.tsx` single terminal → React Navigation (tabs) + feature screens
-- `mobile/src/components/*` HUD → business components
-- `mobile/src/theme.ts` → Casa Rustico tokens
-- `mobile/app.config.js` name/slug/scheme/bundle/display name/splash
-- Docs north star (this file + `NORTH_STAR.md`)
+### Backend (hosted)
+**Supabase project** (cloud):
 
-### Backend (recommended)
-**Supabase (Postgres + Auth + Realtime)** or equivalent hosted Postgres:
+| Piece | Use |
+|-------|-----|
+| Auth | Staff accounts + JWT |
+| Postgres | All business tables |
+| RLS | Role-scoped row access |
+| Realtime | Tickets, 86, reservation changes across iPads |
+| Storage | Menu photos / house imagery later |
+| Edge Functions | Webhooks, SMS, LLM assistant later |
 
-| Table (sketch) | Purpose |
-|----------------|---------|
-| `profiles` | user ↔ role |
-| `locations` | single house now; multi later |
-| `service_periods` | lunch / dinner |
-| `reservations` | book / seat / status |
-| `tables` | floor map |
-| `menu_categories` / `menu_items` | menu + 86 |
-| `tickets` / `ticket_items` | floor/kitchen lite |
-| `staff` / `shifts` | roster |
-| `inventory_items` / `stock_moves` | P1 |
-| `guests` | CRM |
-| `events` | catering |
-| `daily_closes` | end of night |
+Schema sketch (unchanged intent):  
+`profiles`, `locations`, `service_periods`, `reservations`, `tables`, `menu_categories`, `menu_items`, `tickets`, `ticket_items`, `staff`, `shifts`, `inventory_items`, `stock_moves`, `guests`, `events`, `daily_closes`.
 
-API surface: Supabase client from Expo **or** thin Hono `server/` BFF if secrets/policies need a middle tier.
+### Builds & secrets
+| Secret | Where |
+|--------|-------|
+| `EXPO_TOKEN`, Apple API key | GitHub Actions / EAS (already) |
+| `EXPO_PUBLIC_SUPABASE_URL` | EAS env / `app.config.js` extras |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | EAS env |
+| Service role key | **Only** Edge Functions — never the app |
 
-### Agent layer (optional, later)
-Repurpose OpenClaw only as **House Assistant** with tools: `list_reservations`, `get_86`, `draft_guest_message`, `summarize_daily_close`. Not the default tab.
+### House assistant (P2+, optional)
+```
+App → Supabase Edge Function → xAI/OpenAI
+         ↓
+    SQL / RPC over Casa data (RLS service path carefully scoped)
+```
+**Not** OpenClaw. **Not** a process on a PC.
 
-### Legacy disposition
+### Legacy code disposition (Phase 0)
+
 | Path | Action |
 |------|--------|
-| `openclaw/` | Archive or keep as optional assistant; remove from primary README path |
-| `server/` agent tools | Freeze; do not grow Omni tools. New BFF only if needed |
-| Omni bundle `com.jrod042.omni` | **Decision A:** rename in place to Casa Rustico (same ASC app) · **B:** new bundle + new ASC app (cleaner brand, new listing) |
+| `openclaw/` | Move to `archive/legacy-omni/openclaw/` or delete in follow-up PR |
+| `server/` | Move to `archive/legacy-omni/server/` or delete |
+| Omni HUD components | Replace; do not skin |
+| Docs mentioning LAN/Tailscale/gateway | Rewrite or delete |
+| `UplinkBar`, OpenClaw SYS fields | Remove when shell lands |
 
 ---
 
-## 7. Open decisions (need Jorge)
+## 7. Day-one setup for Jorge (no computer lab)
 
-1. **Which Casa Rustico?** Single location? Restaurant only, or catering too? Confirm hours, timezone, party size rules.
-2. **Bundle identity:** keep ASC app `6797235230` and rebrand, or new App Store listing?
-3. **Payments:** none in MVP, or already on Square/Toast/Clover to import?
-4. **Guest SMS:** Twilio later, or email-only at first?
-5. **Staff auth:** shared floor PIN vs individual logins day one?
-6. **Backend preference:** Supabase vs self-hosted Postgres on existing VPS?
+1. Create free **Supabase** project in the browser (phone OK; laptop browser OK — not a server you run).  
+2. Apply SQL schema from repo (SQL editor in Supabase dashboard).  
+3. Put URL + anon key into EAS secrets / Expo env.  
+4. EAS Build → TestFlight (as today).  
+5. Open app → sign in → use Today / Book.
 
-Until answered, implementation assumes: **single location, restaurant + events, Decision A rebrand in place, no payments in MVP, individual logins, Supabase.**
-
----
-
-## 8. Delivery phases
-
-### Phase 0 — Foundations (this replan → code shell)
-- [ ] Lock north star + brand tokens
-- [ ] Rebrand `app.config.js` + assets (icon/splash)
-- [ ] Add navigation shell: Today / Book / Floor / House / More
-- [ ] Stub screens with real copy; remove terminal as home
-- [ ] Choose backend; wire auth + empty schema
-
-### Phase 1 — MVP service
-- [ ] Reservations CRUD + Today arrivals
-- [ ] Menu + 86
-- [ ] Tickets lite + kitchen rail
-- [ ] Staff today + daily close
-- [ ] TestFlight build (`buildNumber` bump)
-
-### Phase 2 — House depth
-- [ ] Table map, waitlist, inventory, schedule, guests, events
-
-### Phase 3 — Growth
-- [ ] Reports, promos, payment/import lane, public booking, house assistant
+If Supabase dashboard feels heavy on phone-only, Phase 0 can ship **mock local data** on TestFlight first, then wire cloud when a browser is available.
 
 ---
 
-## 9. Success metrics
+## 8. Open decisions
+
+1. Single location? Restaurant + catering?  
+2. Rebrand ASC app `6797235230` vs new listing?  
+3. Payments: none in MVP?  
+4. Auth day one: email/password vs magic link vs shared floor PIN?  
+5. ~~Backend: Supabase vs self-hosted VPS~~ → **Settled: hosted Supabase (or equivalent cloud). No self-hosted.**  
+6. First TestFlight: mock data only, or wait for Supabase project?
+
+Defaults until answered: **single location, restaurant + events, rebrand in place, no payments, email auth, mock-first then Supabase.**
+
+---
+
+## 9. Delivery phases
+
+### Phase 0 — Cloud-only foundations
+- [x] Docs: no-Linux system replan  
+- [ ] Rebrand app config + assets  
+- [ ] Tab shell: Today / Book / Floor / House / More  
+- [ ] Strip SYS gateway / OpenClaw / uplink  
+- [ ] Mock data layer so TestFlight works offline-of-backend  
+- [ ] Archive/delete `openclaw/` + Omni `server/` from product path  
+- [ ] Supabase schema SQL in repo + RLS stubs  
+
+### Phase 1 — MVP service (cloud)
+- [ ] Auth + roles  
+- [ ] Reservations + Today  
+- [ ] Menu + 86 realtime  
+- [ ] Tickets lite  
+- [ ] Staff today + daily close  
+- [ ] TestFlight bump  
+
+### Phase 2 — House depth  
+### Phase 3 — Growth + optional cloud assistant  
+
+---
+
+## 10. Success metrics
 
 | Signal | Target |
 |--------|--------|
-| Owner opens **Today** before service | Daily habit |
-| Reservation created without paper | 100% of bookings in-app |
-| 86 item visible to floor + kitchen | < 30s after toggle |
+| App usable with home PC **powered off / gone** | Always |
+| Owner opens Today before service | Daily |
+| Reservation without paper | 100% |
+| 86 visible on all devices | < 30s |
 | Daily close submitted | Every service night |
-| Staff training time | < 15 minutes to seat a party |
 
 ---
 
-## 10. First implementation slice (when approved)
+## 11. First implementation slice (next code)
 
-1. Update README + brand assets to Casa Rustico  
-2. Navigation shell + Today hero (brand-first)  
-3. Local mock data for reservations/menu so UI is reviewable on TestFlight without backend  
-4. Supabase schema migration + auth  
-5. Wire Book + Menu for real data  
+1. Rebrand Expo shell + navigation + Today hero  
+2. In-app mock store (AsyncStorage) so nothing needs a server  
+3. Remove OpenClaw/legacy connect UX  
+4. Add `supabase/schema.sql` + client stub behind a feature flag  
+5. Archive legacy Omni server folders  
 
-Do **not** start by porting Omni chat into a restaurant skin.
+Do **not** revive LAN gateway setup. Do **not** port Omni chat.

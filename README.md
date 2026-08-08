@@ -1,39 +1,43 @@
 # Casa Rustico
 
-**Pocket HQ for running the house** — reservations, floor, kitchen, staff, stock, guests, and close.
-
-> Product replan in progress. Omni (personal operator / OpenClaw) is the prior app in this repo; it is being replaced. Pin these docs:
+**Pocket HQ for running the house** — on iPhone/iPad only.  
+**No Linux computer. No Mac. No home server.**
 
 | Doc | Purpose |
 |-----|---------|
-| **[docs/NORTH_STAR.md](docs/NORTH_STAR.md)** | What Casa Rustico is |
-| **[docs/CASA_RUSTICO_REPLAN.md](docs/CASA_RUSTICO_REPLAN.md)** | Modules, phases, stack, open decisions |
-| **[docs/REPO_DECISION.md](docs/REPO_DECISION.md)** | Keep vs scrap from Omni |
+| **[docs/NORTH_STAR.md](docs/NORTH_STAR.md)** | Product + hard constraints |
+| **[docs/CASA_RUSTICO_REPLAN.md](docs/CASA_RUSTICO_REPLAN.md)** | Full system replan |
+| **[docs/REPO_DECISION.md](docs/REPO_DECISION.md)** | Cloud stack; why OpenClaw is out |
 
-## Target shape
+## System (only this)
 
 ```
-iPad / iPhone (Expo → TestFlight)
-    │
-    ├─ Today · Book · Floor · House · More
-    │
-    └─ Business API (Postgres)  ± optional house assistant
+iPhone / iPad  ──HTTPS──▶  Supabase cloud (auth + Postgres + realtime)
+       │
+       └── builds via Expo EAS → TestFlight
 ```
 
-## Current code state
+| Not part of the product | Why |
+|-------------------------|-----|
+| OpenClaw / Docker / `:18789` | Needs a host we no longer have |
+| Omni `server/` / `:8787` | Same |
+| LAN IP, Tailscale, “leave PC on” | Broken without the Linux box |
+
+## Repo status
 
 | Area | Status |
 |------|--------|
-| `mobile/` | Still ships **Omni** HUD / OpenClaw launcher on TestFlight |
-| `openclaw/` + `server/` | Legacy operator stack — freeze; optional assistant later |
-| Docs | **Casa Rustico north star** (this replan) |
+| Docs | **Cloud-only Casa Rustico** (source of truth) |
+| `mobile/` | Still contains legacy Omni UI — being replaced |
+| `openclaw/`, `server/` | Legacy — archive/delete in Phase 0 |
 
-Ship path for iOS remains EAS → TestFlight (`mobile/IOS.md`) until the rebranded shell lands.
+## Ship path
 
-## Next implementation slice (after decisions)
+EAS → TestFlight (`mobile/IOS.md`). Configure cloud keys in EAS secrets — never a machine-local gateway.
 
-1. Confirm open decisions in the replan (§7)  
-2. Rebrand Expo shell + tab navigation + Today hero  
-3. Mock data TestFlight → then Supabase schema + Book/Menu  
+## Next build slice
 
-Do not skin the Omni chat terminal as a restaurant app.
+1. Rebranded tabs + Today  
+2. Mock data (works with zero backend)  
+3. Supabase schema + auth  
+4. Remove gateway/SYS uplink UX  
