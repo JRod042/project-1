@@ -32,7 +32,7 @@ iPhone / iPad  ──HTTPS──▶  Supabase cloud (auth + Postgres + realtime)
 | `archive/legacy-omni-mobile/` | Old Omni HUD (not compiled) |
 | `openclaw/`, `server/` | Legacy host stacks — not required to run the app |
 
-Welcome motion studied from [Appllama/top-welcome-screens](https://github.com/Appllama/top-welcome-screens) (**GPL — patterns only, no code copied**). See `docs/WELCOME_REFERENCE.md`.
+Welcome uses the [Appllama/top-welcome-screens](https://github.com/Appllama/top-welcome-screens) **Reanimated engine** (GPL-3.0, vendored under `mobile/src/welcome/shared/`) with original Casa Rustico branding. See `docs/WELCOME_REFERENCE.md`.
 
 ## Ship path
 
