@@ -39,6 +39,7 @@ export default function App() {
 
   const [ready, setReady] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [welcomeReplayKey, setWelcomeReplayKey] = useState(0);
   const [tab, setTab] = useState<TabId>("today");
 
   useEffect(() => {
@@ -69,7 +70,12 @@ export default function App() {
   }
 
   if (showWelcome) {
-    return <WelcomeScreen onEnter={() => void enterHouse()} />;
+    return (
+      <WelcomeScreen
+        replayKey={welcomeReplayKey}
+        onEnter={() => void enterHouse()}
+      />
+    );
   }
 
   return (
@@ -86,6 +92,7 @@ export default function App() {
           {tab === "more" ? (
             <MoreScreen
               onShowWelcome={() => {
+                setWelcomeReplayKey((k) => k + 1);
                 setShowWelcome(true);
               }}
             />

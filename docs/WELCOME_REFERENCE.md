@@ -1,26 +1,31 @@
-# Welcome screen reference
+# Welcome screen — Appllama engine
 
-Technical inspiration only:
+We **use** the welcome motion engine from
+[Appllama/top-welcome-screens](https://github.com/Appllama/top-welcome-screens)
+(Expo SDK 57 · GPL-3.0).
 
-**[Appllama/top-welcome-screens](https://github.com/Appllama/top-welcome-screens)** — Expo SDK 57 welcome studies (GPL-3.0).
+## What’s vendored
 
-## License rule
+| Path | Source |
+|------|--------|
+| `mobile/src/welcome/shared/*` | Appllama shared helpers (timeline, ReferenceCanvas, gates, pressable, geometry) |
+| `mobile/src/welcome/GPL-3.0.txt` | Upstream license |
+| `mobile/src/welcome/NOTICE.md` | Attribution |
 
-Their **code is GPL-3.0**. We do **not** vendor or copy those components into this repo.  
-We study motion *patterns* and ship an **original** Casa Rustico welcome.
+## What’s ours
 
-Per their NOTICE: replace all third-party branding; make composition and motion uniquely ours.
+| Path | Notes |
+|------|--------|
+| `mobile/src/welcome/CasaRusticoWelcome.tsx` | Casa Rustico brand, copy, colors, CTAs |
+| `mobile/src/components/WelcomeScreen.tsx` | Thin app wrapper |
 
-## Patterns we adapted (not copied)
+## Studies used as structure (branding fully replaced)
 
-| Study | Pattern used |
-|-------|----------------|
-| onX Hunt / Strava | Short brand-color splash hold → hard cut / dissolve to CTA page |
-| Yazio | Staggered entrance of house motifs after splash (ours: plate / leaf / clock as simple shapes) |
-| SCRL | Dark field + staggered opacity for copy and CTA |
+- **onX Hunt** — splash hold (~1.067s) → CTA page  
+- **Yazio** — staggered spring motif entrances after splash  
 
-## Our implementation
+No third-party logos, mascots, assets, or trade dress are shipped.
 
-- `mobile/src/components/WelcomeScreen.tsx` — original RN `Animated` timeline (no Reanimated dependency)
-- Brand: Casa Rustico · olive / brass / linen — not any referenced app’s trade dress
-- Actions: Enter the house → Today (cloud mock; auth later)
+## Dependencies
+
+`react-native-reanimated`, `react-native-worklets`, `babel.config.js` reanimated plugin.
