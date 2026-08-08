@@ -1,30 +1,48 @@
-# Repository decision — what should Omni be built on?
+# Repository decision — cloud-only Casa Rustico
 
-Checked via Cursor cloud agents + GitHub (2026-08-02).
+Supersedes Omni, OpenClaw, and any self-hosted Linux runtime.
+
+## Constraint that drives everything
+
+**No Linux computer. No Mac.**  
+Product must run on **iPhone/iPad + cloud services + EAS**.
 
 ## What we’re building
 
-From prior Omni sessions: **Grok/Antigravity-class operator on iPhone/iPad** — tools, approvals, live timeline — shippable via **EAS → TestFlight with no Mac**.
+**Casa Rustico** — hospitality business HQ (Today, Book, Floor, House, More).  
+See **[NORTH_STAR.md](./NORTH_STAR.md)** and **[CASA_RUSTICO_REPLAN.md](./CASA_RUSTICO_REPLAN.md)**.
 
-## Candidates
+## Stack decision
 
-| Repo | Fit | Blocker for Jorge’s constraints |
-|------|-----|----------------------------------|
-| `JRod042/project-1` (Omni custom) | Expo + Hono SSE already on TestFlight | Reimplements gateway/tools/channels poorly vs mature stacks |
-| [openclaw/openclaw](https://github.com/openclaw/openclaw) (~385k★) | Jarvis-class self-hosted assistant; Linux VPS; Control UI; Telegram; Grok | Native iOS app needs Xcode — **bypass via Control UI + Telegram + Expo launcher** |
-| [zfifteen/handrail](https://github.com/zfifteen/handrail) | iPhone supervisor for Grok Build | **Requires Mac** |
-| [Pedroshakoor/grok-build-ios](https://github.com/Pedroshakoor/grok-build-ios) | Official-ish Grok pager UI | **Requires Mac + Xcode** |
-| [daniel-farina/grok-remote](https://github.com/daniel-farina/grok-remote) | ACP web UI / PWA | Host still runs Grok CLI on a workstation |
+| Layer | Choice | Why |
+|-------|--------|-----|
+| Client | Expo app on TestFlight | Already shipping without a Mac |
+| Build | EAS Build + Submit | Cloud CI; no Xcode machine |
+| Data / auth / realtime | **Supabase cloud** (default) | Hosted Postgres; no home server; free tier to start |
+| Secrets | Expo env / Supabase dashboard / EAS secrets | Never git; never a `.env` on a PC Jorge lost |
+| Assistant (P2+) | Supabase Edge Function → xAI/OpenAI API | Cloud-only; **not** OpenClaw |
+| Payments (P2+) | Stripe / Square cloud APIs | No local POS bridge required for v1 |
 
-## Decision
+## Rejected (because they need a Linux host)
 
-**Primary runtime = OpenClaw Gateway** (official Docker/npm), documented under `openclaw/`.
+| Old path | Status |
+|----------|--------|
+| `openclaw/` Docker gateway | **Delete from product path** — cannot run without a host |
+| `server/` Omni SSE agent | **Delete from product path** — same |
+| SYS “server URL / gateway token” | **Remove** from app UX |
+| Tailscale / LAN IP docs | **Remove** as primary setup |
 
-**Keep** Expo `mobile/` as the TestFlight brand shell + Control UI launcher.  
-**Keep** `server/` as **legacy** Omni SSE for offline/dev continuity — not the north-star brain.
+Keep those folders in git history only until Phase 0 deletes or moves them to `archive/legacy-omni/` — they must not appear in README setup.
 
-## Implementation in this PR
+## What we keep from Omni era
 
-- `openclaw/docker-compose.yml` + `up.sh` using `openclaw/openclaw:latest`
-- Docs + north-star update
-- Mobile SYS: Runtime OpenClaw | Legacy Omni
+| Keep | Why |
+|------|-----|
+| `mobile/` Expo + EAS wiring | Only ship path without Mac/Linux |
+| Apple team / ASC / Expo project | Rebrand or new listing TBD |
+| No secrets in git | Still law |
+| Typecheck discipline | Still law |
+
+## Success test for any proposal
+
+If a feature requires Jorge to “run something on a computer at home or a VPS he SSHs into daily,” **reject it** and redesign for hosted cloud.

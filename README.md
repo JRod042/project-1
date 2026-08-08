@@ -1,90 +1,43 @@
-# Omni
+# Casa Rustico
 
-**Jarvis for your iPad/iPhone — powered by [OpenClaw](https://github.com/openclaw/openclaw).**
+**Pocket HQ for running the house** — on iPhone/iPad only.  
+**No Linux computer. No Mac. No home server.**
+
+| Doc | Purpose |
+|-----|---------|
+| **[docs/NORTH_STAR.md](docs/NORTH_STAR.md)** | Product + hard constraints |
+| **[docs/CASA_RUSTICO_REPLAN.md](docs/CASA_RUSTICO_REPLAN.md)** | Full system replan |
+| **[docs/REPO_DECISION.md](docs/REPO_DECISION.md)** | Cloud stack; why OpenClaw is out |
+
+## System (only this)
 
 ```
-┌──────────────┐   Control UI / Telegram   ┌────────────────┐  tools  ┌───────────┐
-│ Omni iOS app │ ─────────────────────────▶ │ OpenClaw       │ ──────▶ │ Workspace │
-│ (TestFlight) │                            │ Gateway :18789 │         │ + channels│
-└──────────────┘                            └────────────────┘         └───────────┘
+iPhone / iPad  ──HTTPS──▶  Supabase cloud (auth + Postgres + realtime)
+       │
+       └── builds via Expo EAS → TestFlight
 ```
 
-| Item | Value |
-|------|-------|
-| App | **Omni** |
-| Bundle ID | `com.jrod042.omni` |
-| Expo | `@jrod42/omni` |
-| Agent runtime | **OpenClaw** (primary) · legacy Omni `server/` optional |
-| Min iOS | 16.4 |
-| Install path | EAS → **TestFlight** (no Mac required) |
+| Not part of the product | Why |
+|-------------------------|-----|
+| OpenClaw / Docker / `:18789` | Needs a host we no longer have |
+| Omni `server/` / `:8787` | Same |
+| LAN IP, Tailscale, “leave PC on” | Broken without the Linux box |
 
-## Why OpenClaw?
+## Repo status
 
-We audited Cursor history + open-source options. For a personal operator that *acts*, **OpenClaw is the better repository** than growing a custom Hono agent. See **[docs/REPO_DECISION.md](docs/REPO_DECISION.md)**.
+| Area | Status |
+|------|--------|
+| Docs | **Cloud-only Casa Rustico** (source of truth) |
+| `mobile/` | Still contains legacy Omni UI — being replaced |
+| `openclaw/`, `server/` | Legacy — archive/delete in Phase 0 |
 
-## 1) Run the agent (OpenClaw)
+## Ship path
 
-**Docker wrapper** (this repo):
+EAS → TestFlight (`mobile/IOS.md`). Configure cloud keys in EAS secrets — never a machine-local gateway.
 
-```bash
-cd openclaw
-cp .env.example .env   # OPENCLAW_GATEWAY_TOKEN; XAI_API_KEY optional if using OAuth
-./up.sh                # → http://HOST:18789
-```
+## Next build slice
 
-**npm global** (host daemon — fine if already onboarded):
-
-```bash
-npm i -g openclaw@latest
-openclaw onboard --install-daemon
-openclaw gateway status   # :18789
-```
-
-xAI **OAuth** from onboard works without `XAI_API_KEY`. Full notes: **[openclaw/README.md](openclaw/README.md)**.
-
-Fastest phone path without rebuilding the app: add **Telegram** to the gateway (instructions in that README).
-
-## 2) iPad / TestFlight
-
-Full steps: **[mobile/IOS.md](mobile/IOS.md)**
-
-Short version:
-
-1. Expo → Credentials → iOS → App Store for `com.jrod042.omni`
-2. GitHub base directory = `mobile`
-3. Builds → Build from GitHub → `main` → iOS → `production`
-4. Submit → TestFlight → install on iPad
-5. In app **SYS** → Runtime **OpenClaw** → Control UI URL `http://<LAN-IP>:18789` + gateway token → **OPEN CONTROL UI** (opens `…/#token=…`)
-
-## Legacy Omni server (optional)
-
-The original SSE agent remains under `server/` for local experiments:
-
-```bash
-cd server
-cp .env.example .env
-npm install && npm start   # http://0.0.0.0:8787
-```
-
-In the app, set Runtime → **Legacy Omni** and point at `:8787`.
-
-## Repo layout
-
-| Path | Role |
-|------|------|
-| `openclaw/` | **Primary** OpenClaw Gateway (Docker) |
-| `mobile/` | Expo app (EAS prebuilds iOS) |
-| `server/` | Legacy Omni SSE agent |
-| `docs/` | North star + repo decision |
-| `cursor-prompts/` | Sequential Cursor follow-up prompts |
-
-## North star & prompts
-
-- Product intent: **[docs/NORTH_STAR.md](docs/NORTH_STAR.md)**
-- Repo choice: **[docs/REPO_DECISION.md](docs/REPO_DECISION.md)**
-- Security checklist: **[AUDIT.md](AUDIT.md)** (legacy server hardening)
-- Cursor prompt pack: **[cursor-prompts/](cursor-prompts/)**
-
-## License
-
-MIT (see `mobile/LICENSE`). OpenClaw is MIT (OpenClaw Foundation).
+1. Rebranded tabs + Today  
+2. Mock data (works with zero backend)  
+3. Supabase schema + auth  
+4. Remove gateway/SYS uplink UX  
