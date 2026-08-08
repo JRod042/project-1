@@ -47,7 +47,6 @@ const config = {
     "expo-secure-store",
     "expo-font",
     "expo-image",
-    "react-native-reanimated",
     [
       "expo-splash-screen",
       {
