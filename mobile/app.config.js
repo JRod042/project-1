@@ -1,45 +1,39 @@
 /** @type {import('expo/config').ExpoConfig} */
 const config = {
-  name: "Omni",
+  name: "Casa Rustico",
   slug: "omni",
-  version: "0.1.0",
+  version: "0.2.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "dark",
-  scheme: "omni",
+  scheme: "casarustico",
   newArchEnabled: true,
   splash: {
     image: "./assets/splash-icon.png",
     resizeMode: "contain",
-    backgroundColor: "#070A0F",
+    backgroundColor: "#1A2118",
   },
   ios: {
     supportsTablet: true,
+    // Keep existing ASC / TestFlight identity; display name rebranded.
     bundleIdentifier: "com.jrod042.omni",
     // Bump before each new ASC upload if that number was already used.
     // EAS autoIncrement is unsupported with app.config.js.
-    buildNumber: "6",
+    buildNumber: "7",
     usesAppleSignIn: false,
     infoPlist: {
-      CFBundleDisplayName: "Omni",
-      CFBundleName: "Omni",
+      CFBundleDisplayName: "Casa Rustico",
+      CFBundleName: "Casa Rustico",
       LSRequiresIPhoneOS: true,
       UIRequiredDeviceCapabilities: ["arm64"],
       UIStatusBarStyle: "UIStatusBarStyleLightContent",
-      // Allow talking to the Omni agent server on LAN over HTTP.
-      NSAppTransportSecurity: {
-        NSAllowsLocalNetworking: true,
-      },
-      NSLocalNetworkUsageDescription:
-        "Omni connects to your personal agent server on the local network so it can act on your behalf.",
-      NSBonjourServices: ["_http._tcp."],
       ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
     package: "com.jrod042.omni",
     adaptiveIcon: {
-      backgroundColor: "#070A0F",
+      backgroundColor: "#1A2118",
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundImage: "./assets/android-icon-background.png",
       monochromeImage: "./assets/android-icon-monochrome.png",
@@ -52,10 +46,12 @@ const config = {
   plugins: [
     "expo-secure-store",
     "expo-font",
+    "expo-image",
+    "react-native-reanimated",
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#070A0F",
+        backgroundColor: "#1A2118",
         image: "./assets/splash-icon.png",
         imageWidth: 200,
       },

@@ -27,17 +27,19 @@ iPhone / iPad  ──HTTPS──▶  Supabase cloud (auth + Postgres + realtime)
 
 | Area | Status |
 |------|--------|
-| Docs | **Cloud-only Casa Rustico** (source of truth) |
-| `mobile/` | Still contains legacy Omni UI — being replaced |
-| `openclaw/`, `server/` | Legacy — archive/delete in Phase 0 |
+| Docs | Cloud-only Casa Rustico |
+| `mobile/` | Welcome + Today/Book/Floor/House/More with **mock data** |
+| `archive/legacy-omni-mobile/` | Old Omni HUD (not compiled) |
+| `openclaw/`, `server/` | Legacy host stacks — not required to run the app |
+
+Welcome uses the [Appllama/top-welcome-screens](https://github.com/Appllama/top-welcome-screens) **Reanimated engine** (GPL-3.0, vendored under `mobile/src/welcome/shared/`) with original Casa Rustico branding. See `docs/WELCOME_REFERENCE.md`.
 
 ## Ship path
 
-EAS → TestFlight (`mobile/IOS.md`). Configure cloud keys in EAS secrets — never a machine-local gateway.
+EAS → TestFlight (`mobile/IOS.md`). Display name **Casa Rustico**; bundle still `com.jrod042.omni` until a new ASC listing is chosen.
 
-## Next build slice
+## Next
 
-1. Rebranded tabs + Today  
-2. Mock data (works with zero backend)  
-3. Supabase schema + auth  
-4. Remove gateway/SYS uplink UX  
+1. Supabase schema + auth  
+2. Wire Book/Menu to cloud  
+3. Real house photography on Today hero  
