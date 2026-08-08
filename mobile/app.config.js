@@ -7,9 +7,7 @@ const config = {
   icon: "./assets/icon.png",
   userInterfaceStyle: "dark",
   scheme: "casarustico",
-  // Reanimated 4.5.1 + worklets hit Swift `getModule` internal errors on New Arch
-  // EAS builds; keep classic arch until versions catch up.
-  newArchEnabled: false,
+  newArchEnabled: true,
   splash: {
     image: "./assets/splash-icon.png",
     resizeMode: "contain",
@@ -21,7 +19,7 @@ const config = {
     bundleIdentifier: "com.jrod042.omni",
     // Bump before each new ASC upload if that number was already used.
     // EAS autoIncrement is unsupported with app.config.js.
-    buildNumber: "9",
+    buildNumber: "10",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Casa Rustico",

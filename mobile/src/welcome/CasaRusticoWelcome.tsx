@@ -1,63 +1,28 @@
 /**
- * Casa Rustico welcome — Appllama welcome-engine (GPL) + original brand.
+ * Casa Rustico welcome — Appllama ReferenceCanvas/geometry (GPL shared/) +
+ * original brand, timed with React Native Animated (no Reanimated native module).
  *
- * Structure/timing follow the onX Hunt–style study in
- * https://github.com/Appllama/top-welcome-screens (splash hold → CTA page).
- * Motif stagger echoes the Yazio study’s spring entrances.
- * All copy, colors, and marks are Casa Rustico originals.
+ * Structure follows Appllama onX Hunt (splash hold → CTA) and Yazio (staggered motifs).
  */
+import { useEffect, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
-import Animated, {
+import {
+  Animated,
   Easing,
-  interpolate,
-  useAnimatedStyle,
-  type SharedValue,
-} from "react-native-reanimated";
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import type { CasaWelcomeScreenProps } from "./types";
 import { resolveActionPress } from "./shared/actions";
-import { box, segment } from "./shared/geometry";
-import { useInteractionGate } from "./shared/interaction-gate";
+import { box } from "./shared/geometry";
 import { ReplicaPressable } from "./shared/pressable";
 import { ReferenceCanvas } from "./shared/reference-canvas";
-import { useWelcomeTimeline } from "./shared/timeline";
 
-const SPLASH_MS = 1067;
-const TOTAL_MS = 1733;
-
-type MotifProps = {
-  label: string;
-  glyph: string;
-  enter: readonly [number, number];
-  fromX: number;
-  time: SharedValue<number>;
-  boxStyle: object;
-};
-
-function Motif({ label, glyph, enter, fromX, time, boxStyle }: MotifProps) {
-  const style = useAnimatedStyle(() => {
-    const progress = Easing.out(Easing.back(1.4))(
-      segment(time.value, enter[0], enter[1])
-    );
-    return {
-      opacity: time.value >= enter[0] ? 1 : 0,
-      transform: [
-        { translateX: interpolate(progress, [0, 1], [fromX, 0]) },
-        { translateY: interpolate(progress, [0, 1], [28, 0]) },
-        { scale: interpolate(progress, [0, 1], [0.92, 1]) },
-      ],
-    };
-  });
-
-  return (
-    <Animated.View style={[boxStyle, style]}>
-      <Text style={styles.motifGlyph}>{glyph}</Text>
-      <Text style={styles.motifLabel}>{label}</Text>
-    </Animated.View>
-  );
-}
+const SPLASH_HOLD_MS = 900;
+const SPLASH_FADE_MS = 420;
 
 export function CasaRusticoWelcome({
   autoplay = true,
@@ -65,26 +30,91 @@ export function CasaRusticoWelcome({
   onPrimaryPress,
   replayKey = 0,
 }: CasaWelcomeScreenProps) {
-  const time = useWelcomeTimeline(TOTAL_MS, autoplay, replayKey);
-  const interactionsReady = useInteractionGate({
-    autoplay,
-    delayMs: SPLASH_MS,
-    replayKey,
+  const splash = useRef(new Animated.Value(1)).current;
+  const content = useRef(new Animated.Value(0)).current;
+  const motifA = useRef(new Animated.Value(0)).current;
+  const motifB = useRef(new Animated.Value(0)).current;
+  const motifC = useRef(new Animated.Value(0)).current;
+  const cta = useRef(new Animated.Value(0)).current;
+  const [interactionsReady, setInteractionsReady] = useState(!autoplay);
+
+  useEffect(() => {
+    splash.setValue(autoplay ? 1 : 0);
+    content.setValue(autoplay ? 0 : 1);
+    motifA.setValue(autoplay ? 0 : 1);
+    motifB.setValue(autoplay ? 0 : 1);
+    motifC.setValue(autoplay ? 0 : 1);
+    cta.setValue(autoplay ? 0 : 1);
+    setInteractionsReady(!autoplay);
+
+    if (!autoplay) return;
+
+    const anim = Animated.sequence([
+      Animated.delay(SPLASH_HOLD_MS),
+      Animated.timing(splash, {
+        toValue: 0,
+        duration: SPLASH_FADE_MS,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.stagger(110, [
+        Animated.timing(content, {
+          toValue: 1,
+          duration: 480,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.spring(motifA, {
+          toValue: 1,
+          friction: 7,
+          tension: 60,
+          useNativeDriver: true,
+        }),
+        Animated.spring(motifB, {
+          toValue: 1,
+          friction: 7,
+          tension: 60,
+          useNativeDriver: true,
+        }),
+        Animated.spring(motifC, {
+          toValue: 1,
+          friction: 7,
+          tension: 60,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cta, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]);
+
+    anim.start(({ finished }) => {
+      if (finished) setInteractionsReady(true);
+    });
+
+    return () => anim.stop();
+  }, [autoplay, replayKey, splash, content, motifA, motifB, motifC, cta]);
+
+  const rise = (v: Animated.Value, from = 18) => ({
+    opacity: v,
+    transform: [
+      {
+        translateY: v.interpolate({
+          inputRange: [0, 1],
+          outputRange: [from, 0],
+        }),
+      },
+    ],
   });
-
-  const splashStyle = useAnimatedStyle(() => ({
-    opacity: 1 - Easing.out(Easing.quad)(segment(time.value, 900, SPLASH_MS)),
-  }));
-
-  const shellStyle = useAnimatedStyle(() => ({
-    opacity: time.value >= 700 ? 1 : 0,
-  }));
 
   return (
     <ReferenceCanvas backgroundColor="#1A2118" testID="welcome-casa-rustico">
       <StatusBar style="light" />
 
-      <Animated.View style={[StyleSheet.absoluteFill, shellStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: content }]}>
         <LinearGradient
           colors={["#2A3326", "#1A2118", "#12160F"]}
           locations={[0, 0.5, 1]}
@@ -92,53 +122,48 @@ export function CasaRusticoWelcome({
         />
         <View style={styles.heroWash} />
 
-        <Text style={styles.eyebrow}>SERVICE DESK</Text>
-        <Text style={styles.brand}>Casa{"\n"}Rustico</Text>
-        <Text style={styles.tagline}>
-          The house, in your pocket — books, floor, and close.
-        </Text>
+        <Animated.View style={rise(content, 14)}>
+          <Text style={styles.eyebrow}>SERVICE DESK</Text>
+          <Text style={styles.brand}>Casa{"\n"}Rustico</Text>
+          <Text style={styles.tagline}>
+            The house, in your pocket — books, floor, and close.
+          </Text>
+        </Animated.View>
 
-        <Motif
-          boxStyle={styles.motifBook}
-          enter={[1180, 1480]}
-          fromX={-40}
-          glyph="◈"
-          label="Book"
-          time={time}
-        />
-        <Motif
-          boxStyle={styles.motifFloor}
-          enter={[1280, 1580]}
-          fromX={0}
-          glyph="◎"
-          label="Floor"
-          time={time}
-        />
-        <Motif
-          boxStyle={styles.motifHouse}
-          enter={[1380, 1680]}
-          fromX={40}
-          glyph="▤"
-          label="House"
-          time={time}
-        />
+        <Animated.View style={[styles.motifBook, rise(motifA, 24)]}>
+          <Text style={styles.motifGlyph}>◈</Text>
+          <Text style={styles.motifLabel}>Book</Text>
+        </Animated.View>
+        <Animated.View style={[styles.motifFloor, rise(motifB, 24)]}>
+          <Text style={styles.motifGlyph}>◎</Text>
+          <Text style={styles.motifLabel}>Floor</Text>
+        </Animated.View>
+        <Animated.View style={[styles.motifHouse, rise(motifC, 24)]}>
+          <Text style={styles.motifGlyph}>▤</Text>
+          <Text style={styles.motifLabel}>House</Text>
+        </Animated.View>
 
-        <ReplicaPressable
-          accessibilityLabel="Enter the house"
-          disabled={!interactionsReady}
-          onPress={resolveActionPress(
-            "casa.enter-house",
-            onActionPress,
-            onPrimaryPress
-          )}
-          style={styles.primary}
-        >
-          <Text style={styles.primaryText}>Enter the house</Text>
-        </ReplicaPressable>
-        <Text style={styles.footnote}>Cloud-ready · no home server</Text>
+        <Animated.View style={rise(cta, 20)}>
+          <ReplicaPressable
+            accessibilityLabel="Enter the house"
+            disabled={!interactionsReady}
+            onPress={resolveActionPress(
+              "casa.enter-house",
+              onActionPress,
+              onPrimaryPress
+            )}
+            style={styles.primary}
+          >
+            <Text style={styles.primaryText}>Enter the house</Text>
+          </ReplicaPressable>
+          <Text style={styles.footnote}>Cloud-ready · no home server</Text>
+        </Animated.View>
       </Animated.View>
 
-      <Animated.View pointerEvents="none" style={[styles.splash, splashStyle]}>
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.splash, { opacity: splash }]}
+      >
         <Text style={styles.splashMark}>CR</Text>
         <Text style={styles.splashWord}>CASA RUSTICO</Text>
       </Animated.View>
