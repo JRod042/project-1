@@ -1,30 +1,38 @@
-# Repository decision — what should Omni be built on?
+# Repository decision — Casa Rustico pivot
 
-Checked via Cursor cloud agents + GitHub (2026-08-02).
+Supersedes the Omni / OpenClaw “personal operator” decision for this product line.
 
-## What we’re building
+## What we’re building now
 
-From prior Omni sessions: **Grok/Antigravity-class operator on iPhone/iPad** — tools, approvals, live timeline — shippable via **EAS → TestFlight with no Mac**.
+**Casa Rustico** — an all-around hospitality business app (Today, reservations, floor/tickets, menu, staff, inventory, events, close).  
+See **[NORTH_STAR.md](./NORTH_STAR.md)** and **[CASA_RUSTICO_REPLAN.md](./CASA_RUSTICO_REPLAN.md)**.
 
-## Candidates
+## What we keep from Omni
 
-| Repo | Fit | Blocker for Jorge’s constraints |
-|------|-----|----------------------------------|
-| `JRod042/project-1` (Omni custom) | Expo + Hono SSE already on TestFlight | Reimplements gateway/tools/channels poorly vs mature stacks |
-| [openclaw/openclaw](https://github.com/openclaw/openclaw) (~385k★) | Jarvis-class self-hosted assistant; Linux VPS; Control UI; Telegram; Grok | Native iOS app needs Xcode — **bypass via Control UI + Telegram + Expo launcher** |
-| [zfifteen/handrail](https://github.com/zfifteen/handrail) | iPhone supervisor for Grok Build | **Requires Mac** |
-| [Pedroshakoor/grok-build-ios](https://github.com/Pedroshakoor/grok-build-ios) | Official-ish Grok pager UI | **Requires Mac + Xcode** |
-| [daniel-farina/grok-remote](https://github.com/daniel-farina/grok-remote) | ACP web UI / PWA | Host still runs Grok CLI on a workstation |
+| Keep | Why |
+|------|-----|
+| Expo `mobile/` + EAS → TestFlight | Already shipping to Jorge’s devices without a Mac |
+| Apple / Expo account wiring | `eas.json`, ASC app id, team id — rebrand or new listing TBD |
+| SecureStore / settings hygiene | No secrets in git |
+| Typecheck + small pure tests | Discipline |
 
-## Decision
+## What we stop optimizing for
 
-**Primary runtime = OpenClaw Gateway** (official Docker/npm), documented under `openclaw/`.
+| Stop | Why |
+|------|-----|
+| OpenClaw as primary product surface | Wrong job-to-be-done for a restaurant HQ |
+| Custom Omni SSE agent growth | Freeze `server/` agent loop |
+| Cyber operator HUD | Brand is hospitality, not terminal |
 
-**Keep** Expo `mobile/` as the TestFlight brand shell + Control UI launcher.  
-**Keep** `server/` as **legacy** Omni SSE for offline/dev continuity — not the north-star brain.
+## New stack lean
 
-## Implementation in this PR
+| Layer | Choice |
+|-------|--------|
+| Client | Expo + React Navigation (tabs) |
+| Data | Supabase (Postgres + Auth + Realtime) — default; swappable |
+| Assistant | Optional later; data-scoped tools only |
+| POS / pay | Integration lane in P2, not MVP |
 
-- `openclaw/docker-compose.yml` + `up.sh` using `openclaw/openclaw:latest`
-- Docs + north-star update
-- Mobile SYS: Runtime OpenClaw | Legacy Omni
+## Omni / OpenClaw artifacts
+
+Remain in-tree temporarily for reference / optional assistant experiments. They are **not** the Casa Rustico north star. Primary docs and README should describe Casa Rustico only after Phase 0 lands.

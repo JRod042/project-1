@@ -1,36 +1,40 @@
-# Omni — North star (pin this)
+# Casa Rustico — North star (pin this)
 
-**Omni is like Grok or Antigravity in the terminal — but for iPhone.**
+**Casa Rustico is the pocket HQ for running the house** — reservations, floor, kitchen, staff, stock, guests, and money — in one calm business app.
 
 ## One sentence
-A pocket **operator terminal**: you issue intent, the agent plans, runs tools on your server, streams a live log, and asks approval when it would change the world.
+An all-around **business operations app** for Casa Rustico: owners and staff see today’s service, act on reservations and tickets, manage menu/staff/inventory, and close the day — with an optional house assistant that answers from *your* data, not a generic chatbot.
 
-## Runtime choice
-**Primary brain = [OpenClaw](https://github.com/openclaw/openclaw)** (self-hosted Gateway).  
-Omni’s Expo app is the TestFlight face + Control UI launcher; Telegram/Discord/etc. are first-class phone channels.  
-Legacy `server/` SSE is a fallback, not the destination.
+## Product identity
+| Item | Value |
+|------|-------|
+| Brand | **Casa Rustico** |
+| Audience | Owner, managers, floor, kitchen, catering lead |
+| Primary device | iPad (service desk / office) + iPhone (on the floor) |
+| Feel | Warm hospitality ops — rustic Italian house, not cyber terminal |
+| Ship path | Expo → EAS → TestFlight (reuse existing Apple/Expo plumbing) |
 
 ## Feel
-- Open app → dark terminal / operator shell, not a marketing home screen
-- See tools, approvals, and results — not a chatbot that hides agency
-- SYS connects to *your* OpenClaw gateway (LAN, VPS, Tailscale)
-- Personality: capable, concise, slightly dry — Grok-adjacent operator
+- Open app → **Today** for this house (covers, reservations, open tickets, staff on), not a blank chat
+- One job per screen; brand is hero-level on first paint
+- Tools and numbers are first-class; AI is a helper, never the home screen
+- Personality: warm, clear, no-nonsense — like a good maître d’
 
-## Architecture
+## Architecture (target)
 ```
-iPhone Omni (Expo) / Safari Control UI / Telegram
+Casa Rustico iOS (Expo)
     │
-    ▼
-OpenClaw Gateway (:18789)
+    ├─ Business API (auth, CRUD, realtime) ──▶ Postgres / workspace DB
     │
-    ▼
-workspace + tools + skills + channels
+    └─ optional House Assistant (OpenClaw or thin LLM)
+            └─ tools scoped to Casa Rustico data only
 ```
+
+Legacy Omni terminal + raw OpenClaw launcher are **sunset** for this product. Reuse EAS, SecureStore patterns, and any agent tooling only where it serves the house.
 
 ## When choosing UX
-Prefer: fewer screens, deeper timeline, better tools, clearer SYS.
-Avoid: dashboard tiles, “AI companion” fluff, hiding tool activity.
+Prefer: Today board, reservation list, ticket rail, menu/staff editors, daily close.
+Avoid: operator HUD, scanline cyber chrome, dashboard tile soup, “AI companion” as the product.
 
 ## Shipping
-TestFlight (`com.jrod042.omni`) is the branded product path.  
-OpenClaw Control UI + messaging channels are valid daily drivers immediately.
+TestFlight remains the install path. Bundle / ASC identity will be rebranded (see replan). Detailed modules and phases: **[CASA_RUSTICO_REPLAN.md](./CASA_RUSTICO_REPLAN.md)**.

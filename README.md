@@ -1,90 +1,39 @@
-# Omni
+# Casa Rustico
 
-**Jarvis for your iPad/iPhone — powered by [OpenClaw](https://github.com/openclaw/openclaw).**
+**Pocket HQ for running the house** — reservations, floor, kitchen, staff, stock, guests, and close.
+
+> Product replan in progress. Omni (personal operator / OpenClaw) is the prior app in this repo; it is being replaced. Pin these docs:
+
+| Doc | Purpose |
+|-----|---------|
+| **[docs/NORTH_STAR.md](docs/NORTH_STAR.md)** | What Casa Rustico is |
+| **[docs/CASA_RUSTICO_REPLAN.md](docs/CASA_RUSTICO_REPLAN.md)** | Modules, phases, stack, open decisions |
+| **[docs/REPO_DECISION.md](docs/REPO_DECISION.md)** | Keep vs scrap from Omni |
+
+## Target shape
 
 ```
-┌──────────────┐   Control UI / Telegram   ┌────────────────┐  tools  ┌───────────┐
-│ Omni iOS app │ ─────────────────────────▶ │ OpenClaw       │ ──────▶ │ Workspace │
-│ (TestFlight) │                            │ Gateway :18789 │         │ + channels│
-└──────────────┘                            └────────────────┘         └───────────┘
+iPad / iPhone (Expo → TestFlight)
+    │
+    ├─ Today · Book · Floor · House · More
+    │
+    └─ Business API (Postgres)  ± optional house assistant
 ```
 
-| Item | Value |
-|------|-------|
-| App | **Omni** |
-| Bundle ID | `com.jrod042.omni` |
-| Expo | `@jrod42/omni` |
-| Agent runtime | **OpenClaw** (primary) · legacy Omni `server/` optional |
-| Min iOS | 16.4 |
-| Install path | EAS → **TestFlight** (no Mac required) |
+## Current code state
 
-## Why OpenClaw?
+| Area | Status |
+|------|--------|
+| `mobile/` | Still ships **Omni** HUD / OpenClaw launcher on TestFlight |
+| `openclaw/` + `server/` | Legacy operator stack — freeze; optional assistant later |
+| Docs | **Casa Rustico north star** (this replan) |
 
-We audited Cursor history + open-source options. For a personal operator that *acts*, **OpenClaw is the better repository** than growing a custom Hono agent. See **[docs/REPO_DECISION.md](docs/REPO_DECISION.md)**.
+Ship path for iOS remains EAS → TestFlight (`mobile/IOS.md`) until the rebranded shell lands.
 
-## 1) Run the agent (OpenClaw)
+## Next implementation slice (after decisions)
 
-**Docker wrapper** (this repo):
+1. Confirm open decisions in the replan (§7)  
+2. Rebrand Expo shell + tab navigation + Today hero  
+3. Mock data TestFlight → then Supabase schema + Book/Menu  
 
-```bash
-cd openclaw
-cp .env.example .env   # OPENCLAW_GATEWAY_TOKEN; XAI_API_KEY optional if using OAuth
-./up.sh                # → http://HOST:18789
-```
-
-**npm global** (host daemon — fine if already onboarded):
-
-```bash
-npm i -g openclaw@latest
-openclaw onboard --install-daemon
-openclaw gateway status   # :18789
-```
-
-xAI **OAuth** from onboard works without `XAI_API_KEY`. Full notes: **[openclaw/README.md](openclaw/README.md)**.
-
-Fastest phone path without rebuilding the app: add **Telegram** to the gateway (instructions in that README).
-
-## 2) iPad / TestFlight
-
-Full steps: **[mobile/IOS.md](mobile/IOS.md)**
-
-Short version:
-
-1. Expo → Credentials → iOS → App Store for `com.jrod042.omni`
-2. GitHub base directory = `mobile`
-3. Builds → Build from GitHub → `main` → iOS → `production`
-4. Submit → TestFlight → install on iPad
-5. In app **SYS** → Runtime **OpenClaw** → Control UI URL `http://<LAN-IP>:18789` + gateway token → **OPEN CONTROL UI** (opens `…/#token=…`)
-
-## Legacy Omni server (optional)
-
-The original SSE agent remains under `server/` for local experiments:
-
-```bash
-cd server
-cp .env.example .env
-npm install && npm start   # http://0.0.0.0:8787
-```
-
-In the app, set Runtime → **Legacy Omni** and point at `:8787`.
-
-## Repo layout
-
-| Path | Role |
-|------|------|
-| `openclaw/` | **Primary** OpenClaw Gateway (Docker) |
-| `mobile/` | Expo app (EAS prebuilds iOS) |
-| `server/` | Legacy Omni SSE agent |
-| `docs/` | North star + repo decision |
-| `cursor-prompts/` | Sequential Cursor follow-up prompts |
-
-## North star & prompts
-
-- Product intent: **[docs/NORTH_STAR.md](docs/NORTH_STAR.md)**
-- Repo choice: **[docs/REPO_DECISION.md](docs/REPO_DECISION.md)**
-- Security checklist: **[AUDIT.md](AUDIT.md)** (legacy server hardening)
-- Cursor prompt pack: **[cursor-prompts/](cursor-prompts/)**
-
-## License
-
-MIT (see `mobile/LICENSE`). OpenClaw is MIT (OpenClaw Foundation).
+Do not skin the Omni chat terminal as a restaurant app.
