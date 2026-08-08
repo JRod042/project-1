@@ -176,12 +176,15 @@ Defaults until answered: **single location, restaurant + events, rebrand in plac
 
 ### Phase 0 — Cloud-only foundations
 - [x] Docs: no-Linux system replan  
-- [ ] Rebrand app config + assets  
-- [ ] Tab shell: Today / Book / Floor / House / More  
-- [ ] Strip SYS gateway / OpenClaw / uplink  
-- [ ] Mock data layer so TestFlight works offline-of-backend  
-- [ ] Archive/delete `openclaw/` + Omni `server/` from product path  
+- [x] Rebrand app config (display name Casa Rustico; build 7)  
+- [x] Tab shell: Today / Book / Floor / House / More  
+- [x] Strip SYS gateway / OpenClaw / uplink from app entry  
+- [x] Mock data layer so TestFlight works with zero backend  
+- [x] Original welcome (Appllama patterns only — see WELCOME_REFERENCE.md)  
+- [x] Archive Omni mobile HUD → `archive/legacy-omni-mobile/`  
+- [ ] Archive/delete `openclaw/` + Omni `server/` folders  
 - [ ] Supabase schema SQL in repo + RLS stubs  
+- [ ] Replace icon/splash art with Casa Rustico brand assets  
 
 ### Phase 1 — MVP service (cloud)
 - [ ] Auth + roles  
