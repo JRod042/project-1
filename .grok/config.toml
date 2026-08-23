@@ -1,0 +1,13 @@
+# Casa Rústico — Grok Build project config
+# Cursor + Grok Build CLI pick this up automatically.
+# Product rules: AGENTS.md
+
+[project]
+name = "Casa Rustico"
+description = "Pocket HQ for the house — Expo iOS (EAS → TestFlight). Cloud only."
+
+[models]
+default = "grok-4"
+
+[ui]
+permission_default = "ask"
