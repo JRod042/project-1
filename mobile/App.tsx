@@ -22,7 +22,11 @@ import { ProductScreen } from "./src/screens/ProductScreen";
 import { RitualScreen } from "./src/screens/RitualScreen";
 import { StoryScreen } from "./src/screens/StoryScreen";
 import { CartProvider, useCart } from "./src/lib/cart";
-import { loadWelcomeSeen, saveWelcomeSeen } from "./src/lib/welcomeStorage";
+import {
+  clearWelcomeSeen,
+  loadWelcomeSeen,
+  saveWelcomeSeen,
+} from "./src/lib/welcomeStorage";
 import { PressableScale } from "./src/components/PressableScale";
 import { colors, fonts } from "./src/theme";
 
@@ -44,17 +48,20 @@ function ShopApp() {
   });
 
   const [ready, setReady] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [welcomeSeen, setWelcomeSeen] = useState(false);
+  const [gateOn, setGateOn] = useState(true);
   const [welcomeReplayKey, setWelcomeReplayKey] = useState(0);
   const [screen, setScreen] = useState<Screen>({ kind: "tab", tab: "home" });
   const lastCount = useRef(cart.count);
   const [pop, setPop] = useState(false);
 
   useEffect(() => {
-    loadWelcomeSeen().then((seen) => {
-      setShowWelcome(!seen);
-      setReady(true);
-    });
+    loadWelcomeSeen()
+      .then((seen) => {
+        setWelcomeSeen(seen);
+        setGateOn(true);
+      })
+      .finally(() => setReady(true));
   }, []);
 
   useEffect(() => {
@@ -75,7 +82,8 @@ function ShopApp() {
 
   const enterShop = async () => {
     await saveWelcomeSeen();
-    setShowWelcome(false);
+    setWelcomeSeen(true);
+    setGateOn(false);
     setScreen({ kind: "tab", tab: "home" });
   };
 
@@ -84,80 +92,98 @@ function ShopApp() {
     setScreen({ kind: "product", productId: id, back: tab });
   const openBag = () => setScreen({ kind: "bag", back: tab });
   const onBag = screen.kind === "bag";
+  const firstLaunch = !welcomeSeen;
 
   if (!fontsLoaded || !ready) {
     return <View style={styles.boot} />;
   }
 
-  if (showWelcome) {
-    return (
-      <WelcomeScreen replayKey={welcomeReplayKey} onEnter={() => void enterShop()} />
-    );
-  }
+  const showShop = welcomeSeen || !gateOn;
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-        <StatusBar style="light" />
-        <View style={styles.body}>
-          {screen.kind === "product" ? (
-            <ProductScreen
-              key={screen.productId}
-              productId={screen.productId}
-              onBack={() => setScreen({ kind: "tab", tab: screen.back })}
-              onOpenProduct={openProduct}
-            />
-          ) : screen.kind === "bag" ? (
-            <CartScreen onOpenProduct={openProduct} />
-          ) : tab === "home" ? (
-            <HomeScreen
-              onOpenShop={() => setScreen({ kind: "tab", tab: "coffee" })}
-              onOpenProduct={openProduct}
-              onOpenStory={() => setScreen({ kind: "tab", tab: "story" })}
-            />
-          ) : tab === "coffee" ? (
-            <ShopScreen onOpenProduct={openProduct} />
-          ) : tab === "ritual" ? (
-            <RitualScreen onOpenProduct={openProduct} />
-          ) : (
-            <StoryScreen
-              onOpenProduct={openProduct}
-              onReplayWelcome={() => {
-                setWelcomeReplayKey((k) => k + 1);
-                setShowWelcome(true);
-              }}
-            />
-          )}
-        </View>
+      <View style={styles.safe}>
+        {showShop ? (
+          <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+            <StatusBar style="light" />
+            <View style={styles.body}>
+              {screen.kind === "product" ? (
+                <ProductScreen
+                  key={screen.productId}
+                  productId={screen.productId}
+                  onBack={() => setScreen({ kind: "tab", tab: screen.back })}
+                  onOpenProduct={openProduct}
+                />
+              ) : screen.kind === "bag" ? (
+                <CartScreen onOpenProduct={openProduct} />
+              ) : tab === "home" ? (
+                <HomeScreen
+                  onOpenShop={() => setScreen({ kind: "tab", tab: "coffee" })}
+                  onOpenProduct={openProduct}
+                  onOpenStory={() => setScreen({ kind: "tab", tab: "story" })}
+                />
+              ) : tab === "coffee" ? (
+                <ShopScreen onOpenProduct={openProduct} />
+              ) : tab === "ritual" ? (
+                <RitualScreen onOpenProduct={openProduct} />
+              ) : (
+                <StoryScreen
+                  onOpenProduct={openProduct}
+                  onReplayWelcome={() => {
+                    void clearWelcomeSeen();
+                    setWelcomeSeen(false);
+                    setGateOn(true);
+                    setWelcomeReplayKey((k) => k + 1);
+                  }}
+                />
+              )}
+            </View>
 
-        {!onBag ? (
-          <PressableScale
-            onPress={openBag}
-            style={[styles.fab, pop && styles.fabPop]}
-            accessibilityLabel={`Bag, ${cart.count} items`}
-          >
-            <Text style={styles.fabIcon}>Bag</Text>
-            {cart.count > 0 ? (
-              <View style={styles.fabCount}>
-                <Text style={styles.fabCountText}>{cart.count > 9 ? "9+" : cart.count}</Text>
+            {!onBag ? (
+              <PressableScale
+                onPress={openBag}
+                style={[styles.fab, pop && styles.fabPop]}
+                accessibilityLabel={`Bag, ${cart.count} items`}
+              >
+                <View style={styles.bagGlyph}>
+                  <View style={styles.bagHandle} />
+                  <View style={styles.bagBody} />
+                </View>
+                {cart.count > 0 ? (
+                  <View style={styles.fabCount}>
+                    <Text style={styles.fabCountText}>
+                      {cart.count > 9 ? "9+" : cart.count}
+                    </Text>
+                  </View>
+                ) : null}
+              </PressableScale>
+            ) : null}
+
+            {cart.toast ? (
+              <View style={styles.toast} pointerEvents="none">
+                <Text style={styles.toastText}>{cart.toast}</Text>
               </View>
             ) : null}
-          </PressableScale>
-        ) : null}
 
-        {cart.toast ? (
-          <View style={styles.toast} pointerEvents="none">
-            <Text style={styles.toastText}>{cart.toast}</Text>
-          </View>
-        ) : null}
+            <SafeAreaView edges={["bottom"]} style={styles.tabSafe}>
+              <TabShell
+                active={tab}
+                onChange={(next) => setScreen({ kind: "tab", tab: next })}
+              />
+            </SafeAreaView>
+          </SafeAreaView>
+        ) : (
+          <View style={styles.boot} />
+        )}
 
-        <SafeAreaView edges={["bottom"]} style={styles.tabSafe}>
-          <TabShell
-            active={tab}
-            onChange={(next) => setScreen({ kind: "tab", tab: next })}
+        {gateOn ? (
+          <WelcomeScreen
+            replayKey={welcomeReplayKey}
+            firstLaunch={firstLaunch}
+            onEnter={() => void enterShop()}
           />
-        </SafeAreaView>
-      </SafeAreaView>
+        ) : null}
+      </View>
     </SafeAreaProvider>
   );
 }
@@ -171,7 +197,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  boot: { flex: 1, backgroundColor: colors.bg },
+  boot: { flex: 1, backgroundColor: "#f5ead8" },
   safe: { flex: 1, backgroundColor: colors.bg },
   body: { flex: 1 },
   tabSafe: { backgroundColor: colors.tabGlass },
@@ -179,7 +205,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 10,
     right: 16,
-    minWidth: 52,
+    width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.bgElevated,
@@ -187,19 +213,30 @@ const styles = StyleSheet.create({
     borderColor: colors.lineBright,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 14,
     zIndex: 20,
   },
-  fabPop: { transform: [{ scale: 1.06 }] },
-  fabIcon: {
-    color: colors.linen,
-    fontFamily: fonts.bodyMed,
-    fontSize: 13,
-    letterSpacing: 0.4,
+  fabPop: { transform: [{ scale: 1.08 }] },
+  bagGlyph: { width: 16, height: 18, alignItems: "center" },
+  bagHandle: {
+    width: 8,
+    height: 5,
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    borderColor: colors.linen,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+  },
+  bagBody: {
+    width: 14,
+    height: 12,
+    borderWidth: 1.5,
+    borderColor: colors.linen,
+    borderRadius: 2,
+    marginTop: -1,
   },
   fabCount: {
     position: "absolute",
-    top: -6,
+    top: -4,
     right: -4,
     minWidth: 18,
     height: 18,
