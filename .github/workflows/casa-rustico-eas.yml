@@ -1,0 +1,87 @@
+# Ship JRod042/Casa-Rustico Expo apps using this repo's EAS + Apple secrets.
+# Omni already has a validated Distribution Certificate + ASC API key.
+name: Casa-Rustico Expo
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: "Submit to TestFlight after build"
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: casa-rustico-eas
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app:
+          - casa-rustico-go
+          - espresso-escape
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}
+    steps:
+      - name: Checkout Casa-Rustico
+        uses: actions/checkout@v4
+        with:
+          repository: JRod042/Casa-Rustico
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
+
+      - name: Setup Expo / EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify Expo auth
+        run: eas whoami
+
+      - name: Write App Store Connect API key
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          if [ -n "${APPLE_API_KEY_P8:-}" ]; then
+            printf '%s\n' "$APPLE_API_KEY_P8" > asc-api-key.p8
+            echo "EXPO_ASC_API_KEY_PATH=$PWD/asc-api-key.p8" >> "$GITHUB_ENV"
+            echo "ASC API key file written"
+          else
+            echo "::warning::No APPLE_API_KEY_P8 secret"
+          fi
+
+      - name: Build iOS
+        env:
+          EXPO_ASC_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
+          EXPO_USE_PRECOMPILED_MODULES: "0"
+        run: |
+          set -euo pipefail
+          echo "Building ${{ matrix.app }} (production)"
+          if [ "${{ inputs.submit }}" = "true" ]; then
+            eas build --platform ios --profile production --non-interactive --auto-submit
+          else
+            eas build --platform ios --profile production --non-interactive
+          fi
+
+      - name: Reminder
+        if: ${{ inputs.submit == true }}
+        run: |
+          echo "Watch https://expo.dev/accounts/jrod42/projects/${{ matrix.app }}/builds"
+          echo "Then App Store Connect → TestFlight."
