@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts, radii } from "../theme";
 import { formatPrice, type Product } from "../lib/catalog";
+import { PressableScale } from "./PressableScale";
 
 type Props = {
   product: Product;
@@ -10,13 +11,9 @@ type Props = {
 
 export function ProductCard({ product, onPress, wide }: Props) {
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        wide && styles.wide,
-        pressed && styles.pressed,
-      ]}
+      style={[styles.card, wide && styles.wide]}
     >
       <View style={[styles.swatch, { backgroundColor: product.accent }]}>
         <Text style={styles.glyph}>
@@ -41,7 +38,7 @@ export function ProductCard({ product, onPress, wide }: Props) {
         </Text>
         <Text style={styles.price}>{formatPrice(product.price)}</Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -50,7 +47,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgCard,
     borderWidth: 1,
-    borderColor: colors.line,
+    borderColor: colors.glassBorder,
     borderRadius: radii.md,
     overflow: "hidden",
   },
@@ -58,7 +55,6 @@ const styles = StyleSheet.create({
     minWidth: 196,
     maxWidth: 220,
   },
-  pressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
   swatch: {
     height: 148,
     justifyContent: "center",

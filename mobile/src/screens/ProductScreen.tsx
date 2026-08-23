@@ -1,8 +1,11 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { colors, fonts, radii } from "../theme";
 import { formatPrice, getProduct } from "../lib/catalog";
 import { useCart } from "../lib/cart";
+import { PressableScale } from "../components/PressableScale";
+import { GlassPanel } from "../components/GlassPanel";
+import { ScreenFade } from "../components/ScreenFade";
 
 type Props = {
   productId: string;
@@ -18,75 +21,74 @@ export function ProductScreen({ productId, onBack, onGoCart }: Props) {
     return (
       <View style={styles.root}>
         <Text style={styles.missing}>Product not found</Text>
-        <Pressable onPress={onBack} style={styles.backBtn}>
+        <PressableScale onPress={onBack} style={styles.backBtn}>
           <Text style={styles.backText}>Back</Text>
-        </Pressable>
+        </PressableScale>
       </View>
     );
   }
 
   const add = () => {
     cart.add(product.id);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   return (
-    <View style={styles.root}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { backgroundColor: product.accent }]}>
-          <Pressable onPress={onBack} style={styles.backChip}>
-            <Text style={styles.backChipText}>← Back</Text>
-          </Pressable>
-          <Text style={styles.heroGlyph}>
-            {product.category === "coffee"
-              ? "☕"
-              : product.category === "gear"
-                ? "⌂"
-                : "◎"}
-          </Text>
-          {product.badge ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{product.badge}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.body}>
-          <Text style={styles.category}>
-            {product.category.toUpperCase()}
-            {product.origin ? ` · ${product.origin}` : ""}
-          </Text>
-          <Text style={styles.name}>{product.name}</Text>
-          <Text style={styles.sub}>{product.subtitle}</Text>
-          <Text style={styles.price}>{formatPrice(product.price)}</Text>
-          {product.notes ? (
-            <Text style={styles.notes}>{product.notes}</Text>
-          ) : null}
-
-          <View style={styles.ship}>
-            <Text style={styles.shipTitle}>SHIPPING</Text>
-            <Text style={styles.shipBody}>
-              Bag is live on-device. Finish checkout on rusticopr.com — Shopify
-              Storefront checkout lands next.
+    <ScreenFade>
+      <View style={styles.root}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={[styles.hero, { backgroundColor: product.accent }]}>
+            <PressableScale onPress={onBack} style={styles.backChip}>
+              <Text style={styles.backChipText}>← Back</Text>
+            </PressableScale>
+            <Text style={styles.heroGlyph}>
+              {product.category === "coffee"
+                ? "☕"
+                : product.category === "gear"
+                  ? "⌂"
+                  : "◎"}
             </Text>
+            {product.badge ? (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{product.badge}</Text>
+              </View>
+            ) : null}
           </View>
-        </View>
-      </ScrollView>
 
-      <View style={styles.footer}>
-        <Pressable
-          onPress={add}
-          style={({ pressed }) => [styles.add, pressed && styles.pressed]}
-        >
-          <Text style={styles.addText}>Add to bag</Text>
-        </Pressable>
-        <Pressable onPress={onGoCart} style={styles.secondary}>
-          <Text style={styles.secondaryText}>
-            Bag{cart.count > 0 ? ` · ${cart.count}` : ""}
-          </Text>
-        </Pressable>
+          <View style={styles.body}>
+            <Text style={styles.category}>
+              {product.category.toUpperCase()}
+              {product.origin ? ` · ${product.origin}` : ""}
+            </Text>
+            <Text style={styles.name}>{product.name}</Text>
+            <Text style={styles.sub}>{product.subtitle}</Text>
+            <Text style={styles.price}>{formatPrice(product.price)}</Text>
+            {product.notes ? (
+              <Text style={styles.notes}>{product.notes}</Text>
+            ) : null}
+
+            <GlassPanel style={styles.ship}>
+              <Text style={styles.shipTitle}>IN-APP CHECKOUT</Text>
+              <Text style={styles.shipBody}>
+                Add to bag, then checkout with contact, shipping, and Apple Pay
+                or card — all inside Casa Rústico.
+              </Text>
+            </GlassPanel>
+          </View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <PressableScale onPress={add} style={styles.add}>
+            <Text style={styles.addText}>Add to bag</Text>
+          </PressableScale>
+          <PressableScale onPress={onGoCart} style={styles.secondary}>
+            <Text style={styles.secondaryText}>
+              Bag{cart.count > 0 ? ` · ${cart.count}` : ""}
+            </Text>
+          </PressableScale>
+        </View>
       </View>
-    </View>
+    </ScreenFade>
   );
 }
 
@@ -106,9 +108,11 @@ const styles = StyleSheet.create({
   backChip: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(0,0,0,0.35)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
   backChipText: {
     color: colors.linen,
@@ -173,10 +177,6 @@ const styles = StyleSheet.create({
   ship: {
     marginTop: 20,
     padding: 16,
-    backgroundColor: colors.bgPanel,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radii.md,
     gap: 6,
   },
   shipTitle: {
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.line,
     padding: 16,
     gap: 10,
-    backgroundColor: colors.bgElevated,
+    backgroundColor: colors.tabGlass,
   },
   add: {
     backgroundColor: colors.brass,
@@ -204,7 +204,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: radii.pill,
   },
-  pressed: { opacity: 0.88 },
   addText: {
     color: colors.ink,
     fontFamily: fonts.bodyBold,
@@ -212,10 +211,11 @@ const styles = StyleSheet.create({
   },
   secondary: {
     borderWidth: 1,
-    borderColor: colors.lineBright,
+    borderColor: colors.glassBorder,
     paddingVertical: 14,
     alignItems: "center",
     borderRadius: radii.pill,
+    backgroundColor: colors.glass,
   },
   secondaryText: {
     color: colors.linen,

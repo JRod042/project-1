@@ -1,106 +1,102 @@
-import {
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors, fonts, radii } from "../theme";
-import { brand, formatPrice, getProduct } from "../lib/catalog";
+import { formatPrice, getProduct } from "../lib/catalog";
 import { useCart } from "../lib/cart";
+import { PressableScale } from "../components/PressableScale";
+import { GlassPanel } from "../components/GlassPanel";
+import { ScreenFade } from "../components/ScreenFade";
 
 type Props = {
   onOpenShop: () => void;
   onOpenProduct: (id: string) => void;
+  onCheckout: () => void;
 };
 
-export function CartScreen({ onOpenShop, onOpenProduct }: Props) {
+export function CartScreen({ onOpenShop, onOpenProduct, onCheckout }: Props) {
   const cart = useCart();
 
   if (cart.lines.length === 0) {
     return (
-      <View style={styles.emptyRoot}>
-        <Text style={styles.title}>Bag</Text>
-        <Text style={styles.empty}>Your bag is empty</Text>
-        <Pressable
-          onPress={onOpenShop}
-          style={({ pressed }) => [styles.cta, pressed && styles.pressed]}
-        >
-          <Text style={styles.ctaText}>Browse the menu</Text>
-        </Pressable>
-      </View>
+      <ScreenFade>
+        <View style={styles.emptyRoot}>
+          <Text style={styles.title}>Bag</Text>
+          <Text style={styles.empty}>Your bag is empty</Text>
+          <PressableScale onPress={onOpenShop} style={styles.cta}>
+            <Text style={styles.ctaText}>Browse the menu</Text>
+          </PressableScale>
+        </View>
+      </ScreenFade>
     );
   }
 
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Bag</Text>
-        <Text style={styles.sub}>
-          {cart.count} item{cart.count === 1 ? "" : "s"}
-        </Text>
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-      >
-        {cart.lines.map((line) => {
-          const p = getProduct(line.productId);
-          if (!p) return null;
-          return (
-            <View key={line.productId} style={styles.row}>
-              <Pressable
-                style={styles.rowMain}
-                onPress={() => onOpenProduct(p.id)}
-              >
-                <View
-                  style={[styles.swatch, { backgroundColor: p.accent }]}
-                />
-                <View style={styles.meta}>
-                  <Text style={styles.name}>{p.name}</Text>
-                  <Text style={styles.price}>
-                    {formatPrice(p.price)} each
-                  </Text>
-                </View>
-              </Pressable>
-              <View style={styles.qty}>
-                <Pressable
-                  onPress={() => cart.setQty(p.id, line.qty - 1)}
-                  style={styles.qtyBtn}
-                >
-                  <Text style={styles.qtyBtnText}>−</Text>
-                </Pressable>
-                <Text style={styles.qtyVal}>{line.qty}</Text>
-                <Pressable
-                  onPress={() => cart.setQty(p.id, line.qty + 1)}
-                  style={styles.qtyBtn}
-                >
-                  <Text style={styles.qtyBtnText}>+</Text>
-                </Pressable>
-              </View>
-            </View>
-          );
-        })}
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Subtotal</Text>
-          <Text style={styles.totalVal}>{formatPrice(cart.subtotal)}</Text>
+    <ScreenFade>
+      <View style={styles.root}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Bag</Text>
+          <Text style={styles.sub}>
+            {cart.count} item{cart.count === 1 ? "" : "s"}
+          </Text>
         </View>
-        <Pressable
-          style={styles.checkout}
-          onPress={() => Linking.openURL(`https://${brand.site}`)}
+
+        <ScrollView
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.checkoutText}>Checkout on {brand.site}</Text>
-        </Pressable>
-        <Pressable onPress={cart.clear}>
-          <Text style={styles.clear}>Clear bag</Text>
-        </Pressable>
+          {cart.lines.map((line) => {
+            const p = getProduct(line.productId);
+            if (!p) return null;
+            return (
+              <GlassPanel key={line.productId} style={styles.row}>
+                <PressableScale
+                  style={styles.rowMain}
+                  onPress={() => onOpenProduct(p.id)}
+                  haptic={false}
+                >
+                  <View
+                    style={[styles.swatch, { backgroundColor: p.accent }]}
+                  />
+                  <View style={styles.meta}>
+                    <Text style={styles.name}>{p.name}</Text>
+                    <Text style={styles.price}>
+                      {formatPrice(p.price)} each
+                    </Text>
+                  </View>
+                </PressableScale>
+                <View style={styles.qty}>
+                  <PressableScale
+                    onPress={() => cart.setQty(p.id, line.qty - 1)}
+                    style={styles.qtyBtn}
+                  >
+                    <Text style={styles.qtyBtnText}>−</Text>
+                  </PressableScale>
+                  <Text style={styles.qtyVal}>{line.qty}</Text>
+                  <PressableScale
+                    onPress={() => cart.setQty(p.id, line.qty + 1)}
+                    style={styles.qtyBtn}
+                  >
+                    <Text style={styles.qtyBtnText}>+</Text>
+                  </PressableScale>
+                </View>
+              </GlassPanel>
+            );
+          })}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Subtotal</Text>
+            <Text style={styles.totalVal}>{formatPrice(cart.subtotal)}</Text>
+          </View>
+          <PressableScale style={styles.checkout} onPress={onCheckout}>
+            <Text style={styles.checkoutText}>Checkout</Text>
+          </PressableScale>
+          <PressableScale onPress={cart.clear}>
+            <Text style={styles.clear}>Clear bag</Text>
+          </PressableScale>
+        </View>
       </View>
-    </View>
+    </ScreenFade>
   );
 }
 
@@ -142,14 +138,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: radii.pill,
   },
-  pressed: { opacity: 0.88 },
   ctaText: {
     color: colors.ink,
     fontFamily: fonts.bodyBold,
     fontSize: 15,
   },
   list: {
-    padding: 24,
+    padding: 20,
     gap: 12,
     paddingBottom: 20,
   },
@@ -157,10 +152,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.bgPanel,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radii.md,
     padding: 12,
   },
   rowMain: {
@@ -191,13 +182,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   qtyBtn: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     borderWidth: 1,
-    borderColor: colors.lineBright,
+    borderColor: colors.glassBorder,
     borderRadius: radii.sm,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: colors.glass,
   },
   qtyBtnText: {
     color: colors.linen,
@@ -216,7 +208,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.line,
     padding: 20,
     gap: 12,
-    backgroundColor: colors.bgElevated,
+    backgroundColor: colors.tabGlass,
   },
   totalRow: {
     flexDirection: "row",
@@ -242,7 +234,7 @@ const styles = StyleSheet.create({
   checkoutText: {
     color: colors.ink,
     fontFamily: fonts.bodyBold,
-    fontSize: 15,
+    fontSize: 16,
   },
   clear: {
     textAlign: "center",

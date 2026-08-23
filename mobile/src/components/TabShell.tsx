@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, fonts } from "../theme";
+import { StyleSheet, Text, View } from "react-native";
+import { colors, fonts, radii } from "../theme";
+import { PressableScale } from "./PressableScale";
 
 export type TabId = "home" | "shop" | "cart" | "account";
 
@@ -22,12 +23,11 @@ export function TabShell({ active, onChange, cartCount = 0 }: Props) {
       {TABS.map((t) => {
         const on = t.id === active;
         return (
-          <Pressable
+          <PressableScale
             key={t.id}
             onPress={() => onChange(t.id)}
             style={styles.tab}
-            accessibilityRole="button"
-            accessibilityState={{ selected: on }}
+            haptic
           >
             <View style={styles.labelRow}>
               <Text style={[styles.label, on && styles.labelOn]}>{t.label}</Text>
@@ -40,7 +40,7 @@ export function TabShell({ active, onChange, cartCount = 0 }: Props) {
               ) : null}
             </View>
             {on ? <View style={styles.dot} /> : <View style={styles.dotSpacer} />}
-          </Pressable>
+          </PressableScale>
         );
       })}
     </View>
@@ -51,8 +51,8 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: colors.line,
-    backgroundColor: colors.bgElevated,
+    borderTopColor: colors.glassBorder,
+    backgroundColor: colors.tabGlass,
     paddingBottom: 10,
     paddingTop: 10,
   },
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   badge: {
     minWidth: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: radii.pill,
     backgroundColor: colors.brass,
     alignItems: "center",
     justifyContent: "center",

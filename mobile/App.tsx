@@ -20,6 +20,7 @@ import { ShopScreen } from "./src/screens/ShopScreen";
 import { CartScreen } from "./src/screens/CartScreen";
 import { AccountScreen } from "./src/screens/AccountScreen";
 import { ProductScreen } from "./src/screens/ProductScreen";
+import { CheckoutScreen } from "./src/screens/CheckoutScreen";
 import { CartProvider, useCart } from "./src/lib/cart";
 import {
   loadWelcomeSeen,
@@ -44,6 +45,7 @@ function ShopApp() {
   const [welcomeReplayKey, setWelcomeReplayKey] = useState(0);
   const [tab, setTab] = useState<TabId>("home");
   const [productId, setProductId] = useState<string | null>(null);
+  const [checkout, setCheckout] = useState(false);
 
   useEffect(() => {
     loadWelcomeSeen().then((seen) => {
@@ -78,6 +80,23 @@ function ShopApp() {
         replayKey={welcomeReplayKey}
         onEnter={() => void enterShop()}
       />
+    );
+  }
+
+  if (checkout) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+          <StatusBar style="light" />
+          <CheckoutScreen
+            onClose={() => setCheckout(false)}
+            onDone={() => {
+              setCheckout(false);
+              setTab("shop");
+            }}
+          />
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
@@ -117,6 +136,7 @@ function ShopApp() {
             <CartScreen
               onOpenShop={() => setTab("shop")}
               onOpenProduct={(id) => setProductId(id)}
+              onCheckout={() => setCheckout(true)}
             />
           ) : null}
           {tab === "account" ? (
@@ -159,6 +179,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tabSafe: {
-    backgroundColor: colors.bgElevated,
+    backgroundColor: colors.tabGlass,
   },
 });

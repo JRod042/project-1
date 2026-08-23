@@ -2,7 +2,7 @@
 const config = {
   name: "Casa Rustico",
   slug: "omni",
-  version: "0.3.0",
+  version: "0.3.1",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "dark",
@@ -15,11 +15,8 @@ const config = {
   },
   ios: {
     supportsTablet: true,
-    // Keep existing ASC / TestFlight identity; display name rebranded.
     bundleIdentifier: "com.jrod042.omni",
-    // Bump before each new ASC upload if that number was already used.
-    // EAS autoIncrement is unsupported with app.config.js.
-    buildNumber: "14",
+    buildNumber: "15",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Casa Rustico",
@@ -59,8 +56,6 @@ const config = {
       {
         ios: {
           deploymentTarget: "16.4",
-          // Avoid RN privacy_manifest_utils.rb crash:
-          // "no implicit conversion of nil into Array" during pod post_install.
           privacyManifestAggregationEnabled: false,
         },
       },
