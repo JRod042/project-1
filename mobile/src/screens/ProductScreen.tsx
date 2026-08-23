@@ -58,14 +58,14 @@ export function ProductScreen({
     <ScreenFade>
       <View style={styles.root}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={{ height: width * 0.92 }}>
+          <View style={{ height: width * 0.95 }}>
             <Image
               source={{ uri: product.image }}
               style={StyleSheet.absoluteFill}
               resizeMode="cover"
             />
             <LinearGradient
-              colors={["rgba(0,0,0,0.35)", "transparent", "rgba(14,19,14,0.9)"]}
+              colors={["rgba(0,0,0,0.4)", "transparent", "rgba(12,16,12,0.95)"]}
               style={StyleSheet.absoluteFill}
             />
             <PressableScale onPress={onBack} style={styles.backChip}>
@@ -80,14 +80,18 @@ export function ProductScreen({
 
           <View style={styles.body}>
             <Text style={styles.category}>
-              {product.category.toUpperCase()}
+              {(product.roast || product.category).toUpperCase()}
               {product.origin ? ` · ${product.origin}` : ""}
             </Text>
             <Text style={styles.name}>{product.name}</Text>
             <Text style={styles.sub}>{product.subtitle}</Text>
             <Text style={styles.price}>{formatPrice(product.price)}</Text>
+
             {product.notes ? (
               <Text style={styles.notes}>{product.notes}</Text>
+            ) : null}
+            {product.detail ? (
+              <Text style={styles.detail}>{product.detail}</Text>
             ) : null}
 
             <View style={styles.qtyRow}>
@@ -132,6 +136,7 @@ export function ProductScreen({
           </View>
         </ScrollView>
 
+        {/* Navigation-layer chrome */}
         <View style={styles.footer}>
           <PressableScale onPress={add} style={styles.add}>
             <Text style={styles.addText}>
@@ -177,7 +182,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 16,
     right: 16,
-    backgroundColor: "rgba(10,14,10,0.72)",
+    backgroundColor: "rgba(10,14,10,0.75)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: radii.pill,
@@ -192,13 +197,13 @@ const styles = StyleSheet.create({
   body: {
     padding: 24,
     gap: 8,
-    marginTop: -28,
+    marginTop: -32,
   },
   category: {
     color: colors.brass,
     fontFamily: fonts.bodyMed,
     fontSize: 12,
-    letterSpacing: 1.4,
+    letterSpacing: 1.2,
   },
   name: {
     color: colors.linen,
@@ -218,14 +223,21 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   notes: {
-    marginTop: 12,
+    marginTop: 14,
     color: colors.linen,
-    fontFamily: fonts.body,
-    fontSize: 16,
+    fontFamily: fonts.bodyMed,
+    fontSize: 17,
     lineHeight: 24,
   },
+  detail: {
+    marginTop: 6,
+    color: colors.linenDim,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    lineHeight: 22,
+  },
   qtyRow: {
-    marginTop: 20,
+    marginTop: 22,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -239,10 +251,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.glass,
+    backgroundColor: colors.bgPanel,
     borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.glassBorder,
     paddingHorizontal: 6,
     paddingVertical: 4,
   },
@@ -252,7 +262,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.glassStrong,
+    backgroundColor: colors.bgCard,
   },
   qtyBtnText: {
     color: colors.linen,
@@ -266,7 +276,7 @@ const styles = StyleSheet.create({
     minWidth: 20,
     textAlign: "center",
   },
-  related: { marginTop: 28, gap: 12 },
+  related: { marginTop: 32, gap: 14, paddingBottom: 8 },
   relatedTitle: {
     color: colors.linen,
     fontFamily: fonts.displaySoft,

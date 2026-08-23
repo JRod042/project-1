@@ -11,6 +11,7 @@ type Props = {
   large?: boolean;
 };
 
+/** Content-layer card — solid surface (HIG: no glass on content). */
 export function ProductCard({ product, onPress, wide, large }: Props) {
   return (
     <PressableScale
@@ -24,7 +25,7 @@ export function ProductCard({ product, onPress, wide, large }: Props) {
           resizeMode="cover"
         />
         <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.55)"]}
+          colors={["transparent", "rgba(0,0,0,0.5)"]}
           style={StyleSheet.absoluteFill}
         />
         {product.badge ? (
@@ -38,7 +39,7 @@ export function ProductCard({ product, onPress, wide, large }: Props) {
           {product.name}
         </Text>
         <Text style={styles.sub} numberOfLines={1}>
-          {product.subtitle}
+          {product.notes || product.subtitle}
         </Text>
         <Text style={styles.price}>{formatPrice(product.price)}</Text>
       </View>
@@ -52,8 +53,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderRadius: radii.lg,
     overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.glassBorder,
   },
   wide: {
     minWidth: 200,
@@ -64,22 +63,20 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   media: {
-    height: 160,
+    height: 168,
     backgroundColor: colors.bgPanel,
   },
   mediaLarge: {
-    height: 200,
+    height: 210,
   },
   badge: {
     position: "absolute",
     top: 12,
     left: 12,
-    backgroundColor: "rgba(10,14,10,0.72)",
+    backgroundColor: "rgba(10,14,10,0.75)",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.glassBorder,
   },
   badgeText: {
     color: colors.brass,
