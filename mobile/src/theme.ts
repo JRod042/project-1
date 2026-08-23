@@ -1,32 +1,26 @@
 /**
- * Casa Rústico design tokens — Liquid Glass informed (HIG).
- * Glass = navigation chrome only. Content = solid surfaces.
+ * Casa Rústico — kraft / linen / espresso.
+ * Glass is chrome only (tab bar, buy dock). Content stays solid.
  */
 export const colors = {
-  bg: "#0C100C",
-  bgElevated: "#141A14",
-  bgPanel: "#1A221A",
-  bgCard: "#1E261E",
-  linen: "#F7F3EC",
-  linenDim: "rgba(247, 243, 236, 0.74)",
-  linenMuted: "rgba(247, 243, 236, 0.4)",
-  ink: "#0A0E0A",
-  brass: "#C9A85C",
-  brassSoft: "#D8C07A",
-  brassDim: "#8B7340",
-  leaf: "#6B8F71",
-  leafBright: "#9BC4A0",
-  danger: "#C45C4A",
-  success: "#6B9B72",
-  line: "rgba(247, 243, 236, 0.08)",
-  lineBright: "rgba(247, 243, 236, 0.16)",
-  heroWash: "rgba(201, 168, 92, 0.08)",
-  // Chrome-only glass (tab bar / sticky footer)
-  glass: "rgba(255, 255, 255, 0.08)",
-  glassStrong: "rgba(255, 255, 255, 0.12)",
-  glassBorder: "rgba(255, 255, 255, 0.16)",
-  glassHighlight: "rgba(255, 255, 255, 0.22)",
-  tabGlass: "rgba(12, 16, 12, 0.82)",
+  bg: "#120e0b",
+  bgElevated: "#1a1410",
+  bgPanel: "#211a14",
+  bgCard: "#261e16",
+  linen: "#f5ead8",
+  linenDim: "#cbbba6",
+  linenMuted: "#8f8170",
+  ink: "#120e0b",
+  brass: "#c4a484",
+  brassSoft: "#d4ba9a",
+  brassDim: "#8a6e52",
+  danger: "#c45c4a",
+  success: "#6b9b72",
+  line: "rgba(245, 234, 216, 0.08)",
+  lineBright: "rgba(245, 234, 216, 0.16)",
+  glass: "rgba(245, 234, 216, 0.08)",
+  glassBorder: "rgba(245, 234, 216, 0.16)",
+  tabGlass: "rgba(18, 14, 11, 0.92)",
 };
 
 export const fonts = {
@@ -37,7 +31,6 @@ export const fonts = {
   bodyBold: "SourceSans3_700Bold",
 };
 
-/** Concentric radii aligned to device continuous corners */
 export const radii = {
   sm: 12,
   md: 16,

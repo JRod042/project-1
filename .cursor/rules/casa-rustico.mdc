@@ -3,4 +3,4 @@ description: Casa Rústico product contract for Cursor
 alwaysApply: true
 ---
 
-Casa Rústico is a cloud pocket HQ (shop, book, floor). No Linux host, no Mac, no OpenClaw, no Omni terminal. Expo EAS → TestFlight only. Base directory is `mobile/`. Read AGENTS.md before editing.
+Casa Rústico is the customer coffee shop (bags, ritual, story, rusticopr.com checkout). Not a restaurant HQ. No Linux host, no Mac, no OpenClaw, no Omni terminal, no in-app card forms. Expo EAS → TestFlight only. Base directory is `mobile/`. Never break eas.json / bundle IDs / string build numbers. Read AGENTS.md before editing.

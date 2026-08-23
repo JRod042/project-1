@@ -1,16 +1,9 @@
 import { useState } from "react";
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { colors, fonts, radii } from "../theme";
-import { formatPrice, getProduct, products } from "../lib/catalog";
+import { colombia, formatPrice, gear, getProduct } from "../lib/catalog";
+import { productUrl } from "../lib/shopify";
 import { useCart } from "../lib/cart";
 import { PressableScale } from "../components/PressableScale";
 import { ProductCard } from "../components/ProductCard";
@@ -19,134 +12,121 @@ import { ScreenFade } from "../components/ScreenFade";
 type Props = {
   productId: string;
   onBack: () => void;
-  onGoCart: () => void;
-  onOpenProduct?: (id: string) => void;
+  onOpenProduct: (id: string) => void;
 };
 
-export function ProductScreen({
-  productId,
-  onBack,
-  onGoCart,
-  onOpenProduct,
-}: Props) {
+export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
   const product = getProduct(productId);
   const cart = useCart();
-  const { width } = useWindowDimensions();
+  const variants = product?.variants ?? [];
+  const [variantId, setVariantId] = useState(product?.defaultVariantId ?? 0);
   const [qty, setQty] = useState(1);
+  const [added, setAdded] = useState(false);
+  const variant = variants.find((v) => v.id === variantId) ?? variants[0];
+  const price = variant?.price ?? product?.price ?? 0;
 
   if (!product) {
     return (
       <View style={styles.root}>
-        <Text style={styles.missing}>Product not found</Text>
-        <PressableScale onPress={onBack} style={styles.backBtn}>
-          <Text style={styles.backText}>Back</Text>
+        <Text style={styles.missing}>Bag not found</Text>
+        <PressableScale onPress={onBack}>
+          <Text style={styles.backText}>Back to coffee</Text>
         </PressableScale>
       </View>
     );
   }
 
-  const related = products
-    .filter((p) => p.id !== product.id && p.category === product.category)
-    .slice(0, 4);
+  const pair = product.id === "cr-mug" ? colombia : gear()[0];
 
-  const add = () => {
-    cart.add(product.id, qty);
+  const addToBag = () => {
+    cart.add({
+      productId: product.id,
+      variantId: variant?.id ?? product.defaultVariantId,
+      variantTitle: variant?.title ?? "12oz",
+      price,
+      qty,
+    });
+    setAdded(true);
+    cart.flash("Added to bag");
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => setAdded(false), 1600);
   };
 
   return (
     <ScreenFade>
       <View style={styles.root}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={{ height: width * 0.95 }}>
-            <Image
-              source={{ uri: product.image }}
-              style={StyleSheet.absoluteFill}
-              resizeMode="cover"
-            />
-            <LinearGradient
-              colors={["rgba(0,0,0,0.4)", "transparent", "rgba(12,16,12,0.95)"]}
-              style={StyleSheet.absoluteFill}
-            />
-            <PressableScale onPress={onBack} style={styles.backChip}>
-              <Text style={styles.backChipText}>← Back</Text>
-            </PressableScale>
-            {product.badge ? (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{product.badge}</Text>
-              </View>
-            ) : null}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+          <PressableScale onPress={onBack} style={styles.back}>
+            <Text style={styles.backText}>‹ Coffee</Text>
+          </PressableScale>
+          <Image source={{ uri: product.image }} style={styles.hero} resizeMode="cover" />
+          <View style={styles.body}>
+            {product.badge ? <Text style={styles.kicker}>{product.badge.toUpperCase()}</Text> : null}
+            <Text style={styles.name}>{product.name}.</Text>
+            <Text style={styles.meta}>
+              {[product.origin, product.roast].filter(Boolean).join(" · ")}
+            </Text>
+            <Text style={styles.price}>{formatPrice(price)}</Text>
+            {product.notes ? <Text style={styles.notes}>{product.notes}</Text> : null}
+            {product.detail ? <Text style={styles.detail}>{product.detail}</Text> : null}
           </View>
 
-          <View style={styles.body}>
-            <Text style={styles.category}>
-              {(product.roast || product.category).toUpperCase()}
-              {product.origin ? ` · ${product.origin}` : ""}
-            </Text>
-            <Text style={styles.name}>{product.name}</Text>
-            <Text style={styles.sub}>{product.subtitle}</Text>
-            <Text style={styles.price}>{formatPrice(product.price)}</Text>
+          {variants.length > 1 ? (
+            <View style={styles.block}>
+              <Text style={styles.label}>Grind / size</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chips}
+              >
+                {variants.map((v) => {
+                  const on = v.id === variantId;
+                  return (
+                    <PressableScale
+                      key={v.id}
+                      onPress={() => setVariantId(v.id)}
+                      style={[styles.chip, on && styles.chipOn]}
+                    >
+                      <Text style={[styles.chipText, on && styles.chipTextOn]}>{v.title}</Text>
+                    </PressableScale>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          ) : null}
 
-            {product.notes ? (
-              <Text style={styles.notes}>{product.notes}</Text>
-            ) : null}
-            {product.detail ? (
-              <Text style={styles.detail}>{product.detail}</Text>
-            ) : null}
+          <View style={styles.qtyRow}>
+            <Text style={styles.label}>Quantity</Text>
+            <PressableScale onPress={() => setQty((n) => Math.max(1, n - 1))} style={styles.qtyBtn}>
+              <Text style={styles.qtyBtnText}>−</Text>
+            </PressableScale>
+            <Text style={styles.qtyVal}>{qty}</Text>
+            <PressableScale onPress={() => setQty((n) => n + 1)} style={styles.qtyBtn}>
+              <Text style={styles.qtyBtnText}>+</Text>
+            </PressableScale>
+          </View>
 
-            <View style={styles.qtyRow}>
-              <Text style={styles.qtyLabel}>Quantity</Text>
-              <View style={styles.qtyCtrl}>
-                <PressableScale
-                  onPress={() => setQty((q) => Math.max(1, q - 1))}
-                  style={styles.qtyBtn}
-                >
-                  <Text style={styles.qtyBtnText}>−</Text>
-                </PressableScale>
-                <Text style={styles.qtyVal}>{qty}</Text>
-                <PressableScale
-                  onPress={() => setQty((q) => Math.min(12, q + 1))}
-                  style={styles.qtyBtn}
-                >
-                  <Text style={styles.qtyBtnText}>+</Text>
-                </PressableScale>
+          {pair && pair.id !== product.id ? (
+            <View style={styles.block}>
+              <Text style={styles.kicker}>PAIR WITH</Text>
+              <View style={{ width: 160, marginTop: 12 }}>
+                <ProductCard product={pair} onPress={() => onOpenProduct(pair.id)} />
               </View>
             </View>
+          ) : null}
 
-            {related.length > 0 && onOpenProduct ? (
-              <View style={styles.related}>
-                <Text style={styles.relatedTitle}>You may also like</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.relatedRow}
-                >
-                  {related.map((p) => (
-                    <View key={p.id} style={{ width: 180 }}>
-                      <ProductCard
-                        product={p}
-                        wide
-                        onPress={() => onOpenProduct(p.id)}
-                      />
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-            ) : null}
-          </View>
+          <PressableScale
+            onPress={() => void Linking.openURL(productUrl(product.handle))}
+            style={styles.storeLink}
+          >
+            <Text style={styles.backText}>View on rusticopr.com</Text>
+          </PressableScale>
         </ScrollView>
 
-        {/* Navigation-layer chrome */}
-        <View style={styles.footer}>
-          <PressableScale onPress={add} style={styles.add}>
-            <Text style={styles.addText}>
-              Add to bag · {formatPrice(product.price * qty)}
-            </Text>
-          </PressableScale>
-          <PressableScale onPress={onGoCart} style={styles.secondary}>
-            <Text style={styles.secondaryText}>
-              Bag{cart.count > 0 ? ` · ${cart.count}` : ""}
-            </Text>
+        <View style={styles.dock}>
+          <Text style={styles.dockPrice}>{formatPrice(price * qty)}</Text>
+          <PressableScale onPress={addToBag} style={styles.add}>
+            <Text style={styles.addText}>{added ? "Added" : "Add to Bag"}</Text>
           </PressableScale>
         </View>
       </View>
@@ -158,52 +138,19 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   missing: {
     color: colors.linen,
-    fontFamily: fonts.body,
-    fontSize: 16,
+    fontFamily: fonts.display,
+    fontSize: 24,
     margin: 24,
   },
-  backChip: {
-    position: "absolute",
-    top: 16,
-    left: 16,
-    backgroundColor: "rgba(10,14,10,0.55)",
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.glassBorder,
-  },
-  backChipText: {
-    color: colors.linen,
-    fontFamily: fonts.bodyMed,
-    fontSize: 14,
-  },
-  badge: {
-    position: "absolute",
-    top: 16,
-    right: 16,
-    backgroundColor: "rgba(10,14,10,0.75)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.pill,
-  },
-  badgeText: {
+  back: { paddingHorizontal: 16, paddingVertical: 12, alignSelf: "flex-start" },
+  backText: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 15 },
+  hero: { width: "100%", aspectRatio: 1, backgroundColor: colors.bgElevated },
+  body: { paddingHorizontal: 20, paddingTop: 24, gap: 6 },
+  kicker: {
     color: colors.brass,
     fontFamily: fonts.bodyMed,
     fontSize: 11,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  body: {
-    padding: 24,
-    gap: 8,
-    marginTop: -32,
-  },
-  category: {
-    color: colors.brass,
-    fontFamily: fonts.bodyMed,
-    fontSize: 12,
-    letterSpacing: 1.2,
+    letterSpacing: 2,
   },
   name: {
     color: colors.linen,
@@ -211,120 +158,92 @@ const styles = StyleSheet.create({
     fontSize: 36,
     letterSpacing: -0.6,
   },
-  sub: {
+  meta: { color: colors.linenMuted, fontFamily: fonts.body, fontSize: 14 },
+  price: {
+    marginTop: 8,
+    color: colors.linen,
+    fontFamily: fonts.bodyBold,
+    fontSize: 20,
+  },
+  notes: {
+    marginTop: 10,
     color: colors.linenDim,
     fontFamily: fonts.body,
     fontSize: 16,
-  },
-  price: {
-    marginTop: 8,
-    color: colors.brass,
-    fontFamily: fonts.bodyBold,
-    fontSize: 24,
-  },
-  notes: {
-    marginTop: 14,
-    color: colors.linen,
-    fontFamily: fonts.bodyMed,
-    fontSize: 17,
     lineHeight: 24,
   },
   detail: {
-    marginTop: 6,
-    color: colors.linenDim,
+    color: colors.linenMuted,
     fontFamily: fonts.body,
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 22,
   },
-  qtyRow: {
-    marginTop: 22,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  qtyLabel: {
-    color: colors.linenDim,
+  block: { marginTop: 24, paddingLeft: 20 },
+  label: {
+    color: colors.linenMuted,
     fontFamily: fonts.bodyMed,
-    fontSize: 14,
+    fontSize: 12,
+    letterSpacing: 0.4,
+    paddingHorizontal: 20,
   },
-  qtyCtrl: {
+  chips: { paddingHorizontal: 20, paddingTop: 10, gap: 8 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.lineBright,
+  },
+  chipOn: { backgroundColor: colors.linen, borderColor: colors.linen },
+  chipText: { color: colors.linenDim, fontFamily: fonts.bodyMed, fontSize: 13 },
+  chipTextOn: { color: colors.ink },
+  qtyRow: {
+    marginTop: 24,
+    paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: colors.bgPanel,
-    borderRadius: radii.pill,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
   },
   qtyBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.bgCard,
-  },
-  qtyBtnText: {
-    color: colors.linen,
-    fontSize: 20,
-    lineHeight: 22,
-  },
-  qtyVal: {
-    color: colors.linen,
-    fontFamily: fonts.bodyBold,
-    fontSize: 16,
-    minWidth: 20,
-    textAlign: "center",
-  },
-  related: { marginTop: 32, gap: 14, paddingBottom: 8 },
-  relatedTitle: {
-    color: colors.linen,
-    fontFamily: fonts.displaySoft,
-    fontSize: 20,
-  },
-  relatedRow: { gap: 12, paddingRight: 8 },
-  footer: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.glassBorder,
-    padding: 16,
-    gap: 10,
-    backgroundColor: colors.tabGlass,
-  },
-  add: {
-    backgroundColor: colors.brass,
-    paddingVertical: 16,
-    alignItems: "center",
-    borderRadius: radii.pill,
-  },
-  addText: {
-    color: colors.ink,
-    fontFamily: fonts.bodyBold,
-    fontSize: 16,
-  },
-  secondary: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.glassBorder,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderRadius: radii.pill,
-    backgroundColor: colors.glass,
-  },
-  secondaryText: {
-    color: colors.linen,
-    fontFamily: fonts.bodyMed,
-    fontSize: 15,
-  },
-  backBtn: {
-    marginHorizontal: 24,
-    marginTop: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.lineBright,
-    padding: 14,
     alignItems: "center",
-    borderRadius: radii.pill,
+    justifyContent: "center",
   },
-  backText: {
+  qtyBtnText: { color: colors.linen, fontSize: 20, lineHeight: 22 },
+  qtyVal: {
     color: colors.linen,
-    fontFamily: fonts.bodyMed,
+    fontFamily: fonts.body,
+    fontSize: 16,
+    minWidth: 22,
+    textAlign: "center",
   },
+  storeLink: { paddingHorizontal: 20, paddingVertical: 28 },
+  dock: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.line,
+    backgroundColor: colors.tabGlass,
+    gap: 16,
+  },
+  dockPrice: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 16 },
+  add: {
+    flex: 1,
+    backgroundColor: colors.brass,
+    borderRadius: radii.pill,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  addText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
 });

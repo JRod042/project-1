@@ -1,9 +1,3 @@
-/**
- * Casa Rústico catalog — linked to live Shopify store (rusticopr.com).
- * Prices, images, handles and variant IDs match the store.
- * Cart checkout uses Shopify cart permalinks (or Storefront API when token is set).
- */
-
 export type ShopifyVariant = {
   id: number;
   title: string;
@@ -15,12 +9,11 @@ export type Product = {
   id: string;
   handle: string;
   shopifyProductId: number;
-  /** Default Whole Bean / 12oz (or primary) variant for cart permalinks */
   defaultVariantId: number;
   name: string;
   subtitle: string;
   price: number;
-  category: "coffee" | "gear" | "apparel";
+  category: "coffee" | "gear";
   origin?: string;
   roast?: string;
   notes?: string;
@@ -31,16 +24,42 @@ export type Product = {
   variants?: ShopifyVariant[];
 };
 
+const FILES = "https://cdn.shopify.com/s/files/1/0670/8776/1636/files";
+const CDN = FILES;
+
 export const brand = {
   name: "Casa Rústico",
   tagline: "Single-origin. Ship ready.",
-  promo: "MORNING10 — 10% off your first bag",
+  promo: "MORNING10",
+  promoCopy: "10% off your first bag",
   site: "rusticopr.com",
-  heroImage:
-    "https://cdn.shopify.com/s/files/1/0670/8776/1636/files/kraft_blank_final_latest_d8ef99ab-eaab-4274-b98b-8c3fbcd09ec5.jpg?v=1785445582",
+  siteUrl: "https://rusticopr.com",
+  heroImage: `${FILES}/pr-cordillera-central-vista.jpg`,
+  ritualImage: `${FILES}/pr-hacienda-lealtad-landscape.jpg`,
+  landscapes: [
+    {
+      id: "jayuya",
+      title: "Jayuya",
+      kicker: "The look",
+      image: `${FILES}/pr-jayuya-mountain.jpg`,
+      copy: "Mountain mornings. The Cordillera as the house mark.",
+    },
+    {
+      id: "hacienda",
+      title: "Hacienda Lealtad",
+      kicker: "The house",
+      image: `${FILES}/pr-hacienda-lealtad-landscape.jpg`,
+      copy: "Hacienda memory — the culture of the cup.",
+    },
+    {
+      id: "toro",
+      title: "Toro Negro",
+      kicker: "The highlands",
+      image: `${FILES}/pr-toro-negro-panorama.jpg`,
+      copy: "Rooted in coffee country. Ships from the U.S.",
+    },
+  ],
 };
-
-const CDN = "https://cdn.shopify.com/s/files/1/0670/8776/1636/files";
 
 export const products: Product[] = [
   {
@@ -79,8 +98,7 @@ export const products: Product[] = [
     origin: "Alajuela",
     roast: "Medium",
     notes: "Sweet apple, raisin, honey",
-    detail:
-      "Micro farms in Alajuela. Caturra & Catuai at 1300–1445 m. Eco-pulped, sun-dried.",
+    detail: "Micro farms in Alajuela. Caturra & Catuai at 1300–1445 m. Eco-pulped, sun-dried.",
     accent: "#A67C52",
     image: `${CDN}/kraft_blank_final_latest.jpg?v=1785426934`,
     variants: [
@@ -100,8 +118,7 @@ export const products: Product[] = [
     origin: "Paraná & São Paulo",
     roast: "Medium",
     notes: "Elegant, smooth, cocoa",
-    detail:
-      "Fazenda Santa Barbara estates. Catuai & Mundo Novo at 750–1050 m. Pulped natural.",
+    detail: "Fazenda Santa Barbara estates. Catuai & Mundo Novo at 750–1050 m. Pulped natural.",
     accent: "#6B4423",
     image: `${CDN}/kraft_blank_final_latest_65cad81a-6af2-4151-a71b-22f1b71691f0.jpg?v=1785445610`,
     variants: [
@@ -143,8 +160,7 @@ export const products: Product[] = [
     origin: "Antigua",
     roast: "Medium",
     notes: "Dark chocolate, bright fruit, butterscotch",
-    detail:
-      "Antigua smallholders. Bourbon, Catuai, Caturra & Typica at 1200–1616 m. Fully washed.",
+    detail: "Antigua smallholders. Bourbon, Catuai, Caturra & Typica at 1200–1616 m. Fully washed.",
     accent: "#7A5C3E",
     image: `${CDN}/kraft_blank_final_latest_98b9aa9d-8b85-4393-9611-fdd1992eeb22.jpg?v=1785445668`,
     variants: [
@@ -164,8 +180,7 @@ export const products: Product[] = [
     origin: "Aceh, Takengon",
     roast: "Medium-dark",
     notes: "Dark chocolate, dried fruit, earthy",
-    detail:
-      "KBQB coop. Wet-hulled (giling basah). Tim Tim, Typica, Ateng at 1100–1600 m.",
+    detail: "KBQB coop. Wet-hulled (giling basah). Tim Tim, Typica, Ateng at 1100–1600 m.",
     accent: "#4A3728",
     image: `${CDN}/kraft_blank_final_latest_e2b0f0f9-8d3f-47d9-957e-6c98c445447e.jpg?v=1785461247`,
     variants: [
@@ -185,8 +200,7 @@ export const products: Product[] = [
     origin: "Othaya, Nyeri",
     roast: "Medium",
     notes: "Bright, orange, lemon, floral",
-    detail:
-      "Nyeri County. SL28, SL34, Ruiru 11 & Batian at 1700–1890 m. Fully washed, raised beds.",
+    detail: "Nyeri County. SL28, SL34, Ruiru 11 & Batian at 1700–1890 m. Fully washed, raised beds.",
     badge: "New",
     accent: "#B87333",
     image: `${CDN}/kraft_blank_final_latest_3f457b74-0402-4110-815f-a8e23be0af19.jpg?v=1785460000`,
@@ -207,8 +221,7 @@ export const products: Product[] = [
     origin: "Marcala, La Paz",
     roast: "Medium-dark",
     notes: "Caramel, spice, brown sugar",
-    detail:
-      "Café Orgánicos Marcala cooperative. Fully washed, sun-dried at 1300–1700 m.",
+    detail: "Café Orgánicos Marcala cooperative. Fully washed, sun-dried at 1300–1700 m.",
     accent: "#7A5230",
     image: `${CDN}/kraft_blank_final_latest_886c7c4b-491b-40da-8b31-3df01a8eb8a1.jpg?v=1785460000`,
     variants: [
@@ -230,7 +243,7 @@ export const products: Product[] = [
     notes: "Salted caramel, silky sweet, citrus",
     detail: "Cooperativa Norandino. Fully washed at 1100–1700 m.",
     accent: "#8B6914",
-    image: `${CDN}/kraft_blank_final_latest_5051ac1a-1b3f-4519-aff5-715a67c2dd08.jpg?v=1785460000`,
+    image: `${CDN}/kraft_blank_final_latest_5051ac1a-1b3f-4519-aff5-715a67c0dd08.jpg?v=1785460000`,
     variants: [
       { id: 49541923471588, title: "Whole Bean / 12oz", price: 25 },
       { id: 49542199214308, title: "Espresso / 12oz", price: 25 },
@@ -248,8 +261,7 @@ export const products: Product[] = [
     origin: "Kintamani, Bali",
     roast: "Med-dark",
     notes: "Dark chocolate, molasses, brown sugar",
-    detail:
-      "Smallholders from Kintamani. Bourbon, Typica, Catimor. Wet-hulled, raised beds.",
+    detail: "Smallholders from Kintamani. Bourbon, Typica, Catimor. Wet-hulled, raised beds.",
     accent: "#5C4033",
     image: `${CDN}/kraft_blank_final_latest_d8ef99ab-eaab-4274-b98b-8c3fbcd09ec5.jpg?v=1785445582`,
     variants: [
@@ -269,7 +281,7 @@ export const products: Product[] = [
     origin: "Blend",
     notes: "Dark chocolate, molasses, brown sugar",
     detail: "Compatible pods · same single-origin quality in a weekday format.",
-    accent: "#C9A85C",
+    accent: "#C4A484",
     image: `${CDN}/Single_Serve_Capsules_12_Pack.jpg?v=1785502910`,
     variants: [
       { id: 49550427324644, title: "12 Pack", price: 14.99 },
@@ -304,3 +316,17 @@ export function getProduct(id: string) {
 export function formatPrice(n: number) {
   return n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}`;
 }
+
+export function coffees() {
+  return products.filter((p) => p.category === "coffee");
+}
+
+export function origins() {
+  return products.filter((p) => p.category === "coffee" && p.id !== "cr-capsules");
+}
+
+export function gear() {
+  return products.filter((p) => p.category === "gear");
+}
+
+export const colombia = products[0];

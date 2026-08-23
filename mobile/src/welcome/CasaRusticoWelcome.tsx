@@ -1,19 +1,13 @@
 /**
- * Casa Rustico welcome — Appllama ReferenceCanvas/geometry (GPL shared/) +
+ * Casa Rústico welcome — Appllama ReferenceCanvas/geometry (GPL shared/) +
  * original brand, timed with React Native Animated (no Reanimated native module).
  *
- * Structure follows Appllama onX Hunt (splash hold → CTA) and Yazio (staggered motifs).
+ * Structure follows Appllama splash hold → CTA. Copy, scene, and CTAs are original.
  */
 import { useEffect, useRef, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
-import {
-  Animated,
-  Easing,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Easing, Linking, StyleSheet, Text, View } from "react-native";
 
 import type { CasaWelcomeScreenProps } from "./types";
 import { resolveActionPress } from "./shared/actions";
@@ -111,52 +105,59 @@ export function CasaRusticoWelcome({
   });
 
   return (
-    <ReferenceCanvas backgroundColor="#1A2118" testID="welcome-casa-rustico">
+    <ReferenceCanvas backgroundColor="#120e0b" testID="welcome-casa-rustico">
       <StatusBar style="light" />
 
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: content }]}>
         <LinearGradient
-          colors={["#2A3326", "#1A2118", "#12160F"]}
-          locations={[0, 0.5, 1]}
+          colors={["#2a2118", "#1a1410", "#120e0b"]}
+          locations={[0, 0.48, 1]}
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.heroWash} />
 
         <Animated.View style={rise(content, 14)}>
-          <Text style={styles.eyebrow}>SERVICE DESK</Text>
-          <Text style={styles.brand}>Casa{"\n"}Rustico</Text>
+          <Text style={styles.eyebrow}>CASA RÚSTICO</Text>
+          <Text style={styles.brand}>Colombia{"\n"}leads.</Text>
           <Text style={styles.tagline}>
-            The house, in your pocket — books, floor, and close.
+            Single-origin bags. Ship ready from the U.S.
           </Text>
         </Animated.View>
 
         <Animated.View style={[styles.motifBook, rise(motifA, 24)]}>
-          <Text style={styles.motifGlyph}>◈</Text>
-          <Text style={styles.motifLabel}>Book</Text>
+          <Text style={styles.motifGlyph}>◎</Text>
+          <Text style={styles.motifLabel}>Bags</Text>
         </Animated.View>
         <Animated.View style={[styles.motifFloor, rise(motifB, 24)]}>
-          <Text style={styles.motifGlyph}>◎</Text>
-          <Text style={styles.motifLabel}>Floor</Text>
+          <Text style={styles.motifGlyph}>◈</Text>
+          <Text style={styles.motifLabel}>Ritual</Text>
         </Animated.View>
         <Animated.View style={[styles.motifHouse, rise(motifC, 24)]}>
           <Text style={styles.motifGlyph}>▤</Text>
-          <Text style={styles.motifLabel}>House</Text>
+          <Text style={styles.motifLabel}>Story</Text>
         </Animated.View>
 
         <Animated.View style={rise(cta, 20)}>
           <ReplicaPressable
-            accessibilityLabel="Enter the house"
+            accessibilityLabel="Enter the shop"
             disabled={!interactionsReady}
             onPress={resolveActionPress(
               "casa.enter-house",
               onActionPress,
-              onPrimaryPress
+              onPrimaryPress,
             )}
             style={styles.primary}
           >
-            <Text style={styles.primaryText}>Enter the house</Text>
+            <Text style={styles.primaryText}>Enter the shop</Text>
           </ReplicaPressable>
-          <Text style={styles.footnote}>Cloud-ready · no home server</Text>
+          <ReplicaPressable
+            accessibilityLabel="Open rusticopr.com"
+            disabled={!interactionsReady}
+            onPress={() => void Linking.openURL("https://rusticopr.com")}
+            style={styles.secondary}
+          >
+            <Text style={styles.footnote}>Visit rusticopr.com</Text>
+          </ReplicaPressable>
         </Animated.View>
       </Animated.View>
 
@@ -165,7 +166,7 @@ export function CasaRusticoWelcome({
         style={[styles.splash, { opacity: splash }]}
       >
         <Text style={styles.splashMark}>CR</Text>
-        <Text style={styles.splashWord}>CASA RUSTICO</Text>
+        <Text style={styles.splashWord}>CASA RÚSTICO</Text>
       </Animated.View>
     </ReferenceCanvas>
   );
@@ -174,18 +175,18 @@ export function CasaRusticoWelcome({
 const styles = StyleSheet.create({
   heroWash: {
     ...box([0, 0, 640, 520]),
-    backgroundColor: "rgba(196, 163, 90, 0.08)",
+    backgroundColor: "rgba(196, 164, 132, 0.08)",
   },
   eyebrow: {
     ...box([56, 220, 528, 28]),
-    color: "#C4A35A",
+    color: "#c4a484",
     fontFamily: "SourceSans3_600SemiBold",
     fontSize: 18,
     letterSpacing: 4,
   },
   brand: {
     ...box([56, 260, 528, 160]),
-    color: "#F3EDE2",
+    color: "#f5ead8",
     fontFamily: "Fraunces_700Bold",
     fontSize: 72,
     lineHeight: 76,
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
   },
   tagline: {
     ...box([56, 440, 520, 80]),
-    color: "rgba(243, 237, 226, 0.72)",
+    color: "rgba(245, 234, 216, 0.72)",
     fontFamily: "SourceSans3_400Regular",
     fontSize: 26,
     lineHeight: 34,
@@ -203,34 +204,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "rgba(243, 237, 226, 0.06)",
+    backgroundColor: "rgba(245, 234, 216, 0.06)",
     borderWidth: 1,
-    borderColor: "rgba(243, 237, 226, 0.14)",
+    borderColor: "rgba(245, 234, 216, 0.14)",
   },
   motifFloor: {
     ...box([240, 560, 160, 140]),
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "rgba(243, 237, 226, 0.06)",
+    backgroundColor: "rgba(245, 234, 216, 0.06)",
     borderWidth: 1,
-    borderColor: "rgba(243, 237, 226, 0.14)",
+    borderColor: "rgba(245, 234, 216, 0.14)",
   },
   motifHouse: {
     ...box([424, 560, 160, 140]),
     alignItems: "center",
     justifyContent: "center",
     gap: 10,
-    backgroundColor: "rgba(243, 237, 226, 0.06)",
+    backgroundColor: "rgba(245, 234, 216, 0.06)",
     borderWidth: 1,
-    borderColor: "rgba(243, 237, 226, 0.14)",
+    borderColor: "rgba(245, 234, 216, 0.14)",
   },
   motifGlyph: {
-    color: "#C4A35A",
+    color: "#c4a484",
     fontSize: 34,
   },
   motifLabel: {
-    color: "#F3EDE2",
+    color: "#f5ead8",
     fontFamily: "SourceSans3_600SemiBold",
     fontSize: 20,
     letterSpacing: 0.8,
@@ -239,36 +240,40 @@ const styles = StyleSheet.create({
     ...box([56, 1090, 528, 90]),
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#C4A35A",
+    backgroundColor: "#c4a484",
   },
   primaryText: {
-    color: "#12160F",
+    color: "#120e0b",
     fontFamily: "SourceSans3_700Bold",
     fontSize: 28,
     letterSpacing: 0.4,
   },
+  secondary: {
+    ...box([56, 1190, 528, 50]),
+    alignItems: "center",
+    justifyContent: "center",
+  },
   footnote: {
-    ...box([56, 1200, 528, 40]),
-    color: "rgba(243, 237, 226, 0.55)",
-    fontFamily: "SourceSans3_400Regular",
+    color: "rgba(245, 234, 216, 0.55)",
+    fontFamily: "SourceSans3_600SemiBold",
     fontSize: 20,
     textAlign: "center",
   },
   splash: {
     ...box([0, 0, 640, 1385]),
     alignItems: "center",
-    backgroundColor: "#1A2118",
+    backgroundColor: "#120e0b",
     justifyContent: "center",
     gap: 18,
   },
   splashMark: {
-    color: "#C4A35A",
+    color: "#c4a484",
     fontFamily: "Fraunces_700Bold",
     fontSize: 96,
     letterSpacing: 6,
   },
   splashWord: {
-    color: "#F3EDE2",
+    color: "#f5ead8",
     fontFamily: "SourceSans3_600SemiBold",
     fontSize: 22,
     letterSpacing: 6,
