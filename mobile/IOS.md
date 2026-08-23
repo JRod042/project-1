@@ -49,7 +49,7 @@ Checkout on rusticopr.com. No OpenClaw, no LAN gateway, no SYS, no fake card for
 ### If submit says the build number was already used
 
 Bump `ios.buildNumber` in `mobile/app.config.js`, commit, rebuild, then submit again.  
-`autoIncrement` is **not** enabled. Current value on main: **17**.
+`autoIncrement` is **not** enabled. Current value on main: **18**.
 
 ### If the build is green but nothing appears in TestFlight
 
