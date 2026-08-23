@@ -1,62 +1,37 @@
-# Casa Rustico — North star (pin this)
+# Casa Rústico — North star
 
-**Casa Rustico is the pocket HQ for running the house** — reservations, floor, kitchen, staff, stock, guests, and money — in one calm business app.
+**Casa Rústico is the customer shop** — single-origin bags, capsules, the house mug, ritual, and story. Checkout on rusticopr.com.
 
-## Hard constraint (non‑negotiable)
+## Hard constraint
 
-**There is no Linux computer and no Mac.**
-
-| Device | Role |
-|--------|------|
-| iPhone / iPad | **Only** runtime Jorge operates |
-| Expo cloud (EAS) | Builds + TestFlight submit |
-| Hosted cloud backend | All data, auth, realtime (no home server) |
-
-Anything that required a LAN IP, Tailscale, Docker, OpenClaw Gateway, Omni `:8787`, or “leave a PC on” is **out of the product**.
+**There is no Linux computer and no Mac.** iPhone / iPad + EAS + TestFlight only.
 
 ## One sentence
-An all-around **cloud business operations app** for Casa Rustico: owners and staff work from iPad/iPhone against a hosted database — no self-hosted agent box.
+
+A warm brand shop for Casa Rústico coffee: Colombia leads, cart lives on-device, purchase completes on Shopify.
 
 ## Product identity
+
 | Item | Value |
 |------|-------|
-| Brand | **Casa Rustico** |
-| Audience | Owner, managers, floor, kitchen, catering lead |
-| Primary device | iPad (desk) + iPhone (floor) |
-| Feel | Warm hospitality ops — rustic Italian house, not cyber terminal |
-| Ship path | Expo → EAS → TestFlight only |
-| Backend | **Hosted** Postgres + Auth + Realtime (Supabase cloud default) |
+| Brand | **Casa Rústico** |
+| Audience | Guests buying coffee |
+| Primary device | iPhone + iPad |
+| Feel | Kraft / linen / espresso — highlands, not ops HQ |
+| Ship path | Expo → EAS → TestFlight |
+| Checkout | rusticopr.com cart permalinks |
 
-## Feel
-- Open app → **Today** (covers, arrivals, tickets, staff on) — never a chat/gateway console
-- Sign in with cloud account / staff PIN — never paste a gateway URL
-- Works on cellular / restaurant Wi‑Fi with zero home infrastructure
-- AI (if any) is a cloud edge helper over *Casa Rustico data* — never a self-hosted OpenClaw box
+## Tabs
 
-## Architecture (only allowed shape)
-```
-iPhone / iPad (Expo → TestFlight)
-        │  HTTPS
-        ▼
-Hosted backend (Supabase cloud)
-  · Auth + roles
-  · Postgres business data
-  · Realtime (tickets / 86 / book)
-        │
-        ▼ optional later
-Cloud Edge Function + LLM API
-  (house assistant — no Linux host)
-```
+Home · Coffee · Ritual · Story. Bag is a FAB, not a tab.
 
 ## Explicitly forbidden
-- OpenClaw Gateway / Docker / `:18789`
-- Legacy Omni Hono server / `:8787`
-- “Set LAN IP in SYS”, Tailscale, localhost, leave-PC-on
-- Self-hosted VPS that Jorge must SSH/admin from a Linux box as day‑one dependency
 
-## When choosing UX
-Prefer: Today, Book, Floor, House, daily close.  
-Avoid: operator HUD, SYS gateway screens, uplink bars to home servers, “AI companion” as home.
+- OpenClaw / Docker / LAN gateway / SYS
+- Floor maps, book-a-table, kitchen 86
+- In-app card collection
+- Olive cyber / restaurant HQ chrome
 
 ## Shipping
-TestFlight only. Details: **[CASA_RUSTICO_REPLAN.md](./CASA_RUSTICO_REPLAN.md)**.
+
+TestFlight only. Details: **[mobile/IOS.md](../mobile/IOS.md)**. Bundle stays `com.jrod042.omni` until a new ASC listing is chosen.

@@ -7,16 +7,14 @@
 **GitHub base directory:** `mobile`  
 **ASC App ID:** `6797235230`
 
-You do **not** need a Mac or any home server. Current TestFlight builds ship with **local mock data** and work offline.
+You do **not** need a Mac or any home server.
 
 ---
 
 ## What this build is
 
-Casa Rustico pocket HQ (Today / Book / Floor / House / More).  
-No OpenClaw, no LAN gateway, no SYS screen, no agent server required.
-
-Mock data is intentional for Phase 0 so the app is usable on TestFlight with zero backend. Supabase cloud comes next.
+Casa Rústico **customer shop** (Home / Coffee / Ritual / Story + bag).  
+Checkout on rusticopr.com. No OpenClaw, no LAN gateway, no SYS, no fake card form.
 
 ---
 
@@ -35,7 +33,6 @@ Mock data is intentional for Phase 0 so the app is usable on TestFlight with zer
 2. iOS → App Store for `com.jrod042.omni`
 3. Generate / validate **Distribution Certificate**
 4. Generate / validate **App Store Provisioning Profile**
-5. Both must show as set before building
 
 ---
 
@@ -46,35 +43,32 @@ Mock data is intentional for Phase 0 so the app is usable on TestFlight with zer
 3. Platform: **iOS** · Profile: **production**
 4. Wait for a **green build**
 5. Open that build → **Submit** to App Store Connect (**required** — green Expo build ≠ TestFlight)
-6. App Store Connect → Activity (Processing, usually 5–60 min) → TestFlight → Ready to Test
+6. App Store Connect → Activity → TestFlight → Ready to Test
 7. On device: open **TestFlight** → install **Casa Rustico**
 
 ### If submit says the build number was already used
 
 Bump `ios.buildNumber` in `mobile/app.config.js`, commit, rebuild, then submit again.  
-`autoIncrement` is **not** enabled (unsupported with `app.config.js`). Current value on main: **12**.
+`autoIncrement` is **not** enabled. Current value on main: **17**.
 
 ### If the build is green but nothing appears in TestFlight
 
-You almost always have not submitted yet (or submit failed / Apple rejected by email).
+You almost always have not submitted yet.
 
 1. Open the finished production build on Expo
 2. Tap **Submit**
 3. Check App Store Connect → Activity for Processing
-4. Check Apple ID email (and spam) for ITMS / “Your app build is invalid”
-5. Answer export compliance if asked (`ITSAppUsesNonExemptEncryption: false` → usually “No”)
 
 ---
 
 ## After install
 
-Open the app → Welcome → Enter house → Today board with mock covers, reservations, tickets, and staff.  
-No server URL, no gateway token, no home computer required.
+Open the app → Welcome → Enter the shop → Colombia hero → add a bag → Check Out on rusticopr.com. Promo **MORNING10**.
 
 ---
 
 ## Notes
 
-- Bundle stays `com.jrod042.omni` for continuity with the existing ASC listing; display name is already Casa Rustico.
-- Credentials must show Distribution Certificate + App Store Provisioning Profile for `com.jrod042.omni`.
-- Prefer Expo browser **Build → Submit** until any GitHub Actions workflow is confirmed green.
+- Bundle stays `com.jrod042.omni` for continuity with the existing ASC listing.
+- Never change `eas.json` / bundle IDs unless you intend a new listing.
+- Prefer Expo browser **Build → Submit** until GitHub Actions is confirmed green.

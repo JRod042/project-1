@@ -1,45 +1,28 @@
-# Casa Rustico
+# Casa Rústico (project-1)
 
-**Pocket HQ for running the house** — on iPhone/iPad only.  
+**Customer shop** for rusticopr.com — on iPhone/iPad only.  
 **No Linux computer. No Mac. No home server.**
 
 | Doc | Purpose |
 |-----|---------|
 | **[docs/NORTH_STAR.md](docs/NORTH_STAR.md)** | Product + hard constraints |
-| **[docs/CASA_RUSTICO_REPLAN.md](docs/CASA_RUSTICO_REPLAN.md)** | Full system replan |
-| **[docs/REPO_DECISION.md](docs/REPO_DECISION.md)** | Cloud stack; why OpenClaw is out |
+| **[mobile/IOS.md](mobile/IOS.md)** | TestFlight / EAS |
 
-## System (only this)
+## What ships
 
-```
-iPhone / iPad  ──HTTPS──▶  Supabase cloud (auth + Postgres + realtime)
-       │
-       └── builds via Expo EAS → TestFlight
-```
+Expo app in `mobile/`:
 
-| Not part of the product | Why |
-|-------------------------|-----|
-| OpenClaw / Docker / `:18789` | Needs a host we no longer have |
-| Omni `server/` / `:8787` | Same |
-| LAN IP, Tailscale, “leave PC on” | Broken without the Linux box |
+- Welcome (brand-original)
+- Home · Coffee · Ritual · Story
+- Bag with Shopify checkout permalinks (`MORNING10`)
+- Cart on-device only — no accounts
 
-## Repo status
+Checkout never collects cards in-app. It opens `https://rusticopr.com/cart/{variantId}:{qty}`.
 
-| Area | Status |
-|------|--------|
-| Docs | Cloud-only Casa Rustico |
-| `mobile/` | Welcome + Today/Book/Floor/House/More with **mock data** |
-| `archive/legacy-omni-mobile/` | Old Omni HUD (not compiled) |
-| `openclaw/`, `server/` | Legacy host stacks — not required to run the app |
+## Not this product
 
-Welcome uses [Appllama/top-welcome-screens](https://github.com/Appllama/top-welcome-screens) **ReferenceCanvas / geometry** (GPL-3.0 under `mobile/src/welcome/shared/`) with Casa Rustico branding and RN `Animated`. See `docs/WELCOME_REFERENCE.md`.
+OpenClaw, Omni terminal, floor maps, book-a-table, kitchen 86. Legacy folders stay in `archive/` and `openclaw/` / `server/` — they are not compiled.
 
 ## Ship path
 
-EAS → TestFlight (`mobile/IOS.md`). Display name **Casa Rustico**; bundle still `com.jrod042.omni` until a new ASC listing is chosen.
-
-## Next
-
-1. Supabase schema + auth  
-2. Wire Book/Menu to cloud  
-3. Real house photography on Today hero  
+EAS → TestFlight (`mobile/IOS.md`). Display name **Casa Rustico**; bundle **`com.jrod042.omni`**. GitHub base directory: **`mobile`**.
