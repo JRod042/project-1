@@ -1,19 +1,23 @@
-/** Casa Rustico — warm hospitality ops (not Omni cyber HUD). */
+/** Casa Rústico shop — warm retail, not cyber HUD. */
 export const colors = {
-  bg: "#1A2118",
-  bgElevated: "#232B20",
-  bgPanel: "#2A3326",
-  linen: "#F3EDE2",
-  linenDim: "rgba(243, 237, 226, 0.72)",
-  ink: "#12160F",
-  brass: "#C4A35A",
-  brassDim: "#8A7340",
+  bg: "#141A12",
+  bgElevated: "#1C2419",
+  bgPanel: "#243024",
+  bgCard: "#2A3528",
+  linen: "#F5F0E6",
+  linenDim: "rgba(245, 240, 230, 0.68)",
+  linenMuted: "rgba(245, 240, 230, 0.45)",
+  ink: "#0F130D",
+  brass: "#C9A85C",
+  brassSoft: "#D4B87A",
+  brassDim: "#8B7340",
   leaf: "#6B8F71",
-  leafBright: "#8FB896",
-  warn: "#D4A05A",
+  leafBright: "#9BC4A0",
   danger: "#C45C4A",
-  line: "rgba(243, 237, 226, 0.14)",
-  lineBright: "rgba(243, 237, 226, 0.28)",
+  success: "#6B9B72",
+  line: "rgba(245, 240, 230, 0.12)",
+  lineBright: "rgba(245, 240, 230, 0.24)",
+  heroWash: "rgba(201, 168, 92, 0.09)",
 };
 
 export const fonts = {
