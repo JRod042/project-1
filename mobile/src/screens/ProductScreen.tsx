@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { colors, fonts, radii } from "../theme";
-import { colombia, formatPrice, gear, getProduct } from "../lib/catalog";
+import {
+  colombia,
+  formatPrice,
+  gear,
+  getProduct,
+  type Product,
+  type ShopifyVariant,
+} from "../lib/catalog";
 import { productUrl } from "../lib/shopify";
 import { useCart } from "../lib/cart";
 import { PressableScale } from "../components/PressableScale";
@@ -15,6 +22,101 @@ type Props = {
   onOpenProduct: (id: string) => void;
 };
 
+function unique(values: (string | undefined)[]) {
+  const out: string[] = [];
+  for (const v of values) {
+    if (v && !out.includes(v)) out.push(v);
+  }
+  return out;
+}
+
+function axisLabels(product: Product): [string, string] | [string] {
+  if (product.id.startsWith("cr-hoodie")) return ["Color", "Size"];
+  if (product.id === "cr-capsules") return ["Pack size"];
+  if (product.category === "coffee") return ["Grind", "Size"];
+  return ["Size"];
+}
+
+function VariantPicker({
+  product,
+  variants,
+  variantId,
+  onChange,
+}: {
+  product: Product;
+  variants: ShopifyVariant[];
+  variantId: number;
+  onChange: (id: number) => void;
+}) {
+  const current = variants.find((v) => v.id === variantId) ?? variants[0];
+  const twoAxis = variants.every((v) => (v.options?.length ?? 0) >= 2);
+  const labels = axisLabels(product);
+
+  if (!twoAxis) {
+    return (
+      <View style={styles.block}>
+        <Text style={styles.label}>{labels[0]}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {variants.map((v) => {
+            const on = v.id === variantId;
+            return (
+              <PressableScale key={v.id} onPress={() => onChange(v.id)} style={[styles.chip, on && styles.chipOn]}>
+                <Text style={[styles.chipText, on && styles.chipTextOn]}>{v.title}</Text>
+              </PressableScale>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  const color = current?.options?.[0] ?? "";
+  const size = current?.options?.[1] ?? "";
+  const colors0 = unique(variants.map((v) => v.options?.[0]));
+  const sizes = unique(variants.filter((v) => v.options?.[0] === color).map((v) => v.options?.[1]));
+
+  const choose = (nextColor: string, nextSize: string) => {
+    const match =
+      variants.find((v) => v.options?.[0] === nextColor && v.options?.[1] === nextSize) ??
+      variants.find((v) => v.options?.[0] === nextColor) ??
+      variants[0];
+    onChange(match.id);
+  };
+
+  return (
+    <View>
+      <View style={styles.block}>
+        <Text style={styles.label}>{labels[0]}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {colors0.map((c) => {
+            const on = c === color;
+            return (
+              <PressableScale key={c} onPress={() => choose(c, size)} style={[styles.chip, on && styles.chipOn]}>
+                <Text style={[styles.chipText, on && styles.chipTextOn]}>{c}</Text>
+              </PressableScale>
+            );
+          })}
+        </ScrollView>
+      </View>
+      {sizes.length > 1 || product.id.startsWith("cr-hoodie") ? (
+        <View style={styles.block}>
+          <Text style={styles.label}>{labels[1] ?? "Size"}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+            {sizes.map((s) => {
+              const on = s === size;
+              return (
+                <PressableScale key={s} onPress={() => choose(color, s)} style={[styles.chip, on && styles.chipOn]}>
+                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{s}</Text>
+                </PressableScale>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
   const product = getProduct(productId);
   const cart = useCart();
@@ -24,6 +126,12 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
   const [added, setAdded] = useState(false);
   const variant = variants.find((v) => v.id === variantId) ?? variants[0];
   const price = variant?.price ?? product?.price ?? 0;
+
+  const pair = useMemo(() => {
+    if (!product) return null;
+    if (product.category === "gear") return colombia;
+    return gear()[0];
+  }, [product]);
 
   if (!product) {
     return (
@@ -35,8 +143,6 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
       </View>
     );
   }
-
-  const pair = product.id === "cr-mug" ? colombia : gear()[0];
 
   const addToBag = () => {
     cart.add({
@@ -72,27 +178,12 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
           </View>
 
           {variants.length > 1 ? (
-            <View style={styles.block}>
-              <Text style={styles.label}>Grind / size</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chips}
-              >
-                {variants.map((v) => {
-                  const on = v.id === variantId;
-                  return (
-                    <PressableScale
-                      key={v.id}
-                      onPress={() => setVariantId(v.id)}
-                      style={[styles.chip, on && styles.chipOn]}
-                    >
-                      <Text style={[styles.chipText, on && styles.chipTextOn]}>{v.title}</Text>
-                    </PressableScale>
-                  );
-                })}
-              </ScrollView>
-            </View>
+            <VariantPicker
+              product={product}
+              variants={variants}
+              variantId={variantId}
+              onChange={setVariantId}
+            />
           ) : null}
 
           <View style={styles.qtyRow}>

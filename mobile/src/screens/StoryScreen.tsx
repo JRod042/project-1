@@ -52,13 +52,17 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
         <View style={styles.block}>
           <Text style={styles.h2}>The house mark.</Text>
           <Text style={styles.body}>
-            Rooted in coffee country. The look pulls from Puerto Rico’s highlands — mountain
-            mornings, hacienda memory, the culture of the cup. We keep the menu short, the
-            packaging clear, and the house mark on gear you actually use.
+            Casa Rústico Coffee and Brews is built for the morning ritual: a cup that feels
+            intentional, a short honest menu, and a house mark you can wear and drink from.
           </Text>
           <Text style={styles.body}>
-            Kraft bags. A short origin list. No invented cafe. Bags, capsules, and ritual for
-            the home bar — shipping from the U.S.
+            Our look and language draw from Puerto Rico’s highlands — mountain mornings, hacienda
+            memory, the culture of the cup. That is the soul of the brand. Growing origin is always
+            listed on each coffee; we only call a lot Puerto Rican-grown when it truly is.
+          </Text>
+          <Text style={styles.body}>
+            Partner-roasted and packed in the United States under our label. Bags, capsules, and
+            house-mark gear — shipping from the U.S.
           </Text>
           <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.cta}>
             <Text style={styles.ctaText}>Start with Colombia</Text>
