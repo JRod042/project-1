@@ -39,7 +39,7 @@ const SLIDES = [
   {
     kicker: "Home bar",
     title: "Ready to pour.",
-    body: `${brand.promo} on your first bag. Origins, capsules, and the house mug.`,
+    body: `${brand.promo} for 10% off. Origins, capsules, and house-mark gear.`,
     image: brand.ritualImage,
   },
 ] as const;

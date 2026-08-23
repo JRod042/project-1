@@ -49,7 +49,7 @@ export function ShopScreen({ onOpenProduct }: Props) {
       <View style={styles.root}>
         <View style={styles.header}>
           <Text style={styles.title}>Coffee.</Text>
-          <Text style={styles.sub}>Single-origin bags, capsules, and the house mug.</Text>
+          <Text style={styles.sub}>Single-origin bags, capsules, and house-mark gear.</Text>
           <TextInput
             value={q}
             onChangeText={setQ}

@@ -36,7 +36,7 @@ export function HomeScreen({ onOpenShop, onOpenProduct, onOpenStory }: Props) {
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
           <Text style={styles.title}>{greeting()}</Text>
-          <Text style={styles.sub}>Colombia leads. Single-origin. Ship ready from the U.S.</Text>
+          <Text style={styles.sub}>Colombia leads · single-origin menu · MORNING10 for 10% off</Text>
         </View>
 
         <View style={styles.hero}>
@@ -62,9 +62,9 @@ export function HomeScreen({ onOpenShop, onOpenProduct, onOpenStory }: Props) {
           onPress={() => cart.flash(`${brand.promo} · ${brand.promoCopy}`)}
           style={styles.promo}
         >
-          <Text style={styles.kicker}>FIRST BAG</Text>
+          <Text style={styles.kicker}>PROMO</Text>
           <Text style={styles.promoCode}>{brand.promo}</Text>
-          <Text style={styles.promoCopy}>{brand.promoCopy}. Tap to remember.</Text>
+          <Text style={styles.promoCopy}>{brand.promo} for {brand.promoCopy}. Tap to remember.</Text>
         </PressableScale>
 
         <View style={styles.sectionHead}>

@@ -14,9 +14,9 @@ type Props = {
 export function CartScreen({ onOpenProduct }: Props) {
   const cart = useCart();
   const mug = gear()[0];
-  const hasCoffee = cart.lines.some((l) => l.productId !== "cr-mug");
-  const hasMug = cart.lines.some((l) => l.productId === "cr-mug");
-  const suggest = hasCoffee && !hasMug && mug ? mug : !hasCoffee ? colombia : null;
+  const hasCoffee = cart.lines.some((l) => getProduct(l.productId)?.category === "coffee");
+  const hasGear = cart.lines.some((l) => getProduct(l.productId)?.category === "gear");
+  const suggest = hasCoffee && !hasGear && mug ? mug : !hasCoffee ? colombia : null;
   const checkout = cartPermalink(
     cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })),
   );
@@ -92,7 +92,7 @@ export function CartScreen({ onOpenProduct }: Props) {
             <Text style={styles.kicker}>PROMO</Text>
             <Text style={styles.promoCode}>{brand.promo}</Text>
             <Text style={styles.promoCopy}>
-              {brand.promoCopy}. Tap to remember, then apply at checkout.
+              {brand.promo} for {brand.promoCopy}. Applied when you check out on rusticopr.com.
             </Text>
           </PressableScale>
 
