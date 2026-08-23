@@ -15,11 +15,12 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 import { WelcomeScreen } from "./src/components/WelcomeScreen";
 import { TabShell, type TabId } from "./src/components/TabShell";
-import { TodayScreen } from "./src/screens/TodayScreen";
-import { BookScreen } from "./src/screens/BookScreen";
-import { FloorScreen } from "./src/screens/FloorScreen";
-import { HouseScreen } from "./src/screens/HouseScreen";
-import { MoreScreen } from "./src/screens/MoreScreen";
+import { HomeScreen } from "./src/screens/HomeScreen";
+import { ShopScreen } from "./src/screens/ShopScreen";
+import { CartScreen } from "./src/screens/CartScreen";
+import { AccountScreen } from "./src/screens/AccountScreen";
+import { ProductScreen } from "./src/screens/ProductScreen";
+import { CartProvider, useCart } from "./src/lib/cart";
 import {
   loadWelcomeSeen,
   saveWelcomeSeen,
@@ -28,7 +29,8 @@ import { colors } from "./src/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-export default function App() {
+function ShopApp() {
+  const cart = useCart();
   const [fontsLoaded] = useFonts({
     Fraunces_600SemiBold,
     Fraunces_700Bold,
@@ -40,7 +42,8 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const [welcomeReplayKey, setWelcomeReplayKey] = useState(0);
-  const [tab, setTab] = useState<TabId>("today");
+  const [tab, setTab] = useState<TabId>("home");
+  const [productId, setProductId] = useState<string | null>(null);
 
   useEffect(() => {
     loadWelcomeSeen().then((seen) => {
@@ -55,10 +58,10 @@ export default function App() {
     }
   }, [fontsLoaded, ready]);
 
-  const enterHouse = async () => {
+  const enterShop = async () => {
     await saveWelcomeSeen();
     setShowWelcome(false);
-    setTab("today");
+    setTab("home");
   };
 
   if (!fontsLoaded || !ready) {
@@ -73,8 +76,26 @@ export default function App() {
     return (
       <WelcomeScreen
         replayKey={welcomeReplayKey}
-        onEnter={() => void enterHouse()}
+        onEnter={() => void enterShop()}
       />
+    );
+  }
+
+  if (productId) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+          <StatusBar style="light" />
+          <ProductScreen
+            productId={productId}
+            onBack={() => setProductId(null)}
+            onGoCart={() => {
+              setProductId(null);
+              setTab("cart");
+            }}
+          />
+        </SafeAreaView>
+      </SafeAreaProvider>
     );
   }
 
@@ -83,14 +104,23 @@ export default function App() {
       <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
         <StatusBar style="light" />
         <View style={styles.body}>
-          {tab === "today" ? (
-            <TodayScreen onNewReservation={() => setTab("book")} />
+          {tab === "home" ? (
+            <HomeScreen
+              onOpenShop={() => setTab("shop")}
+              onOpenProduct={(id) => setProductId(id)}
+            />
           ) : null}
-          {tab === "book" ? <BookScreen /> : null}
-          {tab === "floor" ? <FloorScreen /> : null}
-          {tab === "house" ? <HouseScreen /> : null}
-          {tab === "more" ? (
-            <MoreScreen
+          {tab === "shop" ? (
+            <ShopScreen onOpenProduct={(id) => setProductId(id)} />
+          ) : null}
+          {tab === "cart" ? (
+            <CartScreen
+              onOpenShop={() => setTab("shop")}
+              onOpenProduct={(id) => setProductId(id)}
+            />
+          ) : null}
+          {tab === "account" ? (
+            <AccountScreen
               onShowWelcome={() => {
                 setWelcomeReplayKey((k) => k + 1);
                 setShowWelcome(true);
@@ -99,10 +129,18 @@ export default function App() {
           ) : null}
         </View>
         <SafeAreaView edges={["bottom"]} style={styles.tabSafe}>
-          <TabShell active={tab} onChange={setTab} />
+          <TabShell active={tab} onChange={setTab} cartCount={cart.count} />
         </SafeAreaView>
       </SafeAreaView>
     </SafeAreaProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <CartProvider>
+      <ShopApp />
+    </CartProvider>
   );
 }
 
