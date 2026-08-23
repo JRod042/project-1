@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { colors, fonts, radii } from "../theme";
 import { formatPrice, type Product } from "../lib/catalog";
 import { PressableScale } from "./PressableScale";
@@ -7,22 +8,25 @@ type Props = {
   product: Product;
   onPress: () => void;
   wide?: boolean;
+  large?: boolean;
 };
 
-export function ProductCard({ product, onPress, wide }: Props) {
+export function ProductCard({ product, onPress, wide, large }: Props) {
   return (
     <PressableScale
       onPress={onPress}
-      style={[styles.card, wide && styles.wide]}
+      style={[styles.card, wide && styles.wide, large && styles.large]}
     >
-      <View style={[styles.swatch, { backgroundColor: product.accent }]}>
-        <Text style={styles.glyph}>
-          {product.category === "coffee"
-            ? "☕"
-            : product.category === "gear"
-              ? "⌂"
-              : "◎"}
-        </Text>
+      <View style={[styles.media, large && styles.mediaLarge]}>
+        <Image
+          source={{ uri: product.image }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.55)"]}
+          style={StyleSheet.absoluteFill}
+        />
         {product.badge ? (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{product.badge}</Text>
@@ -46,38 +50,42 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: colors.bgCard,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glassBorder,
   },
   wide: {
-    minWidth: 196,
+    minWidth: 200,
     maxWidth: 220,
   },
-  swatch: {
-    height: 148,
-    justifyContent: "center",
-    alignItems: "center",
+  large: {
+    minWidth: 260,
+    maxWidth: 280,
   },
-  glyph: {
-    fontSize: 42,
-    opacity: 0.92,
+  media: {
+    height: 160,
+    backgroundColor: colors.bgPanel,
+  },
+  mediaLarge: {
+    height: 200,
   },
   badge: {
     position: "absolute",
-    top: 10,
-    right: 10,
-    backgroundColor: colors.ink,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: radii.sm,
+    top: 12,
+    left: 12,
+    backgroundColor: "rgba(10,14,10,0.72)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glassBorder,
   },
   badgeText: {
     color: colors.brass,
     fontFamily: fonts.bodyMed,
     fontSize: 10,
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
     textTransform: "uppercase",
   },
   meta: {
@@ -87,7 +95,7 @@ const styles = StyleSheet.create({
   name: {
     color: colors.linen,
     fontFamily: fonts.bodyBold,
-    fontSize: 15,
+    fontSize: 16,
   },
   sub: {
     color: colors.linenDim,
@@ -97,7 +105,7 @@ const styles = StyleSheet.create({
   price: {
     marginTop: 6,
     color: colors.brass,
-    fontFamily: fonts.bodyMed,
-    fontSize: 14,
+    fontFamily: fonts.bodyBold,
+    fontSize: 15,
   },
 });

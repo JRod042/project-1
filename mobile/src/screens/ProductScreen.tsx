@@ -1,21 +1,38 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { colors, fonts, radii } from "../theme";
-import { formatPrice, getProduct } from "../lib/catalog";
+import { formatPrice, getProduct, products } from "../lib/catalog";
 import { useCart } from "../lib/cart";
 import { PressableScale } from "../components/PressableScale";
-import { GlassPanel } from "../components/GlassPanel";
+import { ProductCard } from "../components/ProductCard";
 import { ScreenFade } from "../components/ScreenFade";
 
 type Props = {
   productId: string;
   onBack: () => void;
   onGoCart: () => void;
+  onOpenProduct?: (id: string) => void;
 };
 
-export function ProductScreen({ productId, onBack, onGoCart }: Props) {
+export function ProductScreen({
+  productId,
+  onBack,
+  onGoCart,
+  onOpenProduct,
+}: Props) {
   const product = getProduct(productId);
   const cart = useCart();
+  const { width } = useWindowDimensions();
+  const [qty, setQty] = useState(1);
 
   if (!product) {
     return (
@@ -28,8 +45,12 @@ export function ProductScreen({ productId, onBack, onGoCart }: Props) {
     );
   }
 
+  const related = products
+    .filter((p) => p.id !== product.id && p.category === product.category)
+    .slice(0, 4);
+
   const add = () => {
-    cart.add(product.id);
+    cart.add(product.id, qty);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
@@ -37,17 +58,19 @@ export function ProductScreen({ productId, onBack, onGoCart }: Props) {
     <ScreenFade>
       <View style={styles.root}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={[styles.hero, { backgroundColor: product.accent }]}>
+          <View style={{ height: width * 0.92 }}>
+            <Image
+              source={{ uri: product.image }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={["rgba(0,0,0,0.35)", "transparent", "rgba(14,19,14,0.9)"]}
+              style={StyleSheet.absoluteFill}
+            />
             <PressableScale onPress={onBack} style={styles.backChip}>
               <Text style={styles.backChipText}>← Back</Text>
             </PressableScale>
-            <Text style={styles.heroGlyph}>
-              {product.category === "coffee"
-                ? "☕"
-                : product.category === "gear"
-                  ? "⌂"
-                  : "◎"}
-            </Text>
             {product.badge ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{product.badge}</Text>
@@ -67,19 +90,53 @@ export function ProductScreen({ productId, onBack, onGoCart }: Props) {
               <Text style={styles.notes}>{product.notes}</Text>
             ) : null}
 
-            <GlassPanel style={styles.ship}>
-              <Text style={styles.shipTitle}>IN-APP CHECKOUT</Text>
-              <Text style={styles.shipBody}>
-                Add to bag, then checkout with contact, shipping, and Apple Pay
-                or card — all inside Casa Rústico.
-              </Text>
-            </GlassPanel>
+            <View style={styles.qtyRow}>
+              <Text style={styles.qtyLabel}>Quantity</Text>
+              <View style={styles.qtyCtrl}>
+                <PressableScale
+                  onPress={() => setQty((q) => Math.max(1, q - 1))}
+                  style={styles.qtyBtn}
+                >
+                  <Text style={styles.qtyBtnText}>−</Text>
+                </PressableScale>
+                <Text style={styles.qtyVal}>{qty}</Text>
+                <PressableScale
+                  onPress={() => setQty((q) => Math.min(12, q + 1))}
+                  style={styles.qtyBtn}
+                >
+                  <Text style={styles.qtyBtnText}>+</Text>
+                </PressableScale>
+              </View>
+            </View>
+
+            {related.length > 0 && onOpenProduct ? (
+              <View style={styles.related}>
+                <Text style={styles.relatedTitle}>You may also like</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.relatedRow}
+                >
+                  {related.map((p) => (
+                    <View key={p.id} style={{ width: 180 }}>
+                      <ProductCard
+                        product={p}
+                        wide
+                        onPress={() => onOpenProduct(p.id)}
+                      />
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            ) : null}
           </View>
         </ScrollView>
 
         <View style={styles.footer}>
           <PressableScale onPress={add} style={styles.add}>
-            <Text style={styles.addText}>Add to bag</Text>
+            <Text style={styles.addText}>
+              Add to bag · {formatPrice(product.price * qty)}
+            </Text>
           </PressableScale>
           <PressableScale onPress={onGoCart} style={styles.secondary}>
             <Text style={styles.secondaryText}>
@@ -100,18 +157,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     margin: 24,
   },
-  hero: {
-    height: 300,
-    padding: 20,
-    justifyContent: "space-between",
-  },
   backChip: {
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(0,0,0,0.35)",
+    position: "absolute",
+    top: 16,
+    left: 16,
+    backgroundColor: "rgba(10,14,10,0.55)",
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: radii.pill,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.glassBorder,
   },
   backChipText: {
@@ -119,30 +173,26 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMed,
     fontSize: 14,
   },
-  heroGlyph: {
-    position: "absolute",
-    alignSelf: "center",
-    top: "42%",
-    fontSize: 72,
-    opacity: 0.95,
-  },
   badge: {
-    alignSelf: "flex-end",
-    backgroundColor: colors.ink,
-    paddingHorizontal: 10,
+    position: "absolute",
+    top: 16,
+    right: 16,
+    backgroundColor: "rgba(10,14,10,0.72)",
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: radii.sm,
+    borderRadius: radii.pill,
   },
   badgeText: {
     color: colors.brass,
     fontFamily: fonts.bodyMed,
     fontSize: 11,
-    letterSpacing: 0.8,
+    letterSpacing: 0.6,
     textTransform: "uppercase",
   },
   body: {
     padding: 24,
     gap: 8,
+    marginTop: -28,
   },
   category: {
     color: colors.brass,
@@ -153,8 +203,8 @@ const styles = StyleSheet.create({
   name: {
     color: colors.linen,
     fontFamily: fonts.display,
-    fontSize: 34,
-    letterSpacing: -0.5,
+    fontSize: 36,
+    letterSpacing: -0.6,
   },
   sub: {
     color: colors.linenDim,
@@ -165,7 +215,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: colors.brass,
     fontFamily: fonts.bodyBold,
-    fontSize: 22,
+    fontSize: 24,
   },
   notes: {
     marginTop: 12,
@@ -174,26 +224,58 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-  ship: {
+  qtyRow: {
     marginTop: 20,
-    padding: 16,
-    gap: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  shipTitle: {
-    color: colors.leafBright,
-    fontFamily: fonts.bodyMed,
-    fontSize: 11,
-    letterSpacing: 1.2,
-  },
-  shipBody: {
+  qtyLabel: {
     color: colors.linenDim,
-    fontFamily: fonts.body,
+    fontFamily: fonts.bodyMed,
     fontSize: 14,
-    lineHeight: 20,
   },
+  qtyCtrl: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: colors.glass,
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glassBorder,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  qtyBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.glassStrong,
+  },
+  qtyBtnText: {
+    color: colors.linen,
+    fontSize: 20,
+    lineHeight: 22,
+  },
+  qtyVal: {
+    color: colors.linen,
+    fontFamily: fonts.bodyBold,
+    fontSize: 16,
+    minWidth: 20,
+    textAlign: "center",
+  },
+  related: { marginTop: 28, gap: 12 },
+  relatedTitle: {
+    color: colors.linen,
+    fontFamily: fonts.displaySoft,
+    fontSize: 20,
+  },
+  relatedRow: { gap: 12, paddingRight: 8 },
   footer: {
-    borderTopWidth: 1,
-    borderTopColor: colors.line,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.glassBorder,
     padding: 16,
     gap: 10,
     backgroundColor: colors.tabGlass,
@@ -210,7 +292,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   secondary: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.glassBorder,
     paddingVertical: 14,
     alignItems: "center",

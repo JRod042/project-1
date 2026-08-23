@@ -4,11 +4,11 @@ import { PressableScale } from "./PressableScale";
 
 export type TabId = "home" | "shop" | "cart" | "account";
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "home", label: "Home" },
-  { id: "shop", label: "Shop" },
-  { id: "cart", label: "Bag" },
-  { id: "account", label: "Account" },
+const TABS: { id: TabId; label: string; icon: string }[] = [
+  { id: "home", label: "Home", icon: "⌂" },
+  { id: "shop", label: "Shop", icon: "◎" },
+  { id: "cart", label: "Bag", icon: "◫" },
+  { id: "account", label: "You", icon: "◌" },
 ];
 
 type Props = {
@@ -27,10 +27,9 @@ export function TabShell({ active, onChange, cartCount = 0 }: Props) {
             key={t.id}
             onPress={() => onChange(t.id)}
             style={styles.tab}
-            haptic
           >
-            <View style={styles.labelRow}>
-              <Text style={[styles.label, on && styles.labelOn]}>{t.label}</Text>
+            <View>
+              <Text style={[styles.icon, on && styles.iconOn]}>{t.icon}</Text>
               {t.id === "cart" && cartCount > 0 ? (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>
@@ -39,7 +38,7 @@ export function TabShell({ active, onChange, cartCount = 0 }: Props) {
                 </View>
               ) : null}
             </View>
-            {on ? <View style={styles.dot} /> : <View style={styles.dotSpacer} />}
+            <Text style={[styles.label, on && styles.labelOn]}>{t.label}</Text>
           </PressableScale>
         );
       })}
@@ -50,54 +49,50 @@ export function TabShell({ active, onChange, cartCount = 0 }: Props) {
 const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.glassBorder,
     backgroundColor: colors.tabGlass,
-    paddingBottom: 10,
-    paddingTop: 10,
+    paddingBottom: 8,
+    paddingTop: 8,
   },
   tab: {
     flex: 1,
     alignItems: "center",
-    gap: 5,
+    gap: 3,
     paddingVertical: 4,
   },
-  labelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
+  icon: {
+    color: colors.linenMuted,
+    fontSize: 18,
+    textAlign: "center",
+  },
+  iconOn: {
+    color: colors.brass,
   },
   label: {
-    color: colors.linenDim,
+    color: colors.linenMuted,
     fontFamily: fonts.bodyMed,
-    fontSize: 13,
+    fontSize: 11,
     letterSpacing: 0.2,
   },
   labelOn: {
     color: colors.brass,
   },
   badge: {
-    minWidth: 18,
-    height: 18,
+    position: "absolute",
+    top: -4,
+    right: -10,
+    minWidth: 16,
+    height: 16,
     borderRadius: radii.pill,
     backgroundColor: colors.brass,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
   },
   badgeText: {
     color: colors.ink,
     fontFamily: fonts.bodyBold,
-    fontSize: 10,
-  },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: colors.brass,
-  },
-  dotSpacer: {
-    width: 5,
-    height: 5,
+    fontSize: 9,
   },
 });

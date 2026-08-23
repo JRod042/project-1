@@ -2,7 +2,7 @@
 const config = {
   name: "Casa Rustico",
   slug: "omni",
-  version: "0.3.1",
+  version: "0.4.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "dark",
@@ -11,12 +11,12 @@ const config = {
   splash: {
     image: "./assets/splash-icon.png",
     resizeMode: "contain",
-    backgroundColor: "#1A2118",
+    backgroundColor: "#0E130E",
   },
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.jrod042.omni",
-    buildNumber: "15",
+    buildNumber: "16",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Casa Rustico",
@@ -30,7 +30,7 @@ const config = {
   android: {
     package: "com.jrod042.omni",
     adaptiveIcon: {
-      backgroundColor: "#1A2118",
+      backgroundColor: "#0E130E",
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundImage: "./assets/android-icon-background.png",
       monochromeImage: "./assets/android-icon-monochrome.png",
@@ -46,7 +46,7 @@ const config = {
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#1A2118",
+        backgroundColor: "#0E130E",
         image: "./assets/splash-icon.png",
         imageWidth: 200,
       },

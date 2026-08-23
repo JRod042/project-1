@@ -112,6 +112,7 @@ function ShopApp() {
               setProductId(null);
               setTab("cart");
             }}
+            onOpenProduct={(id) => setProductId(id)}
           />
         </SafeAreaView>
       </SafeAreaProvider>
