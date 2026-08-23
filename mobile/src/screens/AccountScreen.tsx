@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, fonts } from "../theme";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { colors, fonts, radii } from "../theme";
 import { brand } from "../lib/catalog";
 
 type Props = {
@@ -17,10 +17,12 @@ export function AccountScreen({ onShowWelcome }: Props) {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{brand.name}</Text>
         <Text style={styles.cardBody}>
-          {brand.tagline}. Shop the single-origin menu in-app; checkout will
-          open against your Shopify store.
+          {brand.tagline}. Browse the single-origin menu here; complete
+          purchase on the storefront.
         </Text>
-        <Text style={styles.site}>{brand.site}</Text>
+        <Pressable onPress={() => Linking.openURL(`https://${brand.site}`)}>
+          <Text style={styles.site}>{brand.site} →</Text>
+        </Pressable>
       </View>
 
       <View style={styles.card}>
@@ -62,6 +64,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgPanel,
     borderWidth: 1,
     borderColor: colors.line,
+    borderRadius: radii.md,
     padding: 16,
     gap: 8,
   },
@@ -86,6 +89,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderWidth: 1,
     borderColor: colors.lineBright,
+    borderRadius: radii.pill,
     paddingVertical: 14,
     alignItems: "center",
   },

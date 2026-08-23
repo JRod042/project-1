@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.line,
     backgroundColor: colors.bgElevated,
     paddingBottom: 10,
-    paddingTop: 8,
+    paddingTop: 10,
   },
   tab: {
     flex: 1,

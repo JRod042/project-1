@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
-import { colors, fonts } from "../theme";
+import { colors, fonts, radii } from "../theme";
 import { formatPrice, getProduct } from "../lib/catalog";
 import { useCart } from "../lib/cart";
 
@@ -37,6 +37,13 @@ export function ProductScreen({ productId, onBack, onGoCart }: Props) {
           <Pressable onPress={onBack} style={styles.backChip}>
             <Text style={styles.backChipText}>← Back</Text>
           </Pressable>
+          <Text style={styles.heroGlyph}>
+            {product.category === "coffee"
+              ? "☕"
+              : product.category === "gear"
+                ? "⌂"
+                : "◎"}
+          </Text>
           {product.badge ? (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>{product.badge}</Text>
@@ -57,10 +64,10 @@ export function ProductScreen({ productId, onBack, onGoCart }: Props) {
           ) : null}
 
           <View style={styles.ship}>
-            <Text style={styles.shipTitle}>Checkout path</Text>
+            <Text style={styles.shipTitle}>SHIPPING</Text>
             <Text style={styles.shipBody}>
-              Cart is live on-device. Shopify checkout wires in next — same
-              catalog, real payments.
+              Bag is live on-device. Finish checkout on rusticopr.com — Shopify
+              Storefront checkout lands next.
             </Text>
           </View>
         </View>
@@ -92,7 +99,7 @@ const styles = StyleSheet.create({
     margin: 24,
   },
   hero: {
-    height: 280,
+    height: 300,
     padding: 20,
     justifyContent: "space-between",
   },
@@ -101,17 +108,26 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.35)",
     paddingHorizontal: 12,
     paddingVertical: 8,
+    borderRadius: radii.pill,
   },
   backChipText: {
     color: colors.linen,
     fontFamily: fonts.bodyMed,
     fontSize: 14,
   },
+  heroGlyph: {
+    position: "absolute",
+    alignSelf: "center",
+    top: "42%",
+    fontSize: 72,
+    opacity: 0.95,
+  },
   badge: {
     alignSelf: "flex-end",
     backgroundColor: colors.ink,
     paddingHorizontal: 10,
     paddingVertical: 6,
+    borderRadius: radii.sm,
   },
   badgeText: {
     color: colors.brass,
@@ -160,13 +176,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgPanel,
     borderWidth: 1,
     borderColor: colors.line,
+    borderRadius: radii.md,
     gap: 6,
   },
   shipTitle: {
     color: colors.leafBright,
     fontFamily: fonts.bodyMed,
-    fontSize: 12,
-    letterSpacing: 1,
+    fontSize: 11,
+    letterSpacing: 1.2,
   },
   shipBody: {
     color: colors.linenDim,
@@ -185,6 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brass,
     paddingVertical: 16,
     alignItems: "center",
+    borderRadius: radii.pill,
   },
   pressed: { opacity: 0.88 },
   addText: {
@@ -197,6 +215,7 @@ const styles = StyleSheet.create({
     borderColor: colors.lineBright,
     paddingVertical: 14,
     alignItems: "center",
+    borderRadius: radii.pill,
   },
   secondaryText: {
     color: colors.linen,
@@ -210,6 +229,7 @@ const styles = StyleSheet.create({
     borderColor: colors.lineBright,
     padding: 14,
     alignItems: "center",
+    borderRadius: radii.pill,
   },
   backText: {
     color: colors.linen,

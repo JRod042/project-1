@@ -6,7 +6,7 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { colors, fonts } from "../theme";
+import { colors, fonts, radii } from "../theme";
 import { brand, products } from "../lib/catalog";
 import { ProductCard } from "../components/ProductCard";
 
@@ -17,6 +17,7 @@ type Props = {
 
 export function HomeScreen({ onOpenShop, onOpenProduct }: Props) {
   const featured = products.filter((p) => p.category === "coffee").slice(0, 4);
+  const gear = products.filter((p) => p.category !== "coffee").slice(0, 2);
 
   return (
     <ScrollView
@@ -26,7 +27,7 @@ export function HomeScreen({ onOpenShop, onOpenProduct }: Props) {
     >
       <View style={styles.hero}>
         <LinearGradient
-          colors={["#3A4434", "#1A2118", "#141A12"]}
+          colors={["#3F4A36", "#1C2419", "#121812"]}
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.heroWash} />
@@ -66,11 +67,31 @@ export function HomeScreen({ onOpenShop, onOpenProduct }: Props) {
         </ScrollView>
       </View>
 
+      {gear.length > 0 ? (
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>House gear</Text>
+            <Pressable onPress={onOpenShop}>
+              <Text style={styles.link}>Shop</Text>
+            </Pressable>
+          </View>
+          <View style={styles.gearRow}>
+            {gear.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                onPress={() => onOpenProduct(p.id)}
+              />
+            ))}
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.band}>
-        <Text style={styles.bandTitle}>Rooted in the cup</Text>
+        <Text style={styles.bandTitle}>ROOTED IN THE CUP</Text>
         <Text style={styles.bandBody}>
           Short menu. Clear packaging. Single-origin coffees and house gear —
-          built to extend to Shopify when you are ready.
+          ready for Shopify checkout when you connect the storefront.
         </Text>
       </View>
     </ScrollView>
@@ -79,12 +100,12 @@ export function HomeScreen({ onOpenShop, onOpenProduct }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingBottom: 28 },
+  content: { paddingBottom: 32 },
   hero: {
-    minHeight: 320,
+    minHeight: 340,
     paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 28,
+    paddingTop: 32,
+    paddingBottom: 32,
     justifyContent: "flex-end",
     gap: 10,
   },
@@ -96,28 +117,29 @@ const styles = StyleSheet.create({
     color: colors.brass,
     fontFamily: fonts.bodyMed,
     fontSize: 12,
-    letterSpacing: 3,
+    letterSpacing: 3.2,
   },
   headline: {
     color: colors.linen,
     fontFamily: fonts.display,
-    fontSize: 34,
-    lineHeight: 40,
-    letterSpacing: -0.6,
-    maxWidth: 320,
+    fontSize: 36,
+    lineHeight: 42,
+    letterSpacing: -0.8,
+    maxWidth: 340,
   },
   support: {
     color: colors.linenDim,
     fontFamily: fonts.body,
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 23,
   },
   cta: {
     alignSelf: "flex-start",
-    marginTop: 8,
+    marginTop: 10,
     backgroundColor: colors.brass,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 15,
+    borderRadius: radii.pill,
   },
   pressed: { opacity: 0.88 },
   ctaText: {
@@ -131,7 +153,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMed,
     fontSize: 13,
   },
-  section: { paddingTop: 24 },
+  section: { paddingTop: 28 },
   sectionHead: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -154,20 +176,26 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   cardWrap: { width: 200 },
+  gearRow: {
+    flexDirection: "row",
+    paddingHorizontal: 24,
+    gap: 12,
+  },
   band: {
-    marginTop: 28,
+    marginTop: 32,
     marginHorizontal: 24,
-    padding: 20,
+    padding: 22,
     backgroundColor: colors.bgPanel,
     borderWidth: 1,
     borderColor: colors.line,
+    borderRadius: radii.lg,
     gap: 8,
   },
   bandTitle: {
     color: colors.brass,
     fontFamily: fonts.bodyBold,
-    fontSize: 14,
-    letterSpacing: 1,
+    fontSize: 12,
+    letterSpacing: 1.4,
   },
   bandBody: {
     color: colors.linenDim,

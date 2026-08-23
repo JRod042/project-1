@@ -1,6 +1,13 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { colors, fonts } from "../theme";
-import { formatPrice, getProduct } from "../lib/catalog";
+import {
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { colors, fonts, radii } from "../theme";
+import { brand, formatPrice, getProduct } from "../lib/catalog";
 import { useCart } from "../lib/cart";
 
 type Props = {
@@ -83,8 +90,11 @@ export function CartScreen({ onOpenShop, onOpenProduct }: Props) {
           <Text style={styles.totalLabel}>Subtotal</Text>
           <Text style={styles.totalVal}>{formatPrice(cart.subtotal)}</Text>
         </View>
-        <Pressable style={styles.checkout}>
-          <Text style={styles.checkoutText}>Checkout · coming with Shopify</Text>
+        <Pressable
+          style={styles.checkout}
+          onPress={() => Linking.openURL(`https://${brand.site}`)}
+        >
+          <Text style={styles.checkoutText}>Checkout on {brand.site}</Text>
         </Pressable>
         <Pressable onPress={cart.clear}>
           <Text style={styles.clear}>Clear bag</Text>
@@ -128,8 +138,9 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     marginTop: 8,
     backgroundColor: colors.brass,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingVertical: 14,
+    borderRadius: radii.pill,
   },
   pressed: { opacity: 0.88 },
   ctaText: {
@@ -139,7 +150,7 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 24,
-    gap: 14,
+    gap: 12,
     paddingBottom: 20,
   },
   row: {
@@ -149,6 +160,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgPanel,
     borderWidth: 1,
     borderColor: colors.line,
+    borderRadius: radii.md,
     padding: 12,
   },
   rowMain: {
@@ -157,7 +169,11 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: "center",
   },
-  swatch: { width: 52, height: 52 },
+  swatch: {
+    width: 52,
+    height: 52,
+    borderRadius: radii.sm,
+  },
   meta: { flex: 1, gap: 2 },
   name: {
     color: colors.linen,
@@ -179,6 +195,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderWidth: 1,
     borderColor: colors.lineBright,
+    borderRadius: radii.sm,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -220,6 +237,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brass,
     paddingVertical: 16,
     alignItems: "center",
+    borderRadius: radii.pill,
   },
   checkoutText: {
     color: colors.ink,

@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { colors, fonts } from "../theme";
+import { colors, fonts, radii } from "../theme";
 import { products, type Product } from "../lib/catalog";
 import { ProductCard } from "../components/ProductCard";
 
@@ -112,10 +112,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
     borderWidth: 1,
     borderColor: colors.lineBright,
+    borderRadius: radii.pill,
   },
   chipOn: {
     backgroundColor: colors.brass,

@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, fonts } from "../theme";
+import { colors, fonts, radii } from "../theme";
 import { formatPrice, type Product } from "../lib/catalog";
 
 type Props = {
@@ -19,6 +19,13 @@ export function ProductCard({ product, onPress, wide }: Props) {
       ]}
     >
       <View style={[styles.swatch, { backgroundColor: product.accent }]}>
+        <Text style={styles.glyph}>
+          {product.category === "coffee"
+            ? "☕"
+            : product.category === "gear"
+              ? "⌂"
+              : "◎"}
+        </Text>
         {product.badge ? (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{product.badge}</Text>
@@ -44,23 +51,31 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgCard,
     borderWidth: 1,
     borderColor: colors.line,
+    borderRadius: radii.md,
     overflow: "hidden",
   },
   wide: {
-    minWidth: 200,
-    maxWidth: 240,
+    minWidth: 196,
+    maxWidth: 220,
   },
-  pressed: { opacity: 0.88 },
+  pressed: { opacity: 0.9, transform: [{ scale: 0.985 }] },
   swatch: {
-    height: 140,
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
-    padding: 10,
+    height: 148,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  glyph: {
+    fontSize: 42,
+    opacity: 0.92,
   },
   badge: {
+    position: "absolute",
+    top: 10,
+    right: 10,
     backgroundColor: colors.ink,
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     paddingVertical: 4,
+    borderRadius: radii.sm,
   },
   badgeText: {
     color: colors.brass,
@@ -70,7 +85,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   meta: {
-    padding: 12,
+    padding: 14,
     gap: 3,
   },
   name: {
@@ -84,7 +99,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   price: {
-    marginTop: 4,
+    marginTop: 6,
     color: colors.brass,
     fontFamily: fonts.bodyMed,
     fontSize: 14,
