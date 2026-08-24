@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors, fonts, radii } from "../theme";
 import { brand, origins } from "../lib/catalog";
 import { useCart } from "../lib/cart";
-import { ProductCard } from "../components/ProductCard";
+import { CatalogGrid } from "../components/ProductCard";
 import { PressableScale } from "../components/PressableScale";
 import { ScreenFade } from "../components/ScreenFade";
 
@@ -14,9 +14,6 @@ export function HomeScreen({ onOpenProduct }: Props) {
   const bags = origins();
   const cart = useCart();
 
-  const rows = [];
-  for (let i = 0; i < bags.length; i += 2) rows.push(bags.slice(i, i + 2));
-
   return (
     <ScreenFade>
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -25,24 +22,12 @@ export function HomeScreen({ onOpenProduct }: Props) {
           <Text style={styles.sub}>Single-origin bags. House-mark gear.</Text>
         </View>
 
-        <PressableScale
-          onPress={() => cart.flash(`Copied ${brand.promo}`)}
-          style={styles.promo}
-        >
+        <PressableScale onPress={() => cart.flash(`Copied ${brand.promo}`)} style={styles.promo}>
           <Text style={styles.promoCode}>{brand.promo}</Text>
           <Text style={styles.promoCopy}>{brand.promoCopy} · tap to copy</Text>
         </PressableScale>
 
-        <View style={styles.grid}>
-          {rows.map((row, idx) => (
-            <View key={idx} style={styles.row}>
-              {row.map((p) => (
-                <ProductCard key={p.id} product={p} onPress={() => onOpenProduct(p.id)} />
-              ))}
-              {row.length === 1 ? <View style={styles.spacer} /> : null}
-            </View>
-          ))}
-        </View>
+        <CatalogGrid products={bags} onOpen={onOpenProduct} />
       </ScrollView>
     </ScreenFade>
   );
@@ -50,7 +35,7 @@ export function HomeScreen({ onOpenProduct }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingBottom: 48 },
+  content: { paddingBottom: 24 },
   head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
   title: {
     color: colors.ink,
@@ -68,6 +53,7 @@ const styles = StyleSheet.create({
   promo: {
     marginHorizontal: 20,
     marginTop: 8,
+    marginBottom: 20,
     backgroundColor: colors.kraft,
     borderRadius: radii.md,
     paddingHorizontal: 20,
@@ -85,7 +71,4 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 13,
   },
-  grid: { paddingHorizontal: 20, paddingTop: 20, gap: 18 },
-  row: { flexDirection: "row", gap: 12 },
-  spacer: { flex: 1 },
 });

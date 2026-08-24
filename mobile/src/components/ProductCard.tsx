@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, fonts, radii } from "../theme";
 import { formatPrice, type Product } from "../lib/catalog";
 import { PressableScale } from "./PressableScale";
@@ -6,24 +6,15 @@ import { PressableScale } from "./PressableScale";
 type Props = {
   product: Product;
   onPress: () => void;
-  large?: boolean;
 };
 
-export function ProductCard({ product, onPress, large }: Props) {
+export function ProductCard({ product, onPress }: Props) {
   return (
-    <PressableScale
-      onPress={onPress}
-      style={[styles.card, large && styles.large]}
-      haptic={false}
-    >
-      <View style={[styles.media, large && styles.mediaLarge]}>
-        <Image source={{ uri: product.image }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        {product.badge ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{product.badge}</Text>
-          </View>
-        ) : null}
+    <PressableScale onPress={onPress} style={styles.card} haptic={false}>
+      <View style={styles.media}>
+        <Image source={{ uri: product.image }} style={styles.photo} resizeMode="contain" />
       </View>
+      {product.badge ? <Text style={styles.badge}>{product.badge}</Text> : null}
       <Text style={styles.name} numberOfLines={1}>
         {product.name}
       </Text>
@@ -32,36 +23,62 @@ export function ProductCard({ product, onPress, large }: Props) {
   );
 }
 
+const GUTTER = 20;
+const GAP = 12;
+
+export function CatalogGrid({
+  products,
+  onOpen,
+}: {
+  products: Product[];
+  onOpen: (id: string) => void;
+}) {
+  const { width } = useWindowDimensions();
+  const col = (width - GUTTER * 2 - GAP) / 2;
+  const rows: Product[][] = [];
+  for (let i = 0; i < products.length; i += 2) rows.push(products.slice(i, i + 2));
+
+  return (
+    <View style={styles.grid}>
+      {rows.map((row) => (
+        <View key={row.map((p) => p.id).join("-")} style={styles.row}>
+          {row.map((p) => (
+            <View key={p.id} style={{ width: col }}>
+              <ProductCard product={p} onPress={() => onOpen(p.id)} />
+            </View>
+          ))}
+          {row.length === 1 ? <View style={{ width: col }} /> : null}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  card: { flex: 1 },
-  large: { width: 160, flex: 0 },
+  card: { width: "100%" },
   media: {
+    width: "100%",
     aspectRatio: 1,
     borderRadius: radii.sm,
+    backgroundColor: colors.paper,
+    alignItems: "center",
+    justifyContent: "center",
     overflow: "hidden",
-    backgroundColor: colors.kraft,
   },
-  mediaLarge: { aspectRatio: 1 },
+  photo: { width: "78%", height: "78%" },
   badge: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    backgroundColor: "rgba(18,14,11,0.75)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radii.pill,
-  },
-  badgeText: {
-    color: colors.linen,
+    marginTop: 10,
+    color: colors.brass,
     fontFamily: fonts.bodyMed,
-    fontSize: 10,
-    letterSpacing: 0.4,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
   name: {
-    marginTop: 10,
+    marginTop: 4,
     color: colors.ink,
     fontFamily: fonts.bodyBold,
-    fontSize: 14,
+    fontSize: 15,
   },
   price: {
     marginTop: 2,
@@ -69,4 +86,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 13,
   },
+  grid: { paddingHorizontal: GUTTER, paddingBottom: 40, gap: 20 },
+  row: { flexDirection: "row", gap: GAP },
 });

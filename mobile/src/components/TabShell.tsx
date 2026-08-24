@@ -18,33 +18,28 @@ type Props = {
 
 function Glyph({ id, on }: { id: TabId; on: boolean }) {
   const c = on ? colors.ink : colors.linenMuted;
-  if (id === "home") {
-    return (
-      <View style={g.home}>
-        <View style={[g.roof, { borderBottomColor: c }]} />
-        <View style={[g.body, { borderColor: c }]} />
-      </View>
-    );
-  }
-  if (id === "coffee") {
-    return (
-      <View style={[g.bean, { backgroundColor: c }]}>
-        <View style={g.crease} />
-      </View>
-    );
-  }
-  if (id === "ritual") {
-    return (
-      <View style={[g.cup, { borderColor: c }]}>
-        <View style={[g.steam, { backgroundColor: c }]} />
-      </View>
-    );
-  }
   return (
-    <View style={g.book}>
-      <View style={[g.line, { backgroundColor: c }]} />
-      <View style={[g.line, { backgroundColor: c, width: 12 }]} />
-      <View style={[g.line, { backgroundColor: c, width: 10 }]} />
+    <View style={g.box}>
+      {id === "home" ? (
+        <View style={g.home}>
+          <View style={[g.roof, { borderBottomColor: c }]} />
+          <View style={[g.body, { borderColor: c }]} />
+        </View>
+      ) : id === "coffee" ? (
+        <View style={[g.bean, { backgroundColor: c }]}>
+          <View style={g.crease} />
+        </View>
+      ) : id === "ritual" ? (
+        <View style={[g.cup, { borderColor: c }]}>
+          <View style={[g.steam, { backgroundColor: c }]} />
+        </View>
+      ) : (
+        <View style={g.book}>
+          <View style={[g.line, { backgroundColor: c }]} />
+          <View style={[g.line, { backgroundColor: c, width: 12 }]} />
+          <View style={[g.line, { backgroundColor: c, width: 10 }]} />
+        </View>
+      )}
     </View>
   );
 }
@@ -55,10 +50,14 @@ export function TabShell({ active, onChange }: Props) {
       {TABS.map((t) => {
         const on = t.id === active;
         return (
-          <PressableScale key={t.id} onPress={() => onChange(t.id)} style={styles.tab}>
-            <Glyph id={t.id} on={on} />
-            <Text style={[styles.label, on && styles.labelOn]}>{t.label}</Text>
-          </PressableScale>
+          <View key={t.id} style={styles.cell}>
+            <PressableScale onPress={() => onChange(t.id)} style={styles.tab}>
+              <Glyph id={t.id} on={on} />
+              <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
+                {t.label}
+              </Text>
+            </PressableScale>
+          </View>
         );
       })}
     </View>
@@ -66,6 +65,7 @@ export function TabShell({ active, onChange }: Props) {
 }
 
 const g = StyleSheet.create({
+  box: { width: 22, height: 22, alignItems: "center", justifyContent: "center" },
   home: { width: 22, height: 22, alignItems: "center" },
   roof: {
     width: 0,
@@ -106,7 +106,6 @@ const g = StyleSheet.create({
     borderTopWidth: 0,
     borderBottomLeftRadius: 8,
     borderBottomRightRadius: 8,
-    marginTop: 6,
   },
   steam: {
     position: "absolute",
@@ -123,27 +122,28 @@ const g = StyleSheet.create({
 const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
-    alignItems: "flex-start",
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.lineBright,
     backgroundColor: colors.tabGlass,
-    paddingBottom: 4,
-    paddingTop: 8,
-    height: 56,
+    paddingTop: 6,
+    paddingBottom: 2,
   },
+  cell: { flex: 1, minWidth: 0 },
   tab: {
-    flex: 1,
+    width: "100%",
     alignItems: "center",
-    gap: 4,
-    paddingVertical: 4,
-    minHeight: 48,
-    justifyContent: "flex-start",
+    justifyContent: "center",
+    minHeight: 49,
+    paddingTop: 4,
   },
   label: {
+    marginTop: 3,
     color: colors.linenMuted,
     fontFamily: fonts.bodyMed,
-    fontSize: 11,
-    letterSpacing: 0.2,
+    fontSize: 10,
+    letterSpacing: 0,
+    textAlign: "center",
+    width: "100%",
   },
   labelOn: { color: colors.ink },
 });
