@@ -171,7 +171,7 @@ function FamilyCollection({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingBottom: 140 },
+  content: { paddingBottom: 180 },
   head: {
     paddingHorizontal: 20,
     paddingTop: 8,

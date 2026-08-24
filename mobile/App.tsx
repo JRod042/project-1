@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -30,6 +30,8 @@ import { PressableScale } from "./src/components/PressableScale";
 import { GlassPanel } from "./src/components/GlassPanel";
 import { SearchSheet } from "./src/components/SearchSheet";
 import { colors, fonts, radii } from "./src/theme";
+import { formatPrice } from "./src/lib/catalog";
+import { cartPermalink } from "./src/lib/shopify";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -165,13 +167,30 @@ function ShopApp() {
                 pointerEvents="box-none"
                 style={[styles.dockWrap, { paddingBottom: Math.max(insets.bottom, 8) }]}
               >
-                {cart.count > 0 && tab !== "bag" ? (
-                  <PressableScale onPress={() => openTab("bag")} style={styles.review}>
-                    <Text style={styles.reviewTitle}>Review bag</Text>
-                    <Text style={styles.reviewSub}>
-                      {cart.count} {cart.count === 1 ? "item" : "items"}
-                    </Text>
-                  </PressableScale>
+                {cart.count > 0 ? (
+                  tab === "bag" ? (
+                    <PressableScale
+                      onPress={() =>
+                        void Linking.openURL(
+                          cartPermalink(
+                            cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })),
+                          ),
+                        )
+                      }
+                      style={styles.review}
+                      accessibilityLabel="Check out"
+                    >
+                      <Text style={styles.reviewTitle}>Check Out</Text>
+                      <Text style={styles.reviewSub}>{formatPrice(cart.subtotal)}</Text>
+                    </PressableScale>
+                  ) : (
+                    <PressableScale onPress={() => openTab("bag")} style={styles.review}>
+                      <Text style={styles.reviewTitle}>Review bag</Text>
+                      <Text style={styles.reviewSub}>
+                        {cart.count} {cart.count === 1 ? "item" : "items"}
+                      </Text>
+                    </PressableScale>
+                  )
                 ) : null}
                 <View style={styles.dockRow}>
                   <TabShell active={tab} onChange={openTab} bagCount={cart.count} />

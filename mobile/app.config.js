@@ -16,7 +16,7 @@ const config = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.jrod042.omni",
-    buildNumber: "24",
+    buildNumber: "25",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Casa Rustico",

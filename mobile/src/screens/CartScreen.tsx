@@ -1,7 +1,6 @@
-import { Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors, fonts, radii } from "../theme";
 import { brand, colombia, formatPrice, gear, getProduct } from "../lib/catalog";
-import { cartPermalink } from "../lib/shopify";
 import { useCart } from "../lib/cart";
 import { PressableScale } from "../components/PressableScale";
 import { ProductCard } from "../components/ProductCard";
@@ -17,9 +16,6 @@ export function CartScreen({ onOpenProduct }: Props) {
   const hasCoffee = cart.lines.some((l) => getProduct(l.productId)?.category === "coffee");
   const hasGear = cart.lines.some((l) => getProduct(l.productId)?.category === "gear");
   const suggest = hasCoffee && !hasGear && mug ? mug : !hasCoffee ? colombia : null;
-  const checkout = cartPermalink(
-    cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })),
-  );
 
   if (cart.count === 0) {
     return (
@@ -105,16 +101,6 @@ export function CartScreen({ onOpenProduct }: Props) {
             </View>
           ) : null}
         </ScrollView>
-
-        <View style={styles.dock}>
-          <View>
-            <Text style={styles.totalLabel}>Subtotal</Text>
-            <Text style={styles.totalVal}>{formatPrice(cart.subtotal)}</Text>
-          </View>
-          <PressableScale onPress={() => void Linking.openURL(checkout)} style={styles.checkout}>
-            <Text style={styles.checkoutText}>Check Out</Text>
-          </PressableScale>
-        </View>
       </View>
     </ScreenFade>
   );
@@ -122,7 +108,7 @@ export function CartScreen({ onOpenProduct }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  emptyRoot: { flex: 1, backgroundColor: colors.bg, padding: 20, paddingTop: 4 },
+  emptyRoot: { flex: 1, backgroundColor: colors.bg, padding: 20, paddingTop: 4, paddingBottom: 160 },
   header: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
   title: { color: colors.ink, fontFamily: fonts.display, fontSize: 36, letterSpacing: -0.6 },
   sub: { marginTop: 6, color: colors.linenDim, fontFamily: fonts.body, fontSize: 15 },
@@ -136,7 +122,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
   },
   ctaText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
-  list: { paddingBottom: 120 },
+  list: { paddingBottom: 220 },
   row: {
     flexDirection: "row",
     gap: 14,
@@ -145,7 +131,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.line,
   },
-  thumb: { width: 80, height: 80, borderRadius: 8, backgroundColor: colors.kraft },
+  thumb: { width: 80, height: 80, borderRadius: 16, backgroundColor: colors.paper },
   meta: { flex: 1 },
   name: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
   variant: { marginTop: 2, color: colors.linenMuted, fontFamily: fonts.body, fontSize: 13 },
@@ -184,29 +170,4 @@ const styles = StyleSheet.create({
   promoCode: { marginTop: 6, color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
   promoCopy: { marginTop: 4, color: colors.linenDim, fontFamily: fonts.body, fontSize: 13 },
   suggest: { paddingHorizontal: 20, marginBottom: 20 },
-  dock: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.line,
-    backgroundColor: colors.paper,
-    gap: 16,
-  },
-  totalLabel: { color: colors.linenMuted, fontFamily: fonts.body, fontSize: 12 },
-  totalVal: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
-  checkout: {
-    flex: 1,
-    backgroundColor: colors.ink,
-    borderRadius: radii.pill,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  checkoutText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 16 },
 });

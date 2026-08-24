@@ -78,7 +78,7 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingBottom: 140 },
+  content: { paddingBottom: 180 },
   head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
   title: { color: colors.ink, fontFamily: fonts.display, fontSize: 32, letterSpacing: -0.6 },
   sub: { marginTop: 6, color: colors.linenDim, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
