@@ -28,6 +28,7 @@ import {
   saveWelcomeSeen,
 } from "./src/lib/welcomeStorage";
 import { PressableScale } from "./src/components/PressableScale";
+import { GlassPanel } from "./src/components/GlassPanel";
 import { colors, fonts, radii } from "./src/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -113,44 +114,25 @@ function ShopApp() {
               {onProduct ? (
                 <PressableScale
                   onPress={() => setScreen({ kind: "tab", tab: screen.back })}
-                  style={styles.barSide}
-                  accessibilityLabel="Coffee"
+                  accessibilityLabel="Back"
                 >
-                  <Text style={styles.barSideText}>‹ Coffee</Text>
+                  <GlassPanel style={styles.backOrb}>
+                    <Text style={styles.backGlyph}>‹</Text>
+                  </GlassPanel>
                 </PressableScale>
               ) : onBag ? (
                 <PressableScale
                   onPress={() => setScreen({ kind: "tab", tab: screen.back })}
-                  style={styles.barSide}
-                  accessibilityLabel="Home"
+                  accessibilityLabel="Back"
                 >
-                  <Text style={styles.barSideText}>‹ Home</Text>
+                  <GlassPanel style={styles.backOrb}>
+                    <Text style={styles.backGlyph}>‹</Text>
+                  </GlassPanel>
                 </PressableScale>
               ) : (
                 <Text style={styles.barMark}>CASA RÚSTICO</Text>
               )}
-
-              {onBag ? (
-                <View style={styles.bagGhost} />
-              ) : (
-                <PressableScale
-                  onPress={openBag}
-                  style={[styles.bagBtn, pop && styles.bagPop]}
-                  accessibilityLabel={`Bag, ${cart.count} items`}
-                >
-                  <View style={styles.bagGlyph}>
-                    <View style={styles.bagHandle} />
-                    <View style={styles.bagBody} />
-                  </View>
-                  {cart.count > 0 ? (
-                    <View style={styles.fabCount}>
-                      <Text style={styles.fabCountText}>
-                        {cart.count > 9 ? "9+" : cart.count}
-                      </Text>
-                    </View>
-                  ) : null}
-                </PressableScale>
-              )}
+              <View style={styles.bagGhost} />
             </View>
 
             <View style={styles.body}>
@@ -204,7 +186,28 @@ function ShopApp() {
                     </Text>
                   </PressableScale>
                 ) : null}
-                <TabShell active={tab} onChange={openTab} />
+                <View style={styles.dockRow}>
+                  <TabShell active={tab} onChange={openTab} />
+                  <PressableScale
+                    onPress={openBag}
+                    style={[styles.bagOrbHit, pop && styles.bagPop]}
+                    accessibilityLabel={`Bag, ${cart.count} items`}
+                  >
+                    <GlassPanel style={styles.bagOrb}>
+                      <View style={styles.bagGlyph}>
+                        <View style={styles.bagHandle} />
+                        <View style={styles.bagBody} />
+                      </View>
+                      {cart.count > 0 ? (
+                        <View style={styles.fabCount}>
+                          <Text style={styles.fabCountText}>
+                            {cart.count > 9 ? "9+" : cart.count}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </GlassPanel>
+                  </PressableScale>
+                </View>
               </View>
             )}
           </SafeAreaView>
@@ -251,21 +254,24 @@ const styles = StyleSheet.create({
     letterSpacing: 3.2,
     marginLeft: 8,
   },
-  barSide: {
-    minHeight: 44,
-    justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  barSideText: {
-    color: colors.brass,
-    fontFamily: fonts.bodyMed,
-    fontSize: 15,
-  },
-  bagBtn: {
+  backOrb: {
     width: 44,
     height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#120e0b",
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  backGlyph: {
+    color: colors.ink,
+    fontFamily: fonts.bodyMed,
+    fontSize: 28,
+    lineHeight: 32,
+    marginTop: -2,
+    marginLeft: -1,
   },
   bagGhost: { width: 44, height: 44 },
   bagPop: { transform: [{ scale: 1.08 }] },
@@ -289,17 +295,17 @@ const styles = StyleSheet.create({
   },
   fabCount: {
     position: "absolute",
-    top: 2,
-    right: 2,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    top: 8,
+    right: 8,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  fabCountText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 10 },
+  fabCountText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 9 },
   dockWrap: {
     position: "absolute",
     left: 0,
@@ -308,8 +314,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 10,
   },
+  dockRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  bagOrbHit: {
+    width: 62,
+    height: 62,
+  },
+  bagOrb: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#120e0b",
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 14,
+  },
   review: {
-    backgroundColor: colors.ink,
+    backgroundColor: "rgba(18,14,11,0.88)",
     borderRadius: radii.pill,
     minHeight: 52,
     paddingHorizontal: 22,

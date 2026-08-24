@@ -18,7 +18,7 @@ Sources: Apple HIG Materials, WWDC25 Liquid Glass sessions, Expo native-tabs gui
 | **Casa-Rustico monorepo** | Espresso Escape + Casa Rustico Go scaffolds; Go holds real catalog.json |
 | **Native SwiftUI** | Highest Liquid Glass fidelity via `glassEffect`; requires Mac + Xcode 26+ |
 
-Until a Mac/Xcode track exists, we approximate Liquid Glass with translucent **chrome only** and ship product depth via catalog + photography.
+Until a Mac/Xcode track exists, we ship Liquid Glass with `expo-blur` (`BlurView` extraLight) plus a specular gradient rim — chrome only. Content stays cream / paper / kraft.
 
 ## Motion
 

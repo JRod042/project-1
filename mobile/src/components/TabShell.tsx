@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { colors, fonts } from "../theme";
 import { PressableScale } from "./PressableScale";
+import { GlassPanel } from "./GlassPanel";
 
 export type TabId = "home" | "coffee" | "ritual" | "story";
 
@@ -46,39 +47,43 @@ function Glyph({ id, on }: { id: TabId; on: boolean }) {
 
 export function TabShell({ active, onChange }: Props) {
   return (
-    <View style={styles.capsule}>
-      {TABS.map((t) => {
-        const on = t.id === active;
-        return (
-          <View key={t.id} style={styles.cell}>
-            <PressableScale
-              onPress={() => onChange(t.id)}
-              style={styles.tab}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={t.label}
-            >
-              <Glyph id={t.id} on={on} />
-              <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
-                {t.label}
-              </Text>
-            </PressableScale>
-          </View>
-        );
-      })}
-    </View>
+    <GlassPanel style={styles.capsule}>
+      <View style={styles.row}>
+        {TABS.map((t) => {
+          const on = t.id === active;
+          return (
+            <View key={t.id} style={styles.cell}>
+              <PressableScale
+                onPress={() => onChange(t.id)}
+                style={styles.tab}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={t.label}
+              >
+                <Glyph id={t.id} on={on} />
+                <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
+                  {t.label}
+                </Text>
+              </PressableScale>
+            </View>
+          );
+        })}
+      </View>
+    </GlassPanel>
   );
 }
 
 const g = StyleSheet.create({
   well: {
-    width: 52,
-    height: 30,
-    borderRadius: 15,
+    width: 48,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
-  wellOn: { backgroundColor: "rgba(18,14,11,0.08)" },
+  wellOn: {
+    backgroundColor: "rgba(255,255,255,0.62)",
+  },
   home: { width: 22, height: 22, alignItems: "center" },
   roof: {
     width: 0,
@@ -134,27 +139,32 @@ const g = StyleSheet.create({
 
 const styles = StyleSheet.create({
   capsule: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.paper,
+    flex: 1,
+    minWidth: 0,
+    height: 62,
+    borderRadius: 31,
     shadowColor: "#120e0b",
-    shadowOpacity: 0.18,
+    shadowOpacity: 0.16,
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 14,
   },
+  row: {
+    flex: 1,
+    alignSelf: "stretch",
+    flexDirection: "row",
+    alignItems: "center",
+  },
   cell: { flex: 1, minWidth: 0 },
   tab: {
     width: "100%",
-    height: 64,
+    height: 62,
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 4,
   },
   label: {
-    marginTop: 2,
+    marginTop: 1,
     color: colors.linenMuted,
     fontFamily: fonts.bodyMed,
     fontSize: 10,
