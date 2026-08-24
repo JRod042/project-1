@@ -1,92 +1,169 @@
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Image, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, fonts, radii } from "../theme";
-import { brand, colombia, origins } from "../lib/catalog";
+import {
+  apparel,
+  brand,
+  coffees,
+  formatPrice,
+  mugs,
+  origins,
+  type Product,
+} from "../lib/catalog";
 import { useCart } from "../lib/cart";
-import { FeaturedRail } from "../components/ProductCard";
+import { CatalogGrid } from "../components/ProductCard";
 import { PressableScale } from "../components/PressableScale";
 import { ScreenFade } from "../components/ScreenFade";
-import type { TabId } from "../components/TabShell";
+
+type Family = "origins" | "pods" | "mugs" | "apparel";
+
+const FAMILIES: { id: Family; label: string; image: () => string; items: () => Product[] }[] = [
+  { id: "origins", label: "Origins", image: () => origins()[0]?.image ?? "", items: origins },
+  {
+    id: "pods",
+    label: "Capsules",
+    image: () => coffees().find((p) => p.id === "cr-capsules")?.image ?? "",
+    items: () => coffees().filter((p) => p.id === "cr-capsules"),
+  },
+  { id: "mugs", label: "Mugs", image: () => mugs()[0]?.image ?? "", items: mugs },
+  { id: "apparel", label: "Apparel", image: () => apparel()[0]?.image ?? "", items: apparel },
+];
 
 type Props = {
   onOpenProduct: (id: string) => void;
-  onOpenTab: (tab: TabId) => void;
 };
 
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning.";
-  if (h < 17) return "Good afternoon.";
-  return "Good evening.";
-}
-
-export function HomeScreen({ onOpenProduct, onOpenTab }: Props) {
-  const bags = origins();
+export function HomeScreen({ onOpenProduct }: Props) {
+  const [family, setFamily] = useState<Family | null>(null);
   const cart = useCart();
-  const place = brand.landscapes[0];
+  const { width } = useWindowDimensions();
+  const gutter = 20;
+  const gap = 12;
+  const col = (width - gutter * 2 - gap) / 2;
+
+  if (family) {
+    const meta = FAMILIES.find((f) => f.id === family)!;
+    return (
+      <FamilyCollection
+        label={meta.label}
+        items={meta.items()}
+        onBack={() => setFamily(null)}
+        onOpenProduct={onOpenProduct}
+      />
+    );
+  }
+
+  const discover = origins().slice(0, 6);
 
   return (
     <ScreenFade>
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
-          <Text style={styles.hello}>{greeting()}</Text>
+          <Text style={styles.title}>Shop</Text>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>CR</Text>
+          </View>
         </View>
 
-        <View style={styles.shortcuts}>
-          <PressableScale onPress={() => onOpenTab("coffee")} style={styles.shortcut}>
-            <Text style={styles.shortcutText}>Coffee</Text>
-          </PressableScale>
-          <PressableScale onPress={() => onOpenTab("ritual")} style={styles.shortcut}>
-            <Text style={styles.shortcutText}>Ritual</Text>
-          </PressableScale>
+        <View style={[styles.familyGrid, { paddingHorizontal: gutter, gap }]}>
+          {FAMILIES.map((f) => (
+            <PressableScale
+              key={f.id}
+              onPress={() => setFamily(f.id)}
+              style={[styles.familyCard, { width: col, height: col }]}
+              haptic={false}
+            >
+              <View style={styles.familyPhoto}>
+                <Image source={{ uri: f.image() }} style={styles.familyImg} resizeMode="contain" />
+              </View>
+              <Text style={styles.familyName}>{f.label}</Text>
+            </PressableScale>
+          ))}
         </View>
 
         <PressableScale
           onPress={() => cart.flash(`Copied ${brand.promo}`)}
-          style={styles.status}
+          style={styles.promo}
         >
-          <View>
-            <Text style={styles.statusKicker}>HOUSE OFFER</Text>
-            <Text style={styles.statusCode}>{brand.promo}</Text>
-            <Text style={styles.statusCopy}>{brand.promoCopy} the house bag · tap to copy</Text>
-          </View>
-          <Text style={styles.statusMark}>10%</Text>
+          <Text style={styles.promoKicker}>HOUSE OFFER</Text>
+          <Text style={styles.promoCode}>{brand.promo}</Text>
+          <Text style={styles.promoCopy}>{brand.promoCopy} at checkout · tap to copy</Text>
         </PressableScale>
 
-        <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.promo} haptic={false}>
-          <Image source={{ uri: colombia.image }} style={styles.promoImg} resizeMode="contain" />
-          <View style={styles.promoBody}>
-            <Text style={styles.promoKicker}>HOUSE BAG</Text>
-            <Text style={styles.promoTitle}>The house bag.</Text>
-            <Text style={styles.promoCopy}>
-              Colombia. {colombia.notes}. Twelve ounces, roasted in the United States.
-            </Text>
-            <View style={styles.cta}>
-              <Text style={styles.ctaText}>Shop Colombia</Text>
-            </View>
-          </View>
-        </PressableScale>
-
-        {place ? (
-          <PressableScale onPress={() => onOpenTab("story")} style={styles.promo} haptic={false}>
-            <Image source={{ uri: place.image }} style={styles.storyImg} resizeMode="cover" />
-            <View style={styles.promoBody}>
-              <Text style={styles.promoKicker}>{place.kicker.toUpperCase()}</Text>
-              <Text style={styles.promoTitle}>{place.title}.</Text>
-              <Text style={styles.promoCopy}>{place.copy}</Text>
-              <View style={styles.cta}>
-                <Text style={styles.ctaText}>Read the story</Text>
-              </View>
-            </View>
-          </PressableScale>
-        ) : null}
-
-        <View style={styles.railHead}>
-          <Text style={styles.railTitle}>Origins</Text>
-          <PressableScale onPress={() => onOpenTab("coffee")}>
+        <View style={styles.sectionRow}>
+          <Text style={styles.section}>Discover</Text>
+          <PressableScale onPress={() => setFamily("origins")}>
             <Text style={styles.seeAll}>See all</Text>
           </PressableScale>
         </View>
-        <FeaturedRail products={bags.slice(0, 8)} onOpen={onOpenProduct} />
+        <CatalogGrid products={discover} onOpen={onOpenProduct} />
+      </ScrollView>
+    </ScreenFade>
+  );
+}
+
+function FamilyCollection({
+  label,
+  items,
+  onBack,
+  onOpenProduct,
+}: {
+  label: string;
+  items: Product[];
+  onBack: () => void;
+  onOpenProduct: (id: string) => void;
+}) {
+  const cart = useCart();
+  const hero = items[0];
+  const rest = useMemo(() => items.slice(1), [items]);
+
+  const buyHero = () => {
+    if (!hero) return;
+    cart.add({
+      productId: hero.id,
+      variantId: hero.defaultVariantId,
+      variantTitle: hero.variants?.[0]?.title ?? hero.subtitle,
+      price: hero.price,
+      qty: 1,
+    });
+    cart.flash("Added to bag");
+  };
+
+  return (
+    <ScreenFade>
+      <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.collectionHead}>
+          <PressableScale onPress={onBack} style={styles.backText} haptic={false}>
+            <Text style={styles.backGlyph}>‹ Shop</Text>
+          </PressableScale>
+          <Text style={styles.title}>Shop {label}</Text>
+        </View>
+
+        {hero ? (
+          <View style={styles.feature}>
+            <PressableScale onPress={() => onOpenProduct(hero.id)} style={styles.featureWell} haptic={false}>
+              <Image source={{ uri: hero.image }} style={styles.featureImg} resizeMode="contain" />
+            </PressableScale>
+            <Text style={styles.featureName}>{hero.name}</Text>
+            <Text style={styles.featureFrom}>From {formatPrice(hero.price)}</Text>
+            {hero.notes ? <Text style={styles.featureNotes}>{hero.notes}</Text> : null}
+            <View style={styles.pills}>
+              <PressableScale onPress={buyHero} style={styles.pillFill}>
+                <Text style={styles.pillFillText}>Buy</Text>
+              </PressableScale>
+              <PressableScale onPress={() => onOpenProduct(hero.id)} style={styles.pillQuiet} haptic={false}>
+                <Text style={styles.pillQuietText}>Learn more</Text>
+              </PressableScale>
+            </View>
+          </View>
+        ) : null}
+
+        {rest.length > 0 ? (
+          <>
+            <Text style={[styles.section, { paddingHorizontal: 20 }]}>The rest</Text>
+            <CatalogGrid products={rest} onOpen={onOpenProduct} />
+          </>
+        ) : null}
       </ScrollView>
     </ScreenFade>
   );
@@ -95,111 +172,167 @@ export function HomeScreen({ onOpenProduct, onOpenTab }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingBottom: 140 },
-  head: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4 },
-  hello: {
-    color: colors.ink,
-    fontFamily: fonts.display,
-    fontSize: 28,
-    letterSpacing: -0.4,
-  },
-  shortcuts: {
-    flexDirection: "row",
-    gap: 18,
+  head: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  shortcut: { minHeight: 44, justifyContent: "center" },
-  shortcutText: { color: colors.ink, fontFamily: fonts.bodyMed, fontSize: 15 },
-  status: {
-    marginHorizontal: 20,
-    marginBottom: 16,
-    backgroundColor: colors.kraft,
-    borderRadius: radii.md,
-    paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingTop: 8,
+    paddingBottom: 8,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
   },
-  statusKicker: {
-    color: colors.ink,
-    fontFamily: fonts.bodyMed,
-    fontSize: 11,
-    letterSpacing: 1.4,
-  },
-  statusCode: {
-    marginTop: 4,
+  title: {
     color: colors.ink,
     fontFamily: fonts.bodyBold,
-    fontSize: 28,
-    letterSpacing: 1,
+    fontSize: 34,
+    letterSpacing: -0.7,
+    lineHeight: 40,
   },
-  statusCopy: {
-    marginTop: 2,
-    color: colors.linenDim,
-    fontFamily: fonts.body,
-    fontSize: 13,
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.kraft,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
   },
-  statusMark: {
+  avatarText: {
     color: colors.ink,
-    fontFamily: fonts.display,
-    fontSize: 28,
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 0.4,
+  },
+  familyGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  familyCard: {
+    backgroundColor: colors.paper,
+    borderRadius: 22,
+    overflow: "hidden",
+  },
+  familyPhoto: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 16,
+  },
+  familyImg: { width: "78%", height: "78%" },
+  familyName: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 4,
+    color: colors.ink,
+    fontFamily: fonts.bodyBold,
+    fontSize: 17,
+    letterSpacing: -0.3,
   },
   promo: {
     marginHorizontal: 20,
-    marginBottom: 16,
-    backgroundColor: colors.paper,
-    borderRadius: radii.md,
-    overflow: "hidden",
-  },
-  promoImg: {
-    width: "100%",
-    height: 220,
-    backgroundColor: colors.bg,
-  },
-  storyImg: {
-    width: "100%",
-    height: 200,
+    marginTop: 8,
+    marginBottom: 8,
     backgroundColor: colors.kraft,
+    borderRadius: radii.lg,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
-  promoBody: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 20 },
   promoKicker: {
-    color: colors.brass,
-    fontFamily: fonts.bodyMed,
+    color: colors.ink,
+    fontFamily: fonts.bodyBold,
     fontSize: 11,
-    letterSpacing: 1.6,
+    letterSpacing: 1.8,
   },
-  promoTitle: {
+  promoCode: {
     marginTop: 6,
     color: colors.ink,
-    fontFamily: fonts.display,
-    fontSize: 26,
-    letterSpacing: -0.4,
+    fontFamily: fonts.bodyBold,
+    fontSize: 28,
+    letterSpacing: 0.6,
   },
   promoCopy: {
-    marginTop: 8,
+    marginTop: 6,
     color: colors.linenDim,
     fontFamily: fonts.body,
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 14,
   },
-  cta: {
-    alignSelf: "flex-start",
-    marginTop: 16,
-    backgroundColor: colors.ink,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: radii.pill,
-  },
-  ctaText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
-  railHead: {
+  sectionRow: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 10,
+    paddingBottom: 10,
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
   },
-  railTitle: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 18 },
-  seeAll: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 14 },
+  section: {
+    color: colors.ink,
+    fontFamily: fonts.bodyBold,
+    fontSize: 20,
+    letterSpacing: -0.3,
+    paddingTop: 10,
+    paddingBottom: 10,
+  },
+  seeAll: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 16 },
+  collectionHead: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
+  backText: { minHeight: 36, justifyContent: "center", marginLeft: -4 },
+  backGlyph: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 17 },
+  feature: { paddingBottom: 8 },
+  featureWell: {
+    marginHorizontal: 20,
+    aspectRatio: 1,
+    borderRadius: 24,
+    backgroundColor: colors.paper,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  featureImg: { width: "72%", height: "72%" },
+  featureName: {
+    marginTop: 18,
+    paddingHorizontal: 20,
+    color: colors.ink,
+    fontFamily: fonts.bodyBold,
+    fontSize: 28,
+    letterSpacing: -0.5,
+  },
+  featureFrom: {
+    marginTop: 6,
+    paddingHorizontal: 20,
+    color: colors.ink,
+    fontFamily: fonts.bodyMed,
+    fontSize: 17,
+  },
+  featureNotes: {
+    marginTop: 6,
+    paddingHorizontal: 20,
+    color: colors.linenDim,
+    fontFamily: fonts.body,
+    fontSize: 17,
+    lineHeight: 24,
+  },
+  pills: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  pillFill: {
+    minHeight: 44,
+    paddingHorizontal: 22,
+    borderRadius: radii.pill,
+    backgroundColor: colors.ink,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pillFillText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 15 },
+  pillQuiet: {
+    minHeight: 44,
+    paddingHorizontal: 22,
+    borderRadius: radii.pill,
+    backgroundColor: "rgba(255,253,248,0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pillQuietText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 15 },
 });

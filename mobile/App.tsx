@@ -16,7 +16,6 @@ import * as SplashScreen from "expo-splash-screen";
 import { WelcomeScreen } from "./src/components/WelcomeScreen";
 import { TabShell, type TabId } from "./src/components/TabShell";
 import { HomeScreen } from "./src/screens/HomeScreen";
-import { ShopScreen } from "./src/screens/ShopScreen";
 import { CartScreen } from "./src/screens/CartScreen";
 import { ProductScreen } from "./src/screens/ProductScreen";
 import { RitualScreen } from "./src/screens/RitualScreen";
@@ -29,14 +28,14 @@ import {
 } from "./src/lib/welcomeStorage";
 import { PressableScale } from "./src/components/PressableScale";
 import { GlassPanel } from "./src/components/GlassPanel";
+import { SearchSheet } from "./src/components/SearchSheet";
 import { colors, fonts, radii } from "./src/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 type Screen =
   | { kind: "tab"; tab: TabId }
-  | { kind: "product"; productId: string; back: TabId }
-  | { kind: "bag"; back: TabId };
+  | { kind: "product"; productId: string; back: TabId };
 
 function ShopApp() {
   const cart = useCart();
@@ -53,7 +52,8 @@ function ShopApp() {
   const [welcomeSeen, setWelcomeSeen] = useState(false);
   const [gateOn, setGateOn] = useState(true);
   const [welcomeReplayKey, setWelcomeReplayKey] = useState(0);
-  const [screen, setScreen] = useState<Screen>({ kind: "tab", tab: "home" });
+  const [screen, setScreen] = useState<Screen>({ kind: "tab", tab: "shop" });
+  const [search, setSearch] = useState(false);
   const lastCount = useRef(cart.count);
   const [pop, setPop] = useState(false);
 
@@ -86,17 +86,15 @@ function ShopApp() {
     await saveWelcomeSeen();
     setWelcomeSeen(true);
     setGateOn(false);
-    setScreen({ kind: "tab", tab: "home" });
+    setScreen({ kind: "tab", tab: "shop" });
   };
 
   const tab: TabId = screen.kind === "tab" ? screen.tab : screen.back;
   const openProduct = (id: string) =>
     setScreen({ kind: "product", productId: id, back: tab });
-  const openBag = () => setScreen({ kind: "bag", back: tab });
   const openTab = (next: TabId) => setScreen({ kind: "tab", tab: next });
-  const onBag = screen.kind === "bag";
   const onProduct = screen.kind === "product";
-  const hideTabs = onBag || onProduct;
+  const hideTabs = onProduct;
   const firstLaunch = !welcomeSeen;
 
   if (!fontsLoaded || !ready) {
@@ -120,15 +118,6 @@ function ShopApp() {
                     <Text style={styles.backGlyph}>‹</Text>
                   </GlassPanel>
                 </PressableScale>
-              ) : onBag ? (
-                <PressableScale
-                  onPress={() => setScreen({ kind: "tab", tab: screen.back })}
-                  accessibilityLabel="Back"
-                >
-                  <GlassPanel style={styles.backOrb}>
-                    <Text style={styles.backGlyph}>‹</Text>
-                  </GlassPanel>
-                </PressableScale>
               ) : (
                 <Text style={styles.barMark}>CASA RÚSTICO</Text>
               )}
@@ -143,15 +132,11 @@ function ShopApp() {
                   onBack={() => setScreen({ kind: "tab", tab: screen.back })}
                   onOpenProduct={openProduct}
                 />
-              ) : screen.kind === "bag" ? (
-                <CartScreen onOpenProduct={openProduct} />
-              ) : tab === "home" ? (
-                <HomeScreen onOpenProduct={openProduct} onOpenTab={openTab} />
-              ) : tab === "coffee" ? (
-                <ShopScreen onOpenProduct={openProduct} />
+              ) : tab === "shop" ? (
+                <HomeScreen onOpenProduct={openProduct} />
               ) : tab === "ritual" ? (
                 <RitualScreen onOpenProduct={openProduct} />
-              ) : (
+              ) : tab === "story" ? (
                 <StoryScreen
                   onOpenProduct={openProduct}
                   onReplayWelcome={() => {
@@ -161,6 +146,8 @@ function ShopApp() {
                     setWelcomeReplayKey((k) => k + 1);
                   }}
                 />
+              ) : (
+                <CartScreen onOpenProduct={openProduct} />
               )}
             </View>
 
@@ -178,8 +165,8 @@ function ShopApp() {
                 pointerEvents="box-none"
                 style={[styles.dockWrap, { paddingBottom: Math.max(insets.bottom, 8) }]}
               >
-                {cart.count > 0 ? (
-                  <PressableScale onPress={openBag} style={styles.review}>
+                {cart.count > 0 && tab !== "bag" ? (
+                  <PressableScale onPress={() => openTab("bag")} style={styles.review}>
                     <Text style={styles.reviewTitle}>Review bag</Text>
                     <Text style={styles.reviewSub}>
                       {cart.count} {cart.count === 1 ? "item" : "items"}
@@ -187,29 +174,27 @@ function ShopApp() {
                   </PressableScale>
                 ) : null}
                 <View style={styles.dockRow}>
-                  <TabShell active={tab} onChange={openTab} />
+                  <TabShell active={tab} onChange={openTab} bagCount={cart.count} />
                   <PressableScale
-                    onPress={openBag}
-                    style={[styles.bagOrbHit, pop && styles.bagPop]}
-                    accessibilityLabel={`Bag, ${cart.count} items`}
+                    onPress={() => setSearch(true)}
+                    style={[styles.searchHit, pop && styles.bagPop]}
+                    accessibilityLabel="Search"
                   >
-                    <GlassPanel style={styles.bagOrb}>
-                      <View style={styles.bagGlyph}>
-                        <View style={styles.bagHandle} />
-                        <View style={styles.bagBody} />
+                    <GlassPanel style={styles.searchOrb}>
+                      <View style={styles.mag}>
+                        <View style={styles.magRing} />
+                        <View style={styles.magHandle} />
                       </View>
-                      {cart.count > 0 ? (
-                        <View style={styles.fabCount}>
-                          <Text style={styles.fabCountText}>
-                            {cart.count > 9 ? "9+" : cart.count}
-                          </Text>
-                        </View>
-                      ) : null}
                     </GlassPanel>
                   </PressableScale>
                 </View>
               </View>
             )}
+            <SearchSheet
+              open={search}
+              onClose={() => setSearch(false)}
+              onOpenProduct={openProduct}
+            />
           </SafeAreaView>
         ) : (
           <View style={styles.boot} />
@@ -275,37 +260,6 @@ const styles = StyleSheet.create({
   },
   bagGhost: { width: 44, height: 44 },
   bagPop: { transform: [{ scale: 1.08 }] },
-  bagGlyph: { width: 16, height: 18, alignItems: "center" },
-  bagHandle: {
-    width: 8,
-    height: 5,
-    borderWidth: 1.5,
-    borderBottomWidth: 0,
-    borderColor: colors.ink,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-  },
-  bagBody: {
-    width: 14,
-    height: 12,
-    borderWidth: 1.5,
-    borderColor: colors.ink,
-    borderRadius: 2,
-    marginTop: -1,
-  },
-  fabCount: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.ink,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-  },
-  fabCountText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 9 },
   dockWrap: {
     position: "absolute",
     left: 0,
@@ -319,11 +273,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  bagOrbHit: {
+  searchHit: {
     width: 62,
     height: 62,
   },
-  bagOrb: {
+  searchOrb: {
     width: 62,
     height: 62,
     borderRadius: 31,
@@ -334,6 +288,24 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 14,
+  },
+  mag: { width: 18, height: 18 },
+  magRing: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1.8,
+    borderColor: colors.ink,
+  },
+  magHandle: {
+    position: "absolute",
+    right: 1,
+    bottom: 1,
+    width: 7,
+    height: 1.8,
+    backgroundColor: colors.ink,
+    borderRadius: 1,
+    transform: [{ rotate: "45deg" }],
   },
   review: {
     backgroundColor: "rgba(18,14,11,0.88)",

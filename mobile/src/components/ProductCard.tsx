@@ -1,4 +1,4 @@
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, fonts, radii } from "../theme";
 import { formatPrice, type Product } from "../lib/catalog";
 import { PressableScale } from "./PressableScale";
@@ -38,6 +38,31 @@ export function ProductCard({ product, onPress }: CardProps) {
       </Text>
       <Text style={styles.price}>{formatPrice(product.price)}</Text>
     </PressableScale>
+  );
+}
+
+export function CatalogGrid({
+  products,
+  onOpen,
+}: {
+  products: Product[];
+  onOpen: (id: string) => void;
+}) {
+  const { width } = useWindowDimensions();
+  const gutter = 20;
+  const gap = 12;
+  const col = (width - gutter * 2 - gap) / 2;
+  if (products.length === 0) {
+    return <Text style={styles.empty}>No bags match that search.</Text>;
+  }
+  return (
+    <View style={[styles.grid, { paddingHorizontal: gutter, gap }]}>
+      {products.map((p) => (
+        <View key={p.id} style={{ width: col }}>
+          <ProductCard product={p} onPress={() => onOpen(p.id)} />
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -102,7 +127,7 @@ const styles = StyleSheet.create({
   media: {
     width: "100%",
     aspectRatio: 1,
-    borderRadius: radii.sm,
+    borderRadius: radii.lg,
     backgroundColor: colors.paper,
     alignItems: "center",
     justifyContent: "center",
@@ -113,13 +138,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: colors.ink,
     fontFamily: fonts.bodyBold,
-    fontSize: 15,
+    fontSize: 13,
   },
   price: {
     marginTop: 2,
     color: colors.linenMuted,
     fontFamily: fonts.body,
     fontSize: 13,
+  },
+  grid: { flexDirection: "row", flexWrap: "wrap", paddingBottom: 24 },
+  empty: {
+    color: colors.linenMuted,
+    fontFamily: fonts.body,
+    textAlign: "center",
+    marginTop: 40,
+    paddingHorizontal: 20,
   },
   rail: { paddingHorizontal: 20, gap: 16, paddingBottom: 4 },
   railItem: { width: 92, alignItems: "center", gap: 8 },

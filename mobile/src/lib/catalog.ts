@@ -587,4 +587,12 @@ export function gear() {
   return products.filter((p) => p.category === "gear");
 }
 
+export function mugs() {
+  return products.filter((p) => p.id === "cr-mug" || p.id === "cr-latte" || p.id === "cr-pint");
+}
+
+export function apparel() {
+  return products.filter((p) => p.id.startsWith("cr-hoodie"));
+}
+
 export const colombia = products[0];
