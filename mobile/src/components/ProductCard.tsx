@@ -34,14 +34,14 @@ export function ProductCard({ product, onPress, large }: Props) {
 
 const styles = StyleSheet.create({
   card: { flex: 1 },
-  large: { width: 176, flex: 0 },
+  large: { width: 160, flex: 0 },
   media: {
-    aspectRatio: 4 / 5,
+    aspectRatio: 1,
     borderRadius: radii.sm,
     overflow: "hidden",
-    backgroundColor: colors.bgElevated,
+    backgroundColor: colors.kraft,
   },
-  mediaLarge: { height: 208, aspectRatio: undefined },
+  mediaLarge: { aspectRatio: 1 },
   badge: {
     position: "absolute",
     top: 10,
@@ -52,14 +52,14 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
   },
   badgeText: {
-    color: colors.brass,
+    color: colors.linen,
     fontFamily: fonts.bodyMed,
     fontSize: 10,
     letterSpacing: 0.4,
   },
   name: {
     marginTop: 10,
-    color: colors.linen,
+    color: colors.ink,
     fontFamily: fonts.bodyBold,
     fontSize: 14,
   },

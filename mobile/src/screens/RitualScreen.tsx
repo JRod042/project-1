@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors, fonts, radii } from "../theme";
-import { brand, colombia, formatPrice, gear } from "../lib/catalog";
+import { colombia, formatPrice, gear } from "../lib/catalog";
 import { useCart } from "../lib/cart";
 import { PressableScale } from "../components/PressableScale";
 import { ScreenFade } from "../components/ScreenFade";
@@ -13,27 +13,9 @@ type Props = {
 const TOTAL = 180;
 
 const METHODS = [
-  {
-    name: "Pour-over",
-    ratio: "1 : 16",
-    grind: "Medium",
-    time: "3:00",
-    copy: "15 g coffee to 240 g water. Bloom 45 g for 30 seconds, then spiral to the line.",
-  },
-  {
-    name: "Espresso",
-    ratio: "1 : 2",
-    grind: "Fine",
-    time: "25–30 s",
-    copy: "18 g in, 36 g out. Colombia espresso grind is already on the bag if you want it done.",
-  },
-  {
-    name: "Mug",
-    ratio: "House cup",
-    grind: "As roasted",
-    time: "Sit with it",
-    copy: "The white glossy mug is the everyday house mark. Pair it with the week’s bag.",
-  },
+  { name: "Pour-over", ratio: "1 : 16", grind: "Medium", time: "3:00" },
+  { name: "Espresso", ratio: "1 : 2", grind: "Fine", time: "25–30 s" },
+  { name: "Mug", ratio: "House cup", grind: "As roasted", time: "Sit with it" },
 ];
 
 function formatClock(seconds: number) {
@@ -104,19 +86,16 @@ export function RitualScreen({ onOpenProduct }: Props) {
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
           <Text style={styles.title}>Ritual.</Text>
-          <Text style={styles.sub}>How we drink the house bag. Short methods, honest notes.</Text>
+          <Text style={styles.sub}>How we drink the house bag.</Text>
         </View>
-        <Image source={{ uri: brand.ritualImage }} style={styles.hero} resizeMode="cover" />
+        <BrewTimer />
         <View style={styles.block}>
           <Text style={styles.kicker}>COLOMBIA</Text>
-          <Text style={styles.h2}>Tasting notes.</Text>
-          <Text style={styles.body}>{colombia.notes}</Text>
-          <Text style={styles.muted}>{colombia.detail}</Text>
+          <Text style={styles.h2}>{colombia.notes}</Text>
           <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.cta}>
             <Text style={styles.ctaText}>Shop the bag · {formatPrice(colombia.price)}</Text>
           </PressableScale>
         </View>
-        <BrewTimer />
         {METHODS.map((m) => (
           <View key={m.name} style={styles.method}>
             <View style={styles.methodHead}>
@@ -126,7 +105,6 @@ export function RitualScreen({ onOpenProduct }: Props) {
             <Text style={styles.muted}>
               {m.grind} · {m.time}
             </Text>
-            <Text style={styles.body}>{m.copy}</Text>
           </View>
         ))}
         {mug ? (
@@ -148,11 +126,9 @@ export function RitualScreen({ onOpenProduct }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingBottom: 48 },
-  head: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16, paddingRight: 72 },
-  title: { color: colors.linen, fontFamily: fonts.display, fontSize: 36, letterSpacing: -0.6 },
-  sub: { marginTop: 8, color: colors.linenDim, fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
-  hero: { height: 220, width: "100%", backgroundColor: colors.bgElevated },
-  block: { paddingHorizontal: 20, paddingTop: 24 },
+  head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
+  title: { color: colors.ink, fontFamily: fonts.display, fontSize: 32, letterSpacing: -0.6 },
+  sub: { marginTop: 6, color: colors.linenDim, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   kicker: {
     color: colors.brass,
     fontFamily: fonts.bodyMed,
@@ -161,18 +137,11 @@ const styles = StyleSheet.create({
   },
   h2: {
     marginTop: 8,
-    color: colors.linen,
+    color: colors.ink,
     fontFamily: fonts.displaySoft,
-    fontSize: 24,
+    fontSize: 22,
   },
-  h3: { color: colors.linen, fontFamily: fonts.displaySoft, fontSize: 20 },
-  body: {
-    marginTop: 8,
-    color: colors.linenDim,
-    fontFamily: fonts.body,
-    fontSize: 15,
-    lineHeight: 22,
-  },
+  h3: { color: colors.ink, fontFamily: fonts.displaySoft, fontSize: 20 },
   muted: {
     marginTop: 6,
     color: colors.linenMuted,
@@ -183,22 +152,24 @@ const styles = StyleSheet.create({
   cta: {
     alignSelf: "flex-start",
     marginTop: 16,
-    backgroundColor: colors.brass,
+    backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 13,
     borderRadius: radii.pill,
   },
-  ctaText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 14 },
+  ctaText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
   timer: {
     marginHorizontal: 20,
-    marginTop: 28,
-    backgroundColor: colors.bgElevated,
+    marginTop: 12,
+    backgroundColor: colors.paper,
     borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.line,
     padding: 20,
   },
   clock: {
     marginTop: 10,
-    color: colors.linen,
+    color: colors.ink,
     fontFamily: fonts.display,
     fontSize: 56,
     fontVariant: ["tabular-nums"],
@@ -207,12 +178,12 @@ const styles = StyleSheet.create({
   timerRow: { marginTop: 16, flexDirection: "row", gap: 8 },
   primary: {
     flex: 1,
-    backgroundColor: colors.brass,
+    backgroundColor: colors.ink,
     borderRadius: radii.pill,
     paddingVertical: 14,
     alignItems: "center",
   },
-  primaryText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 14 },
+  primaryText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
   reset: {
     borderWidth: 1,
     borderColor: colors.lineBright,
@@ -220,11 +191,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     justifyContent: "center",
+    backgroundColor: colors.paper,
   },
-  resetText: { color: colors.linen, fontFamily: fonts.bodyMed, fontSize: 14 },
+  resetText: { color: colors.ink, fontFamily: fonts.bodyMed, fontSize: 14 },
+  block: { paddingHorizontal: 20, paddingTop: 28 },
   method: {
     marginHorizontal: 20,
-    paddingVertical: 20,
+    paddingVertical: 18,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.line,
   },
@@ -235,10 +208,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    backgroundColor: colors.bgElevated,
+    backgroundColor: colors.paper,
     borderRadius: radii.sm,
     padding: 12,
   },
-  mugImg: { width: 80, height: 80, borderRadius: 8 },
-  name: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 16 },
+  mugImg: { width: 80, height: 80, borderRadius: 8, backgroundColor: colors.kraft },
+  name: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
 });

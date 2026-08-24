@@ -92,6 +92,8 @@ function ShopApp() {
     setScreen({ kind: "product", productId: id, back: tab });
   const openBag = () => setScreen({ kind: "bag", back: tab });
   const onBag = screen.kind === "bag";
+  const onProduct = screen.kind === "product";
+  const hideTabs = onBag || onProduct;
   const firstLaunch = !welcomeSeen;
 
   if (!fontsLoaded || !ready) {
@@ -105,7 +107,51 @@ function ShopApp() {
       <View style={styles.safe}>
         {showShop ? (
           <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-            <StatusBar style="light" />
+            <StatusBar style="dark" />
+            <View style={styles.storeBar}>
+              {onProduct ? (
+                <PressableScale
+                  onPress={() => setScreen({ kind: "tab", tab: screen.back })}
+                  style={styles.barSide}
+                  accessibilityLabel="Coffee"
+                >
+                  <Text style={styles.barSideText}>‹ Coffee</Text>
+                </PressableScale>
+              ) : onBag ? (
+                <PressableScale
+                  onPress={() => setScreen({ kind: "tab", tab: screen.back })}
+                  style={styles.barSide}
+                  accessibilityLabel="Home"
+                >
+                  <Text style={styles.barSideText}>‹ Home</Text>
+                </PressableScale>
+              ) : (
+                <Text style={styles.barMark}>CASA RÚSTICO</Text>
+              )}
+
+              {onBag ? (
+                <View style={styles.bagGhost} />
+              ) : (
+                <PressableScale
+                  onPress={openBag}
+                  style={[styles.bagBtn, pop && styles.bagPop]}
+                  accessibilityLabel={`Bag, ${cart.count} items`}
+                >
+                  <View style={styles.bagGlyph}>
+                    <View style={styles.bagHandle} />
+                    <View style={styles.bagBody} />
+                  </View>
+                  {cart.count > 0 ? (
+                    <View style={styles.fabCount}>
+                      <Text style={styles.fabCountText}>
+                        {cart.count > 9 ? "9+" : cart.count}
+                      </Text>
+                    </View>
+                  ) : null}
+                </PressableScale>
+              )}
+            </View>
+
             <View style={styles.body}>
               {screen.kind === "product" ? (
                 <ProductScreen
@@ -117,11 +163,7 @@ function ShopApp() {
               ) : screen.kind === "bag" ? (
                 <CartScreen onOpenProduct={openProduct} />
               ) : tab === "home" ? (
-                <HomeScreen
-                  onOpenShop={() => setScreen({ kind: "tab", tab: "coffee" })}
-                  onOpenProduct={openProduct}
-                  onOpenStory={() => setScreen({ kind: "tab", tab: "story" })}
-                />
+                <HomeScreen onOpenProduct={openProduct} />
               ) : tab === "coffee" ? (
                 <ShopScreen onOpenProduct={openProduct} />
               ) : tab === "ritual" ? (
@@ -139,38 +181,20 @@ function ShopApp() {
               )}
             </View>
 
-            {!onBag ? (
-              <PressableScale
-                onPress={openBag}
-                style={[styles.fab, pop && styles.fabPop]}
-                accessibilityLabel={`Bag, ${cart.count} items`}
-              >
-                <View style={styles.bagGlyph}>
-                  <View style={styles.bagHandle} />
-                  <View style={styles.bagBody} />
-                </View>
-                {cart.count > 0 ? (
-                  <View style={styles.fabCount}>
-                    <Text style={styles.fabCountText}>
-                      {cart.count > 9 ? "9+" : cart.count}
-                    </Text>
-                  </View>
-                ) : null}
-              </PressableScale>
-            ) : null}
-
             {cart.toast ? (
               <View style={styles.toast} pointerEvents="none">
                 <Text style={styles.toastText}>{cart.toast}</Text>
               </View>
             ) : null}
 
-            <SafeAreaView edges={["bottom"]} style={styles.tabSafe}>
-              <TabShell
-                active={tab}
-                onChange={(next) => setScreen({ kind: "tab", tab: next })}
-              />
-            </SafeAreaView>
+            {hideTabs ? null : (
+              <SafeAreaView edges={["bottom"]} style={styles.tabSafe}>
+                <TabShell
+                  active={tab}
+                  onChange={(next) => setScreen({ kind: "tab", tab: next })}
+                />
+              </SafeAreaView>
+            )}
           </SafeAreaView>
         ) : (
           <View style={styles.boot} />
@@ -200,29 +224,45 @@ const styles = StyleSheet.create({
   boot: { flex: 1, backgroundColor: "#f5ead8" },
   safe: { flex: 1, backgroundColor: colors.bg },
   body: { flex: 1 },
-  tabSafe: { backgroundColor: colors.tabGlass },
-  fab: {
-    position: "absolute",
-    top: 10,
-    right: 16,
+  storeBar: {
+    height: 56,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  barMark: {
+    color: colors.ink,
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 3.2,
+    marginLeft: 8,
+  },
+  barSide: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 8,
+  },
+  barSideText: {
+    color: colors.brass,
+    fontFamily: fonts.bodyMed,
+    fontSize: 15,
+  },
+  bagBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.bgElevated,
-    borderWidth: 1,
-    borderColor: colors.lineBright,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 20,
   },
-  fabPop: { transform: [{ scale: 1.08 }] },
+  bagGhost: { width: 44, height: 44 },
+  bagPop: { transform: [{ scale: 1.08 }] },
   bagGlyph: { width: 16, height: 18, alignItems: "center" },
   bagHandle: {
     width: 8,
     height: 5,
     borderWidth: 1.5,
     borderBottomWidth: 0,
-    borderColor: colors.linen,
+    borderColor: colors.ink,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
   },
@@ -230,34 +270,35 @@ const styles = StyleSheet.create({
     width: 14,
     height: 12,
     borderWidth: 1.5,
-    borderColor: colors.linen,
+    borderColor: colors.ink,
     borderRadius: 2,
     marginTop: -1,
   },
   fabCount: {
     position: "absolute",
-    top: -4,
-    right: -4,
+    top: 2,
+    right: 2,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.brass,
+    backgroundColor: colors.ink,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 4,
   },
-  fabCountText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 10 },
+  fabCountText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 10 },
+  tabSafe: { backgroundColor: colors.tabGlass },
   toast: {
     position: "absolute",
     left: 24,
     right: 24,
     bottom: 88,
-    backgroundColor: colors.linen,
+    backgroundColor: colors.ink,
     borderRadius: 999,
     paddingVertical: 12,
     paddingHorizontal: 18,
     alignItems: "center",
     zIndex: 30,
   },
-  toastText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 14 },
+  toastText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
 });

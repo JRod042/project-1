@@ -49,7 +49,7 @@ export function ShopScreen({ onOpenProduct }: Props) {
       <View style={styles.root}>
         <View style={styles.header}>
           <Text style={styles.title}>Coffee.</Text>
-          <Text style={styles.sub}>Single-origin bags, capsules, and house-mark gear.</Text>
+          <Text style={styles.sub}>Bags, capsules, and house-mark gear.</Text>
           <TextInput
             value={q}
             onChangeText={setQ}
@@ -102,8 +102,8 @@ export function ShopScreen({ onOpenProduct }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  header: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8, gap: 8, paddingRight: 72 },
-  title: { color: colors.linen, fontFamily: fonts.display, fontSize: 36, letterSpacing: -0.6 },
+  header: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8, gap: 8 },
+  title: { color: colors.ink, fontFamily: fonts.display, fontSize: 32, letterSpacing: -0.6 },
   sub: { color: colors.linenDim, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   search: {
     marginTop: 8,
@@ -111,8 +111,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.lineBright,
-    backgroundColor: colors.bgElevated,
-    color: colors.linen,
+    backgroundColor: colors.paper,
+    color: colors.ink,
     fontFamily: fonts.body,
     fontSize: 16,
     paddingHorizontal: 20,
@@ -124,11 +124,11 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     borderWidth: 1,
     borderColor: colors.lineBright,
-    backgroundColor: colors.bgElevated,
+    backgroundColor: colors.paper,
   },
-  chipOn: { backgroundColor: colors.linen, borderColor: colors.linen },
+  chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   chipText: { color: colors.linenDim, fontFamily: fonts.bodyMed, fontSize: 13 },
-  chipTextOn: { color: colors.ink },
+  chipTextOn: { color: colors.linen },
   grid: { paddingHorizontal: 20, paddingBottom: 40, gap: 18 },
   row: { flexDirection: "row", gap: 12 },
   spacer: { flex: 1 },

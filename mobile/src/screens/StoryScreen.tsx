@@ -33,9 +33,7 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
           <Text style={styles.title}>Story.</Text>
-          <Text style={styles.sub}>
-            Puerto Rico in the mark. Single-origin in the cup. Colombia leads the menu.
-          </Text>
+          <Text style={styles.sub}>Puerto Rico in the mark. Single-origin in the cup.</Text>
         </View>
 
         {brand.landscapes.map((place) => (
@@ -52,17 +50,8 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
         <View style={styles.block}>
           <Text style={styles.h2}>The house mark.</Text>
           <Text style={styles.body}>
-            Casa Rústico Coffee and Brews is built for the morning ritual: a cup that feels
-            intentional, a short honest menu, and a house mark you can wear and drink from.
-          </Text>
-          <Text style={styles.body}>
-            Our look and language draw from Puerto Rico’s highlands — mountain mornings, hacienda
-            memory, the culture of the cup. That is the soul of the brand. Growing origin is always
-            listed on each coffee; we only call a lot Puerto Rican-grown when it truly is.
-          </Text>
-          <Text style={styles.body}>
-            Partner-roasted and packed in the United States under our label. Bags, capsules, and
-            house-mark gear — shipping from the U.S.
+            A short honest menu and a house mark you can wear and drink from. Growing origin is
+            listed on each coffee.
           </Text>
           <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.cta}>
             <Text style={styles.ctaText}>Start with Colombia</Text>
@@ -90,11 +79,11 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingBottom: 48 },
-  head: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16, paddingRight: 72 },
-  title: { color: colors.linen, fontFamily: fonts.display, fontSize: 36, letterSpacing: -0.6 },
-  sub: { marginTop: 8, color: colors.linenDim, fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
+  head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12 },
+  title: { color: colors.ink, fontFamily: fonts.display, fontSize: 32, letterSpacing: -0.6 },
+  sub: { marginTop: 6, color: colors.linenDim, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   place: { marginBottom: 8 },
-  hero: { height: 220, width: "100%", backgroundColor: colors.bgElevated },
+  hero: { height: 220, width: "100%", backgroundColor: colors.kraft },
   caption: { paddingHorizontal: 20, paddingTop: 16, gap: 4 },
   kicker: {
     color: colors.brass,
@@ -103,7 +92,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.6,
   },
   h2: {
-    color: colors.linen,
+    color: colors.ink,
     fontFamily: fonts.displaySoft,
     fontSize: 24,
   },
@@ -118,18 +107,18 @@ const styles = StyleSheet.create({
   cta: {
     alignSelf: "flex-start",
     marginTop: 16,
-    backgroundColor: colors.brass,
+    backgroundColor: colors.ink,
     paddingHorizontal: 20,
     paddingVertical: 13,
     borderRadius: radii.pill,
   },
-  ctaText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 14 },
+  ctaText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
   review: {
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.line,
     gap: 8,
   },
-  replay: { paddingHorizontal: 20, paddingVertical: 28 },
+  replay: { paddingHorizontal: 20, paddingVertical: 28, minHeight: 44, justifyContent: "center" },
   replayText: { color: colors.linenMuted, fontFamily: fonts.bodyMed, fontSize: 14 },
 });

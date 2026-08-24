@@ -126,9 +126,11 @@ function Splash({ fading, onSkip }: { fading: boolean; onSkip: () => void }) {
     >
       <StatusBar style="dark" />
       <Pressable style={styles.splashHit} onPress={onSkip} accessibilityLabel="Continue">
-        <BeanMark />
-        <Text style={styles.splashBrand}>CASA RÚSTICO</Text>
-        <Text style={styles.splashGo}>GO</Text>
+        <View style={styles.splashLockup}>
+          <BeanMark />
+          <Text style={styles.splashBrand}>CASA RÚSTICO</Text>
+          <Text style={styles.splashGo}>GO</Text>
+        </View>
       </Pressable>
     </Animated.View>
   );
@@ -157,7 +159,7 @@ function Onboard({ onDone }: { onDone: () => void }) {
   return (
     <SafeAreaView style={styles.onboard} edges={["top", "left", "right", "bottom"]}>
       <StatusBar style="dark" />
-      <Pressable onPress={onDone} style={styles.skip} hitSlop={12}>
+      <Pressable onPress={onDone} style={styles.skip} hitSlop={12} accessibilityLabel="Skip">
         <Text style={styles.skipText}>Skip</Text>
       </Pressable>
 
@@ -257,20 +259,25 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+  },
+  splashLockup: {
+    alignItems: "center",
     gap: 18,
   },
   splashBrand: {
     color: INK,
     fontFamily: fonts.bodyBold,
     fontSize: 13,
-    letterSpacing: 6,
+    letterSpacing: 5.6,
+    marginRight: -5.6,
   },
   splashGo: {
     color: BRASS_DIM,
     fontFamily: fonts.bodyMed,
-    fontSize: 14,
-    letterSpacing: 4,
-    marginTop: -8,
+    fontSize: 11,
+    letterSpacing: 4.4,
+    marginTop: -6,
+    marginRight: -4.4,
   },
   onboard: {
     flex: 1,
@@ -286,17 +293,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   skipText: {
-    color: BRASS_DIM,
+    color: LINEN,
     fontFamily: fonts.bodyMed,
     fontSize: 15,
   },
-  pager: { flex: 1, marginTop: 52 },
-  slide: { paddingHorizontal: 20, justifyContent: "center" },
+  pager: { flex: 1 },
+  slide: { justifyContent: "flex-start" },
   photo: {
     flex: 1,
-    borderRadius: radii.lg,
     overflow: "hidden",
-    backgroundColor: "#e4d5c0",
+    backgroundColor: "#c4a484",
     minHeight: 220,
   },
   dots: {

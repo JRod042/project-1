@@ -162,9 +162,6 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
     <ScreenFade>
       <View style={styles.root}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-          <PressableScale onPress={onBack} style={styles.back}>
-            <Text style={styles.backText}>‹ Coffee</Text>
-          </PressableScale>
           <Image source={{ uri: product.image }} style={styles.hero} resizeMode="cover" />
           <View style={styles.body}>
             {product.badge ? <Text style={styles.kicker}>{product.badge.toUpperCase()}</Text> : null}
@@ -188,11 +185,11 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
 
           <View style={styles.qtyRow}>
             <Text style={styles.label}>Quantity</Text>
-            <PressableScale onPress={() => setQty((n) => Math.max(1, n - 1))} style={styles.qtyBtn}>
+            <PressableScale onPress={() => setQty((n) => Math.max(1, n - 1))} style={styles.qtyBtn} accessibilityLabel="Decrease">
               <Text style={styles.qtyBtnText}>−</Text>
             </PressableScale>
             <Text style={styles.qtyVal}>{qty}</Text>
-            <PressableScale onPress={() => setQty((n) => n + 1)} style={styles.qtyBtn}>
+            <PressableScale onPress={() => setQty((n) => n + 1)} style={styles.qtyBtn} accessibilityLabel="Increase">
               <Text style={styles.qtyBtnText}>+</Text>
             </PressableScale>
           </View>
@@ -228,14 +225,13 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   missing: {
-    color: colors.linen,
+    color: colors.ink,
     fontFamily: fonts.display,
     fontSize: 24,
     margin: 24,
   },
-  back: { paddingHorizontal: 16, paddingVertical: 12, alignSelf: "flex-start" },
-  backText: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 15 },
-  hero: { width: "100%", aspectRatio: 1, backgroundColor: colors.bgElevated },
+    backText: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 15 },
+  hero: { width: "100%", aspectRatio: 1, backgroundColor: colors.kraft },
   body: { paddingHorizontal: 20, paddingTop: 24, gap: 6 },
   kicker: {
     color: colors.brass,
@@ -244,7 +240,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   name: {
-    color: colors.linen,
+    color: colors.ink,
     fontFamily: fonts.display,
     fontSize: 36,
     letterSpacing: -0.6,
@@ -252,7 +248,7 @@ const styles = StyleSheet.create({
   meta: { color: colors.linenMuted, fontFamily: fonts.body, fontSize: 14 },
   price: {
     marginTop: 8,
-    color: colors.linen,
+    color: colors.ink,
     fontFamily: fonts.bodyBold,
     fontSize: 20,
   },
@@ -285,9 +281,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.lineBright,
   },
-  chipOn: { backgroundColor: colors.linen, borderColor: colors.linen },
+  chipOn: { backgroundColor: colors.ink, borderColor: colors.ink },
   chipText: { color: colors.linenDim, fontFamily: fonts.bodyMed, fontSize: 13 },
-  chipTextOn: { color: colors.ink },
+  chipTextOn: { color: colors.linen },
   qtyRow: {
     marginTop: 24,
     paddingHorizontal: 20,
@@ -304,9 +300,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  qtyBtnText: { color: colors.linen, fontSize: 20, lineHeight: 22 },
+  qtyBtnText: { color: colors.ink, fontSize: 20, lineHeight: 22 },
   qtyVal: {
-    color: colors.linen,
+    color: colors.ink,
     fontFamily: fonts.body,
     fontSize: 16,
     minWidth: 22,
@@ -325,16 +321,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.line,
-    backgroundColor: colors.tabGlass,
+    backgroundColor: colors.paper,
     gap: 16,
   },
-  dockPrice: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 16 },
+  dockPrice: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
   add: {
     flex: 1,
-    backgroundColor: colors.brass,
+    backgroundColor: colors.ink,
     borderRadius: radii.pill,
     paddingVertical: 16,
     alignItems: "center",
   },
-  addText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
+  addText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 16 },
 });

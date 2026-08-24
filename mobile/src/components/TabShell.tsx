@@ -17,7 +17,7 @@ type Props = {
 };
 
 function Glyph({ id, on }: { id: TabId; on: boolean }) {
-  const c = on ? colors.brass : colors.linenMuted;
+  const c = on ? colors.ink : colors.linenMuted;
   if (id === "home") {
     return (
       <View style={g.home}>
@@ -123,11 +123,13 @@ const g = StyleSheet.create({
 const styles = StyleSheet.create({
   bar: {
     flexDirection: "row",
+    alignItems: "flex-start",
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.lineBright,
     backgroundColor: colors.tabGlass,
     paddingBottom: 4,
     paddingTop: 8,
+    height: 56,
   },
   tab: {
     flex: 1,
@@ -135,7 +137,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 4,
     minHeight: 48,
-    justifyContent: "center",
+    justifyContent: "flex-start",
   },
   label: {
     color: colors.linenMuted,
@@ -143,5 +145,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.2,
   },
-  labelOn: { color: colors.brass },
+  labelOn: { color: colors.ink },
 });

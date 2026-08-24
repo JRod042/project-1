@@ -5,32 +5,32 @@ const config = {
   version: "0.5.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
-  userInterfaceStyle: "dark",
+  userInterfaceStyle: "light",
   scheme: "casarustico",
   newArchEnabled: true,
   splash: {
     image: "./assets/splash-icon.png",
     resizeMode: "contain",
-    backgroundColor: "#0E130E",
+    backgroundColor: "#f5ead8",
   },
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.jrod042.omni",
-    buildNumber: "19",
+    buildNumber: "20",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Casa Rustico",
       CFBundleName: "Casa Rustico",
       LSRequiresIPhoneOS: true,
       UIRequiredDeviceCapabilities: ["arm64"],
-      UIStatusBarStyle: "UIStatusBarStyleLightContent",
+      UIStatusBarStyle: "UIStatusBarStyleDarkContent",
       ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
     package: "com.jrod042.omni",
     adaptiveIcon: {
-      backgroundColor: "#0E130E",
+      backgroundColor: "#f5ead8",
       foregroundImage: "./assets/android-icon-foreground.png",
       backgroundImage: "./assets/android-icon-background.png",
       monochromeImage: "./assets/android-icon-monochrome.png",
@@ -46,7 +46,7 @@ const config = {
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#0E130E",
+        backgroundColor: "#f5ead8",
         image: "./assets/splash-icon.png",
         imageWidth: 200,
       },

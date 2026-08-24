@@ -1,26 +1,28 @@
 /**
- * Casa Rústico — kraft / linen / espresso.
+ * Casa Rústico — cream page, paper surfaces, kraft wells, espresso ink.
  * Glass is chrome only (tab bar, buy dock). Content stays solid.
  */
 export const colors = {
-  bg: "#120e0b",
-  bgElevated: "#1a1410",
-  bgPanel: "#211a14",
-  bgCard: "#261e16",
+  bg: "#f5ead8",
+  paper: "#fffdf8",
+  kraft: "#c4a484",
+  bgElevated: "#fffdf8",
+  bgPanel: "#e6d3b8",
+  bgCard: "#fffdf8",
   linen: "#f5ead8",
-  linenDim: "#cbbba6",
-  linenMuted: "#8f8170",
+  linenDim: "#5c4a3a",
+  linenMuted: "#8a7460",
   ink: "#120e0b",
-  brass: "#c4a484",
-  brassSoft: "#d4ba9a",
+  brass: "#8a6e52",
+  brassSoft: "#c4a484",
   brassDim: "#8a6e52",
   danger: "#c45c4a",
   success: "#6b9b72",
-  line: "rgba(245, 234, 216, 0.08)",
-  lineBright: "rgba(245, 234, 216, 0.16)",
-  glass: "rgba(245, 234, 216, 0.08)",
-  glassBorder: "rgba(245, 234, 216, 0.16)",
-  tabGlass: "rgba(18, 14, 11, 0.92)",
+  line: "rgba(18, 14, 11, 0.10)",
+  lineBright: "rgba(18, 14, 11, 0.16)",
+  glass: "rgba(18, 14, 11, 0.06)",
+  glassBorder: "rgba(18, 14, 11, 0.12)",
+  tabGlass: "#f5ead8",
 };
 
 export const fonts = {
