@@ -9,6 +9,8 @@ import {
 import * as Haptics from "expo-haptics";
 import { animatePressIn, animatePressOut, createPressScale } from "../lib/motion";
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 type Props = Omit<PressableProps, "style"> & {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -27,9 +29,9 @@ export function PressableScale({
   const scale = useRef(createPressScale()).current;
 
   return (
-    <Pressable
+    <AnimatedPressable
       {...rest}
-      style={style}
+      style={[style, { transform: [{ scale }] }]}
       onPressIn={(e) => {
         animatePressIn(scale);
         onPressIn?.(e);
@@ -45,7 +47,7 @@ export function PressableScale({
         onPress?.(e);
       }}
     >
-      <Animated.View style={{ transform: [{ scale }], alignSelf: "stretch" }}>{children}</Animated.View>
-    </Pressable>
+      {children}
+    </AnimatedPressable>
   );
 }

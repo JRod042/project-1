@@ -32,12 +32,12 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
     <ScreenFade>
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
-          <Text style={styles.title}>Story.</Text>
+          <Text style={styles.title}>Story</Text>
           <Text style={styles.sub}>Puerto Rico in the mark. Single-origin in the cup.</Text>
         </View>
 
         {brand.landscapes.map((place) => (
-          <View key={place.id} style={styles.place}>
+          <View key={place.id} style={styles.card}>
             <Image source={{ uri: place.image }} style={styles.hero} resizeMode="cover" />
             <View style={styles.caption}>
               <Text style={styles.kicker}>{place.kicker.toUpperCase()}</Text>
@@ -47,7 +47,7 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
           </View>
         ))}
 
-        <View style={styles.block}>
+        <View style={styles.cardPad}>
           <Text style={styles.h2}>The house mark.</Text>
           <Text style={styles.body}>
             A short honest menu and a house mark you can wear and drink from. Growing origin is
@@ -58,7 +58,7 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
           </PressableScale>
         </View>
 
-        <View style={styles.block}>
+        <View style={styles.cardPad}>
           <Text style={styles.h2}>From the house.</Text>
           {REVIEWS.map((r) => (
             <View key={r.name} style={styles.review}>
@@ -78,13 +78,19 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingBottom: 48 },
-  head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12 },
+  content: { paddingBottom: 140 },
+  head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
   title: { color: colors.ink, fontFamily: fonts.display, fontSize: 32, letterSpacing: -0.6 },
   sub: { marginTop: 6, color: colors.linenDim, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
-  place: { marginBottom: 8 },
-  hero: { height: 220, width: "100%", backgroundColor: colors.kraft },
-  caption: { paddingHorizontal: 20, paddingTop: 16, gap: 4 },
+  card: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: colors.paper,
+    borderRadius: radii.md,
+    overflow: "hidden",
+  },
+  hero: { height: 200, width: "100%", backgroundColor: colors.kraft },
+  caption: { paddingHorizontal: 20, paddingVertical: 18, gap: 4 },
   kicker: {
     color: colors.brass,
     fontFamily: fonts.bodyMed,
@@ -103,7 +109,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
-  block: { paddingHorizontal: 20, paddingTop: 28 },
+  cardPad: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: colors.paper,
+    borderRadius: radii.md,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
   cta: {
     alignSelf: "flex-start",
     marginTop: 16,

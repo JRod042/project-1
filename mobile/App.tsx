@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
   Fraunces_600SemiBold,
@@ -28,7 +28,7 @@ import {
   saveWelcomeSeen,
 } from "./src/lib/welcomeStorage";
 import { PressableScale } from "./src/components/PressableScale";
-import { colors, fonts } from "./src/theme";
+import { colors, fonts, radii } from "./src/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -39,6 +39,7 @@ type Screen =
 
 function ShopApp() {
   const cart = useCart();
+  const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({
     Fraunces_600SemiBold,
     Fraunces_700Bold,
@@ -91,6 +92,7 @@ function ShopApp() {
   const openProduct = (id: string) =>
     setScreen({ kind: "product", productId: id, back: tab });
   const openBag = () => setScreen({ kind: "bag", back: tab });
+  const openTab = (next: TabId) => setScreen({ kind: "tab", tab: next });
   const onBag = screen.kind === "bag";
   const onProduct = screen.kind === "product";
   const hideTabs = onBag || onProduct;
@@ -103,8 +105,7 @@ function ShopApp() {
   const showShop = welcomeSeen || !gateOn;
 
   return (
-    <SafeAreaProvider>
-      <View style={styles.safe}>
+    <View style={styles.safe}>
         {showShop ? (
           <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
             <StatusBar style="dark" />
@@ -163,7 +164,7 @@ function ShopApp() {
               ) : screen.kind === "bag" ? (
                 <CartScreen onOpenProduct={openProduct} />
               ) : tab === "home" ? (
-                <HomeScreen onOpenProduct={openProduct} />
+                <HomeScreen onOpenProduct={openProduct} onOpenTab={openTab} />
               ) : tab === "coffee" ? (
                 <ShopScreen onOpenProduct={openProduct} />
               ) : tab === "ritual" ? (
@@ -182,18 +183,29 @@ function ShopApp() {
             </View>
 
             {cart.toast ? (
-              <View style={styles.toast} pointerEvents="none">
+              <View
+                style={[styles.toast, { bottom: hideTabs ? 24 : 150 + insets.bottom }]}
+                pointerEvents="none"
+              >
                 <Text style={styles.toastText}>{cart.toast}</Text>
               </View>
             ) : null}
 
             {hideTabs ? null : (
-              <SafeAreaView edges={["bottom"]} style={styles.tabSafe}>
-                <TabShell
-                  active={tab}
-                  onChange={(next) => setScreen({ kind: "tab", tab: next })}
-                />
-              </SafeAreaView>
+              <View
+                pointerEvents="box-none"
+                style={[styles.dockWrap, { paddingBottom: Math.max(insets.bottom, 8) }]}
+              >
+                {cart.count > 0 ? (
+                  <PressableScale onPress={openBag} style={styles.review}>
+                    <Text style={styles.reviewTitle}>Review bag</Text>
+                    <Text style={styles.reviewSub}>
+                      {cart.count} {cart.count === 1 ? "item" : "items"}
+                    </Text>
+                  </PressableScale>
+                ) : null}
+                <TabShell active={tab} onChange={openTab} />
+              </View>
             )}
           </SafeAreaView>
         ) : (
@@ -208,14 +220,15 @@ function ShopApp() {
           />
         ) : null}
       </View>
-    </SafeAreaProvider>
   );
 }
 
 export default function App() {
   return (
     <CartProvider>
-      <ShopApp />
+      <SafeAreaProvider>
+        <ShopApp />
+      </SafeAreaProvider>
     </CartProvider>
   );
 }
@@ -225,7 +238,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   body: { flex: 1 },
   storeBar: {
-    height: 56,
+    height: 52,
     paddingHorizontal: 12,
     flexDirection: "row",
     alignItems: "center",
@@ -287,12 +300,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   fabCountText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 10 },
-  tabSafe: { backgroundColor: colors.tabGlass },
+  dockWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  review: {
+    backgroundColor: colors.ink,
+    borderRadius: radii.pill,
+    minHeight: 52,
+    paddingHorizontal: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  reviewTitle: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 16 },
+  reviewSub: { color: colors.linen, fontFamily: fonts.body, fontSize: 13, opacity: 0.8 },
   toast: {
     position: "absolute",
     left: 24,
     right: 24,
-    bottom: 88,
     backgroundColor: colors.ink,
     borderRadius: 999,
     paddingVertical: 12,

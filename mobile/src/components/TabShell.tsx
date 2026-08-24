@@ -19,7 +19,7 @@ type Props = {
 function Glyph({ id, on }: { id: TabId; on: boolean }) {
   const c = on ? colors.ink : colors.linenMuted;
   return (
-    <View style={g.box}>
+    <View style={[g.well, on && g.wellOn]}>
       {id === "home" ? (
         <View style={g.home}>
           <View style={[g.roof, { borderBottomColor: c }]} />
@@ -46,12 +46,18 @@ function Glyph({ id, on }: { id: TabId; on: boolean }) {
 
 export function TabShell({ active, onChange }: Props) {
   return (
-    <View style={styles.bar}>
+    <View style={styles.capsule}>
       {TABS.map((t) => {
         const on = t.id === active;
         return (
           <View key={t.id} style={styles.cell}>
-            <PressableScale onPress={() => onChange(t.id)} style={styles.tab}>
+            <PressableScale
+              onPress={() => onChange(t.id)}
+              style={styles.tab}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={t.label}
+            >
               <Glyph id={t.id} on={on} />
               <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
                 {t.label}
@@ -65,7 +71,14 @@ export function TabShell({ active, onChange }: Props) {
 }
 
 const g = StyleSheet.create({
-  box: { width: 22, height: 22, alignItems: "center", justifyContent: "center" },
+  well: {
+    width: 52,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  wellOn: { backgroundColor: "rgba(18,14,11,0.08)" },
   home: { width: 22, height: 22, alignItems: "center" },
   roof: {
     width: 0,
@@ -95,8 +108,8 @@ const g = StyleSheet.create({
   crease: {
     width: 1.5,
     height: 10,
-    backgroundColor: colors.bg,
-    opacity: 0.45,
+    backgroundColor: colors.paper,
+    opacity: 0.55,
     borderRadius: 1,
   },
   cup: {
@@ -120,24 +133,28 @@ const g = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  bar: {
+  capsule: {
     flexDirection: "row",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.lineBright,
-    backgroundColor: colors.tabGlass,
-    paddingTop: 6,
-    paddingBottom: 2,
+    alignItems: "center",
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.paper,
+    shadowColor: "#120e0b",
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 14,
   },
   cell: { flex: 1, minWidth: 0 },
   tab: {
     width: "100%",
+    height: 64,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 49,
     paddingTop: 4,
   },
   label: {
-    marginTop: 3,
+    marginTop: 2,
     color: colors.linenMuted,
     fontFamily: fonts.bodyMed,
     fontSize: 10,
