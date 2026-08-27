@@ -2,7 +2,7 @@
 const config = {
   name: "Casa Rustico",
   slug: "omni",
-  version: "0.5.0",
+  version: "0.5.1",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
@@ -16,7 +16,7 @@ const config = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.jrod042.omni",
-    buildNumber: "25",
+    buildNumber: "26",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Casa Rustico",
@@ -65,7 +65,6 @@ const config = {
     eas: {
       projectId: process.env.EAS_PROJECT_ID || "b7896713-f57d-4303-850d-b4985ade82ab",
     },
-    // Shopify Storefront (public token — safe for client)
     shopifyDomain:
       process.env.EXPO_PUBLIC_SHOPIFY_DOMAIN || "b84a47-3.myshopify.com",
     shopifyStorefrontToken:
