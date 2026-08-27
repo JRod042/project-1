@@ -28,5 +28,147 @@ export function cartPermalink(
   const valid = lines.filter((l) => l.qty > 0 && l.variantId);
   if (!valid.length) return `${STORE_URL}/cart`;
   const path = valid.map((l) => `${l.variantId}:${l.qty}`).join(",");
-  return `${STORE_URL}/cart/${path}?discount=${encodeURICodeURIComponent(brand.promo)}`;
+  return `${STORE_URL}/cart/${path}?discount=${encodeURIComponent(brand.promo)}`;
+}
+
+export function variantGid(id: string | number) {
+  const raw = String(id);
+  return raw.startsWith("gid://") ? raw : `gid://shopify/ProductVariant/${raw}`;
+}
+
+/** Resolve a checkout URL. Never opens a browser. */
+export async function resolveCheckoutUrl(
+  lines: { variantId: string | number; qty: number }[],
+): Promise<string> {
+  const valid = lines.filter((l) => l.qty > 0 && l.variantId);
+  if (!valid.length) return cartPermalink([]);
+
+  if (isStorefrontEnabled()) {
+    try {
+      const url = await createCheckoutUrl(
+        valid.map((l) => ({
+          merchandiseId: variantGid(l.variantId),
+          quantity: l.qty,
+        })),
+      );
+      if (url) return url;
+    } catch {
+      // fall through to permalink
+    }
+  }
+  return cartPermalink(valid);
+}
+
+export function isCheckoutCompleteUrl(url: string) {
+  const u = url.toLowerCase();
+  return (
+    u.includes("/thank_you") ||
+    u.includes("/thank-you") ||
+    u.includes("/orders/") ||
+    u.includes("checkout/thank") ||
+    /\/checkouts\/[^/]+\/thank/.test(u)
+  );
+}
+
+async function storefront<T>(
+  query: string,
+  variables?: Record<string, unknown>,
+): Promise<T> {
+  if (!STOREFRONT_TOKEN) throw new Error("Storefront token missing");
+  const res = await fetch(API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Storefront-Access-Token": STOREFRONT_TOKEN,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  const json = await res.json();
+  if (json.errors?.length) throw new Error(json.errors[0].message || "Storefront error");
+  return json.data as T;
+}
+
+export async function fetchProducts(first = 50) {
+  return storefront<{
+    products: {
+      edges: {
+        node: {
+          id: string;
+          handle: string;
+          title: string;
+          description: string;
+          priceRange: { minVariantPrice: { amount: string; currencyCode: string } };
+          images: { edges: { node: { url: string; altText: string | null } }[] };
+          variants: {
+            edges: {
+              node: {
+                id: string;
+                title: string;
+                availableForSale: boolean;
+                price: { amount: string };
+                sku: string | null;
+              };
+            }[];
+          };
+        };
+      }[];
+    };
+  }>(`
+    query Products($first: Int!) {
+      products(first: $first) {
+        edges {
+          node {
+            id
+            handle
+            title
+            description
+            priceRange { minVariantPrice { amount currencyCode } }
+            images(first: 3) { edges { node { url altText } } }
+            variants(first: 15) {
+              edges {
+                node {
+                  id
+                  title
+                  availableForSale
+                  price { amount }
+                  sku
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `, { first });
+}
+
+export async function createCheckoutUrl(
+  lines: { merchandiseId: string; quantity: number }[],
+) {
+  const data = await storefront<{
+    cartCreate: {
+      cart: { checkoutUrl: string } | null;
+      userErrors: { field: string[]; message: string }[];
+    };
+  }>(`
+    mutation cartCreate($input: CartInput!) {
+      cartCreate(input: $input) {
+        cart { checkoutUrl }
+        userErrors { field message }
+      }
+    }
+  `, {
+    input: {
+      lines: lines.map((l) => ({
+        merchandiseId: variantGid(l.merchandiseId),
+        quantity: l.quantity,
+      })),
+      discountCodes: brand.promo ? [brand.promo] : [],
+    },
+  });
+
+  if (data.cartCreate.userErrors?.length) {
+    throw new Error(data.cartCreate.userErrors[0].message);
+  }
+  return data.cartCreate.cart?.checkoutUrl ?? null;
 }
