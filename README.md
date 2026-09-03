@@ -14,10 +14,10 @@ Expo app in `mobile/`:
 
 - Welcome (brand-original)
 - Home · Coffee · Ritual · Story
-- Bag with Shopify checkout permalinks (`MORNING10`)
+- Bag with in-app Shopify checkout (`MORNING10`)
 - Cart on-device only — no accounts
 
-Checkout never collects cards in-app. It opens `https://rusticopr.com/cart/{variantId}:{qty}`.
+Checkout never collects cards in-app. Check Out loads rusticopr.com Shopify inside a WebView (`CheckoutScreen`). Safari is only used if `CHECKOUT_IN_APP` is false.
 
 ## Not this product
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 import type { WebViewNavigation } from "react-native-webview";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts, radii } from "../theme";
 import { useCart } from "../lib/cart";
 import { isCheckoutCompleteUrl, resolveCheckoutUrl } from "../lib/shopify";
@@ -16,6 +17,8 @@ type Phase = "loading" | "ready" | "done" | "error";
 
 export function CheckoutScreen({ onClose, onDone }: Props) {
   const cart = useCart();
+  const insets = useSafeAreaInsets();
+  const webRef = useRef<WebView>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +40,8 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
     return () => {
       alive = false;
     };
+    // Mounted only when Check Out is tapped — capture those lines.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const complete = () => {
@@ -47,13 +52,49 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
     setPhase("done");
   };
 
+  const maybeComplete = (next: string | undefined) => {
+    if (next && isCheckoutCompleteUrl(next)) complete();
+  };
+
   const onNav = (nav: WebViewNavigation) => {
-    if (nav.url && isCheckoutCompleteUrl(nav.url)) complete();
+    maybeComplete(nav.url);
+  };
+
+  const onShouldStart = (req: { url: string }) => {
+    const next = req.url;
+    if (!next) return true;
+    if (isCheckoutCompleteUrl(next)) {
+      complete();
+      return false;
+    }
+    // Keep payment in this WebView — block Shop app / App Store handoff.
+    if (
+      next.startsWith("itms") ||
+      next.startsWith("market:") ||
+      next.startsWith("intent:") ||
+      next.startsWith("shop-app://") ||
+      next.startsWith("shopify://")
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const onOpenWindow = (event: { nativeEvent: { targetUrl: string } }) => {
+    const next = event.nativeEvent.targetUrl;
+    if (!next) return;
+    if (isCheckoutCompleteUrl(next)) {
+      complete();
+      return;
+    }
+    webRef.current?.injectJavaScript(
+      `window.location.href = ${JSON.stringify(next)}; true;`,
+    );
   };
 
   if (phase === "done") {
     return (
-      <View style={styles.root}>
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <Text style={styles.title}>Thank you.</Text>
         <Text style={styles.copy}>Your order is confirmed. A receipt is on the way.</Text>
         <PressableScale onPress={() => (onDone ? onDone() : onClose())} style={styles.cta}>
@@ -65,7 +106,7 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
 
   if (phase === "error") {
     return (
-      <View style={styles.root}>
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <Text style={styles.title}>Checkout paused.</Text>
         <Text style={styles.copy}>{error ?? "Something went wrong starting checkout."}</Text>
         <PressableScale onPress={onClose} style={styles.ghost}>
@@ -77,7 +118,7 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
 
   if (phase === "loading" || !url) {
     return (
-      <View style={styles.root}>
+      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <ActivityIndicator color={colors.brass} />
         <Text style={styles.copy}>Preparing checkout...</Text>
         <PressableScale onPress={onClose}>
@@ -89,7 +130,7 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
 
   return (
     <View style={styles.sheet}>
-      <View style={styles.bar}>
+      <View style={[styles.bar, { paddingTop: insets.top }]}>
         <PressableScale onPress={onClose} accessibilityLabel="Close checkout">
           <Text style={styles.barAction}>Close</Text>
         </PressableScale>
@@ -97,14 +138,18 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
         <View style={styles.barSpacer} />
       </View>
       <WebView
+        ref={webRef}
         source={{ uri: url }}
         onNavigationStateChange={onNav}
+        onShouldStartLoadWithRequest={onShouldStart}
+        onOpenWindow={onOpenWindow}
+        setSupportMultipleWindows
         startInLoadingState
         javaScriptEnabled
         domStorageEnabled
         sharedCookiesEnabled
         thirdPartyCookiesEnabled
-        setSupportMultipleWindows={false}
+        allowsBackForwardNavigationGestures
         originWhitelist={["https://*", "http://*"]}
         style={styles.web}
       />
@@ -123,13 +168,15 @@ const styles = StyleSheet.create({
   },
   sheet: { flex: 1, backgroundColor: colors.bg },
   bar: {
-    height: 52,
+    minHeight: 52,
     paddingHorizontal: 16,
+    paddingBottom: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.line,
+    backgroundColor: colors.bg,
   },
   barTitle: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
   barAction: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 16, width: 64 },

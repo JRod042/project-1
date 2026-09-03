@@ -14,7 +14,7 @@ You do **not** need a Mac or any home server.
 ## What this build is
 
 Casa Rústico **customer shop** (Home / Coffee / Ritual / Story + bag).  
-Checkout on rusticopr.com. No OpenClaw, no LAN gateway, no SYS, no fake card form.
+Checkout on rusticopr.com **inside the app** (Shopify WebView). No OpenClaw, no LAN gateway, no SYS, no fake card form.
 
 ---
 
@@ -49,7 +49,7 @@ Checkout on rusticopr.com. No OpenClaw, no LAN gateway, no SYS, no fake card for
 ### If submit says the build number was already used
 
 Bump `ios.buildNumber` in `mobile/app.config.js`, commit, rebuild, then submit again.  
-`autoIncrement` is **not** enabled. Current value on main: **18**.
+`autoIncrement` is **not** enabled. Current value on this branch: **27**.
 
 ### If the build is green but nothing appears in TestFlight
 
@@ -63,7 +63,7 @@ You almost always have not submitted yet.
 
 ## After install
 
-Open the app → Welcome → Enter the shop → Colombia hero → add a bag → Check Out on rusticopr.com. Promo **MORNING10**.
+Open the app → Welcome → Enter the shop → Colombia hero → add a bag → **Check Out**. Shopify checkout stays in the app. Promo **MORNING10**. Close returns to the bag; a completed order returns to the shop.
 
 ---
 
@@ -72,3 +72,4 @@ Open the app → Welcome → Enter the shop → Colombia hero → add a bag → 
 - Bundle stays `com.jrod042.omni` for continuity with the existing ASC listing.
 - Never change `eas.json` / bundle IDs unless you intend a new listing.
 - Prefer Expo browser **Build → Submit** until GitHub Actions is confirmed green.
+- This checkout change is JS + WebView. A new EAS iOS production build is required for TestFlight.

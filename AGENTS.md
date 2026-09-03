@@ -9,7 +9,7 @@ This repo (`JRod042/project-1`, `mobile/`) is the **TestFlight app**. All shop, 
 - **No Linux computer and no Mac as runtime.**
 - iPhone / iPad is the only device Jorge operates.
 - Builds and submits via Expo Application Services (EAS) + TestFlight only.
-- Cart is on-device (AsyncStorage). Checkout is rusticopr.com Shopify permalinks.
+- Cart is on-device (AsyncStorage). Checkout is rusticopr.com Shopify in a WebView (`CheckoutScreen`).
 - Never collect card numbers in-app.
 
 ## What the app is
@@ -19,7 +19,7 @@ This repo (`JRod042/project-1`, `mobile/`) is the **TestFlight app**. All shop, 
 | Brand shop: bags, capsules, mug | Pocket HQ / floor / kitchen 86 |
 | Colombia as the hero bag | Cafe reservations or covers |
 | Warm highlands (kraft, linen, brass) | Cyber HUD / olive ops console |
-| rusticopr.com Shopify checkout | Home-server SSE / OpenClaw |
+| rusticopr.com Shopify checkout in-app | Home-server SSE / OpenClaw |
 | Cream splash → onboard → shop | SYS / Book / Floor tabs |
 
 ## Architecture (only allowed shape)
@@ -28,8 +28,12 @@ This repo (`JRod042/project-1`, `mobile/`) is the **TestFlight app**. All shop, 
 iPhone / iPad (Expo → TestFlight)
         │
         ├── local cart (AsyncStorage)
-        └── checkout → https://rusticopr.com/cart/{variantId}:{qty}
+        └── Check Out → CheckoutScreen (WebView)
+                └── https://rusticopr.com/cart/{variantId}:{qty}
+                    (Storefront cartCreate when token is present)
 ```
+
+Safari is a fallback only if `CHECKOUT_IN_APP` is false. Do not hand off to the browser by default.
 
 ## Engineering rules
 
@@ -38,6 +42,7 @@ iPhone / iPad (Expo → TestFlight)
 3. Do not revive OpenClaw, legacy Omni server, SYS screens, floor maps, or book-a-table.
 4. Keep welcome screens brand-original (Appllama geometry is reference only). First-run is cream splash + Colombia onboard.
 5. After native-config changes: document the next TestFlight rebuild.
+6. Check Out must present `CheckoutScreen`. Do not `Linking.openURL` the cart permalink unless the gate is off.
 
 ## Primary docs
 

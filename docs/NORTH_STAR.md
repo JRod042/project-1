@@ -1,6 +1,6 @@
 # Casa Rústico — North star
 
-**Casa Rústico is the customer shop** — single-origin bags, capsules, the house mug, ritual, and story. Checkout on rusticopr.com.
+**Casa Rústico is the customer shop** — single-origin bags, capsules, the house mug, ritual, and story. Checkout on rusticopr.com, inside the app.
 
 ## Hard constraint
 
@@ -8,7 +8,7 @@
 
 ## One sentence
 
-A warm brand shop for Casa Rústico coffee: Colombia leads, cart lives on-device, purchase completes on Shopify.
+A warm brand shop for Casa Rústico coffee: Colombia leads, cart lives on-device, purchase completes on Shopify without leaving the app.
 
 ## Product identity
 
@@ -19,7 +19,7 @@ A warm brand shop for Casa Rústico coffee: Colombia leads, cart lives on-device
 | Primary device | iPhone + iPad |
 | Feel | Kraft / linen / espresso — highlands, not ops HQ |
 | Ship path | Expo → EAS → TestFlight |
-| Checkout | rusticopr.com cart permalinks |
+| Checkout | rusticopr.com Shopify in-app (WebView). Never collect cards. |
 
 ## Tabs
 

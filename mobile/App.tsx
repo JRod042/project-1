@@ -20,6 +20,8 @@ import { CartScreen } from "./src/screens/CartScreen";
 import { ProductScreen } from "./src/screens/ProductScreen";
 import { RitualScreen } from "./src/screens/RitualScreen";
 import { StoryScreen } from "./src/screens/StoryScreen";
+import { CheckoutScreen } from "./src/screens/CheckoutScreen";
+import { CHECKOUT_IN_APP } from "./src/components/CheckoutGate";
 import { CartProvider, useCart } from "./src/lib/cart";
 import {
   clearWelcomeSeen,
@@ -56,6 +58,7 @@ function ShopApp() {
   const [welcomeReplayKey, setWelcomeReplayKey] = useState(0);
   const [screen, setScreen] = useState<Screen>({ kind: "tab", tab: "shop" });
   const [search, setSearch] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const lastCount = useRef(cart.count);
   const [pop, setPop] = useState(false);
 
@@ -91,12 +94,23 @@ function ShopApp() {
     setScreen({ kind: "tab", tab: "shop" });
   };
 
+  const startCheckout = () => {
+    if (!cart.count) return;
+    if (CHECKOUT_IN_APP) {
+      setCheckoutOpen(true);
+      return;
+    }
+    void Linking.openURL(
+      cartPermalink(cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty }))),
+    );
+  };
+
   const tab: TabId = screen.kind === "tab" ? screen.tab : screen.back;
   const openProduct = (id: string) =>
     setScreen({ kind: "product", productId: id, back: tab });
   const openTab = (next: TabId) => setScreen({ kind: "tab", tab: next });
   const onProduct = screen.kind === "product";
-  const hideTabs = onProduct;
+  const hideTabs = onProduct || checkoutOpen;
   const firstLaunch = !welcomeSeen;
 
   if (!fontsLoaded || !ready) {
@@ -170,13 +184,7 @@ function ShopApp() {
                 {cart.count > 0 ? (
                   tab === "bag" ? (
                     <PressableScale
-                      onPress={() =>
-                        void Linking.openURL(
-                          cartPermalink(
-                            cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })),
-                          ),
-                        )
-                      }
+                      onPress={startCheckout}
                       style={styles.review}
                       accessibilityLabel="Check out"
                     >
@@ -225,6 +233,18 @@ function ShopApp() {
             firstLaunch={firstLaunch}
             onEnter={() => void enterShop()}
           />
+        ) : null}
+
+        {checkoutOpen ? (
+          <View style={styles.checkoutOverlay}>
+            <CheckoutScreen
+              onClose={() => setCheckoutOpen(false)}
+              onDone={() => {
+                setCheckoutOpen(false);
+                setScreen({ kind: "tab", tab: "shop" });
+              }}
+            />
+          </View>
         ) : null}
       </View>
   );
@@ -349,4 +369,9 @@ const styles = StyleSheet.create({
     zIndex: 30,
   },
   toastText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
+  checkoutOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 80,
+    backgroundColor: colors.bg,
+  },
 });
