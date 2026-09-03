@@ -2,7 +2,7 @@
 const config = {
   name: "Casa Rustico",
   slug: "omni",
-  version: "0.5.1",
+  version: "0.5.2",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
@@ -16,7 +16,7 @@ const config = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.jrod042.omni",
-    buildNumber: "26",
+    buildNumber: "27",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Casa Rustico",
