@@ -1,6 +1,5 @@
 import Constants from "expo-constants";
 import { brand } from "./catalog";
-import type { Fulfillment } from "./checkoutPrefs";
 
 const STORE_URL = "https://rusticopr.com";
 const SHOP_DOMAIN =
@@ -14,12 +13,6 @@ const STOREFRONT_TOKEN =
 
 const API = `https://${SHOP_DOMAIN}/api/2024-10/graphql.json`;
 
-export type CheckoutBuyer = {
-  email?: string;
-  phone?: string;
-  fulfillment?: Fulfillment;
-};
-
 export function isStorefrontEnabled() {
   return Boolean(STOREFRONT_TOKEN);
 }
@@ -28,14 +21,29 @@ export function productUrl(handle: string) {
   return `${STORE_URL}/products/${handle}`;
 }
 
-/** Classic cart permalink — works without Storefront token. Applies MORNING10. */
+function withInAppParams(url: string) {
+  try {
+    const next = new URL(url);
+    next.searchParams.set("discount", next.searchParams.get("discount") || brand.promo);
+    next.searchParams.set("skip_shop_pay", "true");
+    next.searchParams.set("auto_redirect", "false");
+    return next.toString();
+  } catch {
+    const join = url.includes("?") ? "&" : "?";
+    return `${url}${join}skip_shop_pay=true&auto_redirect=false`;
+  }
+}
+
+/** Classic cart permalink — rusticopr.com checkout, not Shop app. */
 export function cartPermalink(
   lines: { variantId: string | number; qty: number }[],
 ) {
   const valid = lines.filter((l) => l.qty > 0 && l.variantId);
   if (!valid.length) return `${STORE_URL}/cart`;
   const path = valid.map((l) => `${l.variantId}:${l.qty}`).join(",");
-  return `${STORE_URL}/cart/${path}?discount=${encodeURIComponent(brand.promo)}`;
+  return withInAppParams(
+    `${STORE_URL}/cart/${path}?discount=${encodeURIComponent(brand.promo)}`,
+  );
 }
 
 export function variantGid(id: string | number) {
@@ -43,28 +51,43 @@ export function variantGid(id: string | number) {
   return raw.startsWith("gid://") ? raw : `gid://shopify/ProductVariant/${raw}`;
 }
 
+/** Stay on rusticopr.com inside the WebView. Never hand off to shop.app. */
+export function keepCheckoutInApp(url: string) {
+  if (!url) return url;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.endsWith("shop.app")) {
+      const back = parsed.searchParams.get("ur_back_url");
+      if (back) return keepCheckoutInApp(back);
+      return cartPermalink([]);
+    }
+  } catch {
+    return url;
+  }
+  return withInAppParams(url);
+}
+
+export function isExternalCheckoutHandoff(url: string) {
+  const u = url.toLowerCase();
+  return (
+    u.startsWith("shop-app://") ||
+    u.startsWith("shopify://") ||
+    u.startsWith("itms") ||
+    u.startsWith("market:") ||
+    u.startsWith("intent:") ||
+    u.includes("://shop.app/") ||
+    u.includes("://www.shop.app/")
+  );
+}
+
 /** Resolve a checkout URL. Never opens a browser. */
 export async function resolveCheckoutUrl(
   lines: { variantId: string | number; qty: number }[],
-  buyer?: CheckoutBuyer,
 ): Promise<string> {
   const valid = lines.filter((l) => l.qty > 0 && l.variantId);
   if (!valid.length) return cartPermalink([]);
 
-  if (isStorefrontEnabled()) {
-    try {
-      const url = await createCheckoutUrl(
-        valid.map((l) => ({
-          merchandiseId: variantGid(l.variantId),
-          quantity: l.qty,
-        })),
-        buyer,
-      );
-      if (url) return url;
-    } catch {
-      // fall through to permalink
-    }
-  }
+  // Notes: permalink is the allowed shape. Keep Shop Pay from stealing the session.
   return cartPermalink(valid);
 }
 
@@ -153,27 +176,7 @@ export async function fetchProducts(first = 50) {
 
 export async function createCheckoutUrl(
   lines: { merchandiseId: string; quantity: number }[],
-  buyer?: CheckoutBuyer,
 ) {
-  const input: Record<string, unknown> = {
-    lines: lines.map((l) => ({
-      merchandiseId: variantGid(l.merchandiseId),
-      quantity: l.quantity,
-    })),
-    discountCodes: brand.promo ? [brand.promo] : [],
-  };
-
-  if (buyer?.email || buyer?.phone) {
-    input.buyerIdentity = {
-      ...(buyer.email ? { email: buyer.email } : {}),
-      ...(buyer.phone ? { phone: buyer.phone } : {}),
-    };
-  }
-  if (buyer?.fulfillment) {
-    input.note = buyer.fulfillment === "pickup" ? "Pickup" : "Ship";
-    input.attributes = [{ key: "fulfillment", value: buyer.fulfillment }];
-  }
-
   const data = await storefront<{
     cartCreate: {
       cart: { checkoutUrl: string } | null;
@@ -186,10 +189,19 @@ export async function createCheckoutUrl(
         userErrors { field message }
       }
     }
-  `, { input });
+  `, {
+    input: {
+      lines: lines.map((l) => ({
+        merchandiseId: variantGid(l.merchandiseId),
+        quantity: l.quantity,
+      })),
+      discountCodes: brand.promo ? [brand.promo] : [],
+    },
+  });
 
   if (data.cartCreate.userErrors?.length) {
     throw new Error(data.cartCreate.userErrors[0].message);
   }
-  return data.cartCreate.cart?.checkoutUrl ?? null;
+  const url = data.cartCreate.cart?.checkoutUrl ?? null;
+  return url ? keepCheckoutInApp(url) : null;
 }
