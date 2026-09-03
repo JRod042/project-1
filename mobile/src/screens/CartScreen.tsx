@@ -88,7 +88,7 @@ export function CartScreen({ onOpenProduct }: Props) {
             <Text style={styles.kicker}>PROMO</Text>
             <Text style={styles.promoCode}>{brand.promo}</Text>
             <Text style={styles.promoCopy}>
-              {brand.promo} for {brand.promoCopy}. Applied when you check out on rusticopr.com.
+              {brand.promo} for {brand.promoCopy}. Applied when you check out in the app.
             </Text>
           </PressableScale>
 

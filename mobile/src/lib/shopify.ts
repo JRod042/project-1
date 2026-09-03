@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { brand } from "./catalog";
+import type { Fulfillment } from "./checkoutPrefs";
 
 const STORE_URL = "https://rusticopr.com";
 const SHOP_DOMAIN =
@@ -12,6 +13,12 @@ const STOREFRONT_TOKEN =
   "";
 
 const API = `https://${SHOP_DOMAIN}/api/2024-10/graphql.json`;
+
+export type CheckoutBuyer = {
+  email?: string;
+  phone?: string;
+  fulfillment?: Fulfillment;
+};
 
 export function isStorefrontEnabled() {
   return Boolean(STOREFRONT_TOKEN);
@@ -39,6 +46,7 @@ export function variantGid(id: string | number) {
 /** Resolve a checkout URL. Never opens a browser. */
 export async function resolveCheckoutUrl(
   lines: { variantId: string | number; qty: number }[],
+  buyer?: CheckoutBuyer,
 ): Promise<string> {
   const valid = lines.filter((l) => l.qty > 0 && l.variantId);
   if (!valid.length) return cartPermalink([]);
@@ -50,6 +58,7 @@ export async function resolveCheckoutUrl(
           merchandiseId: variantGid(l.variantId),
           quantity: l.qty,
         })),
+        buyer,
       );
       if (url) return url;
     } catch {
@@ -144,7 +153,27 @@ export async function fetchProducts(first = 50) {
 
 export async function createCheckoutUrl(
   lines: { merchandiseId: string; quantity: number }[],
+  buyer?: CheckoutBuyer,
 ) {
+  const input: Record<string, unknown> = {
+    lines: lines.map((l) => ({
+      merchandiseId: variantGid(l.merchandiseId),
+      quantity: l.quantity,
+    })),
+    discountCodes: brand.promo ? [brand.promo] : [],
+  };
+
+  if (buyer?.email || buyer?.phone) {
+    input.buyerIdentity = {
+      ...(buyer.email ? { email: buyer.email } : {}),
+      ...(buyer.phone ? { phone: buyer.phone } : {}),
+    };
+  }
+  if (buyer?.fulfillment) {
+    input.note = buyer.fulfillment === "pickup" ? "Pickup" : "Ship";
+    input.attributes = [{ key: "fulfillment", value: buyer.fulfillment }];
+  }
+
   const data = await storefront<{
     cartCreate: {
       cart: { checkoutUrl: string } | null;
@@ -157,15 +186,7 @@ export async function createCheckoutUrl(
         userErrors { field message }
       }
     }
-  `, {
-    input: {
-      lines: lines.map((l) => ({
-        merchandiseId: variantGid(l.merchandiseId),
-        quantity: l.quantity,
-      })),
-      discountCodes: brand.promo ? [brand.promo] : [],
-    },
-  });
+  `, { input });
 
   if (data.cartCreate.userErrors?.length) {
     throw new Error(data.cartCreate.userErrors[0].message);
