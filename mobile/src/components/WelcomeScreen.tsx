@@ -20,6 +20,13 @@ import { colors, fonts, radii } from "../theme";
 const LINEN = "#f5ead8";
 const INK = "#120e0b";
 const BRASS_DIM = "#8a6e52";
+const KRAFT = "#9c704b";
+
+/** Calm seal hold, then a slow crossfade into the shop. */
+const SEAL_HOLD_MS = 1700;
+const SEAL_FADE_MS = 820;
+const NATIVE_HIDE_MS = 240;
+const SKIP_AFTER_MS = 1200;
 
 const SLIDES = [
   {
@@ -65,15 +72,15 @@ function Splash({
     if (!fading) return;
     Animated.timing(opacity, {
       toValue: 0,
-      duration: 720,
+      duration: SEAL_FADE_MS,
       easing: Easing.inOut(Easing.quad),
       useNativeDriver: true,
     }).start();
   }, [fading, opacity]);
 
   useEffect(() => {
-    const ready = setTimeout(() => onReady?.(), 160);
-    const skip = setTimeout(() => setCanSkip(true), 700);
+    const ready = setTimeout(() => onReady?.(), NATIVE_HIDE_MS);
+    const skip = setTimeout(() => setCanSkip(true), SKIP_AFTER_MS);
     return () => {
       clearTimeout(ready);
       clearTimeout(skip);
@@ -175,8 +182,10 @@ function Onboard({ onDone }: { onDone: () => void }) {
 }
 
 /**
- * Still kraft seal every launch (same crop as the native splash).
- * Fade only — no overlay beans, no scale. Tap to skip after a beat.
+ * Kraft seal every launch (same crop as the native splash).
+ * Hold, then fade only — no overlay beans, no tagline, no scale.
+ * Returning launches keep this overlay mounted until the fade finishes
+ * so enterShop does not tear it down mid-crossfade.
  */
 export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: Props) {
   const [splash, setSplash] = useState(true);
@@ -189,14 +198,16 @@ export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: 
     setSplash(true);
     setSplashGone(false);
     setLeaving(false);
-    const id = setTimeout(() => setSplash(false), 1600);
+    const id = setTimeout(() => setSplash(false), SEAL_HOLD_MS);
     return () => clearTimeout(id);
   }, [replayKey]);
 
   useEffect(() => {
     if (splash) return;
-    if (!firstLaunch) enter.current();
-    const id = setTimeout(() => setSplashGone(true), 760);
+    const id = setTimeout(() => {
+      setSplashGone(true);
+      if (!firstLaunch) enter.current();
+    }, SEAL_FADE_MS);
     return () => clearTimeout(id);
   }, [splash, firstLaunch]);
 
@@ -206,9 +217,10 @@ export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: 
   };
 
   const showOnboard = firstLaunch && !leaving;
+  const captureTaps = splash || showOnboard;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents={splashGone && !showOnboard ? "none" : "auto"}>
+    <View style={StyleSheet.absoluteFill} pointerEvents={captureTaps ? "auto" : "none"}>
       {showOnboard ? <Onboard onDone={finish} /> : null}
       {!splashGone ? <Splash fading={!splash} onSkip={() => setSplash(false)} onReady={onReady} /> : null}
     </View>
@@ -218,7 +230,7 @@ export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: 
 const styles = StyleSheet.create({
   splash: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#9c704b",
+    backgroundColor: KRAFT,
     zIndex: 20,
   },
   splashHit: {

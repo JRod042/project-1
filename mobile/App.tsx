@@ -234,7 +234,7 @@ function ShopApp() {
                   }}
                 />
               ) : (
-                <CartScreen onOpenProduct={openProduct} onCheckout={startCheckout} />
+                <CartScreen onOpenProduct={openProduct} />
               )}
             </View>
 

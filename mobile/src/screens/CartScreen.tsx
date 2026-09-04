@@ -8,7 +8,6 @@ import { ScreenFade } from "../components/ScreenFade";
 
 type Props = {
   onOpenProduct: (id: string) => void;
-  onCheckout: () => void;
 };
 
 export function CartScreen({ onOpenProduct }: Props) {
