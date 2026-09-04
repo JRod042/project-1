@@ -1,4 +1,4 @@
-# iPhone TestFlight + Android Play bundle. Trigger: Actions → Casa Rústico store.
+# iPhone App Store Connect + Android Play production. Trigger: Actions → Casa Rústico store.
 name: Casa Rústico store
 
 on:
@@ -13,9 +13,14 @@ on:
           - production
           - preview
       submit:
-        description: "Submit iOS to TestFlight after build"
+        description: "Submit after build (iOS → App Store Connect, Android → Play production)"
         required: true
         default: true
+        type: boolean
+      submit_only:
+        description: "Skip build; submit the latest production binaries to the stores"
+        required: false
+        default: false
         type: boolean
 
 concurrency:
@@ -69,6 +74,7 @@ jobs:
           fi
 
       - name: Build
+        if: ${{ inputs.submit_only != true }}
         env:
           EXPO_ASC_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
@@ -82,8 +88,17 @@ jobs:
             eas build --platform "$PLATFORM" --profile "$PROFILE" --non-interactive
           fi
 
-      - name: Try Android Play submit
-        if: matrix.platform == 'android' && inputs.submit == true
+      - name: Submit latest (no rebuild)
+        if: ${{ inputs.submit_only == true }}
+        env:
+          EXPO_ASC_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          eas submit --platform "${{ matrix.platform }}" --profile production --latest --non-interactive --no-wait
+
+      - name: Try Android Play production submit
+        if: ${{ matrix.platform == 'android' && inputs.submit == true && inputs.submit_only != true }}
         continue-on-error: true
         run: |
-          eas submit --platform android --profile "${{ inputs.profile }}" --latest --non-interactive --no-wait
+          eas submit --platform android --profile production --latest --non-interactive --no-wait
