@@ -74,12 +74,6 @@ function ShopApp() {
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && ready) {
-      SplashScreen.hideAsync().catch(() => undefined);
-    }
-  }, [fontsLoaded, ready]);
-
-  useEffect(() => {
     if (cart.count > lastCount.current) {
       setPop(true);
       const id = setTimeout(() => setPop(false), 420);
@@ -94,6 +88,11 @@ function ShopApp() {
     setWelcomeSeen(true);
     setGateOn(false);
     setScreen({ kind: "tab", tab: "shop" });
+    SplashScreen.hideAsync().catch(() => undefined);
+  };
+
+  const splashPainted = () => {
+    SplashScreen.hideAsync().catch(() => undefined);
   };
 
   const startCheckout = () => {
@@ -228,6 +227,7 @@ function ShopApp() {
           <WelcomeScreen
             replayKey={welcomeReplayKey}
             firstLaunch={firstLaunch}
+            onReady={splashPainted}
             onEnter={() => void enterShop()}
           />
         ) : null}

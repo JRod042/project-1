@@ -22,14 +22,19 @@ export function productUrl(handle: string) {
   return `${STORE_URL}/products/${handle}`;
 }
 
-/** Classic cart permalink — works without Storefront token. Applies MORNING10. */
+/** Classic cart permalink — in-app WebView. Skip Shop Pay so Safari/Shop don't take over. */
 export function cartPermalink(
   lines: { variantId: string | number; qty: number }[],
+  email?: string,
 ) {
   const valid = lines.filter((l) => l.qty > 0 && l.variantId);
   if (!valid.length) return `${STORE_URL}/cart`;
   const path = valid.map((l) => `${l.variantId}:${l.qty}`).join(",");
-  return `${STORE_URL}/cart/${path}?discount=${encodeURIComponent(brand.promo)}&skip_shop_pay=true`;
+  const params = new URLSearchParams();
+  params.set("discount", brand.promo);
+  params.set("skip_shop_pay", "true");
+  if (email) params.set("checkout[email]", email);
+  return `${STORE_URL}/cart/${path}?${params.toString()}`;
 }
 
 export function variantGid(id: string | number) {
@@ -47,28 +52,13 @@ export function stayInAppUrl(url: string) {
   }
 }
 
+/** Permalink only. Storefront checkoutUrl kicks out to Shop Pay / Safari. */
 export async function resolveCheckoutUrl(
   lines: { variantId: string | number; qty: number }[],
   identity?: { token?: string; email?: string },
 ): Promise<string> {
   const valid = lines.filter((l) => l.qty > 0 && l.variantId);
-  if (!valid.length) return stayInAppUrl(cartPermalink([]));
-
-  if (isStorefrontEnabled()) {
-    try {
-      const url = await createCheckoutUrl(
-        valid.map((l) => ({
-          merchandiseId: variantGid(l.variantId),
-          quantity: l.qty,
-        })),
-        identity,
-      );
-      if (url) return stayInAppUrl(url);
-    } catch {
-      // fall through to permalink
-    }
-  }
-  return stayInAppUrl(cartPermalink(valid));
+  return cartPermalink(valid, identity?.email);
 }
 
 export function isCheckoutCompleteUrl(url: string) {
