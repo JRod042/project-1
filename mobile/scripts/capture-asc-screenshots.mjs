@@ -108,7 +108,7 @@ async function main() {
     await waitImages(page);
     written.push(...(await save(page, dests, `${d.id}-shop-home`)));
 
-    await page.getByLabel("Colombia").first().click();
+    await page.getByText("Colombia", { exact: true }).first().click();
     await page.getByText("Add to bag").first().waitFor({ timeout: 15000 });
     await waitImages(page);
     written.push(...(await save(page, dests, `${d.id}-product-colombia`)));
