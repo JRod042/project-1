@@ -51,11 +51,8 @@ type Props = {
 };
 
 const BEANS = [
-  { x: 110, y: 96, peak: -42, rot: "-28deg", rotEnd: "12deg", delay: 80 },
-  { x: -118, y: 88, peak: -46, rot: "22deg", rotEnd: "-10deg", delay: 280 },
-  { x: 8, y: 128, peak: -52, rot: "6deg", rotEnd: "4deg", delay: 480 },
-  { x: 96, y: -92, peak: -28, rot: "16deg", rotEnd: "-8deg", delay: 680 },
-  { x: -100, y: -86, peak: -30, rot: "-14deg", rotEnd: "8deg", delay: 880 },
+  { x: -36, y: 16, peak: -20, rot: "-18deg", rotEnd: "8deg", delay: 160 },
+  { x: 38, y: 14, peak: -18, rot: "16deg", rotEnd: "-6deg", delay: 340 },
 ] as const;
 
 function JumpBean({
@@ -76,21 +73,17 @@ function JumpBean({
   const t = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.timing(t, {
-          toValue: 1,
-          duration: 920,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.delay(280),
-        Animated.timing(t, { toValue: 0, duration: 0, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
+    const hop = Animated.sequence([
+      Animated.delay(delay),
+      Animated.timing(t, {
+        toValue: 1,
+        duration: 1180,
+        easing: Easing.bezier(0.22, 1, 0.36, 1),
+        useNativeDriver: true,
+      }),
+    ]);
+    hop.start();
+    return () => hop.stop();
   }, [delay, t]);
 
   return (
@@ -100,7 +93,7 @@ function JumpBean({
         styles.bean,
         {
           opacity: t.interpolate({
-            inputRange: [0, 0.08, 0.72, 1],
+            inputRange: [0, 0.12, 0.78, 1],
             outputRange: [0, 1, 1, 0],
           }),
           transform: [
@@ -112,8 +105,8 @@ function JumpBean({
             },
             {
               translateY: t.interpolate({
-                inputRange: [0, 0.48, 1],
-                outputRange: [y, peak, 8],
+                inputRange: [0, 0.52, 1],
+                outputRange: [y, peak, 6],
               }),
             },
             {
@@ -124,8 +117,8 @@ function JumpBean({
             },
             {
               scale: t.interpolate({
-                inputRange: [0, 0.7, 1],
-                outputRange: [1, 1, 0.22],
+                inputRange: [0, 0.55, 1],
+                outputRange: [1, 1, 0.28],
               }),
             },
           ],
@@ -148,16 +141,26 @@ function Splash({
   onReady?: () => void;
 }) {
   const opacity = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new Animated.Value(1)).current;
   const [canSkip, setCanSkip] = useState(false);
 
   useEffect(() => {
-    Animated.timing(opacity, {
-      toValue: fading ? 0 : 1,
-      duration: fading ? 420 : 0,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [fading, opacity]);
+    if (!fading) return;
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 860,
+        easing: Easing.inOut(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 0.96,
+        duration: 860,
+        easing: Easing.inOut(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fading, opacity, scale]);
 
   useEffect(() => {
     const ready = setTimeout(() => onReady?.(), 280);
@@ -181,7 +184,7 @@ function Splash({
         }}
         accessibilityLabel="Continue"
       >
-        <View style={styles.splashLockup}>
+        <Animated.View style={[styles.splashLockup, { transform: [{ scale }] }]}>
           <Image
             source={require("../../assets/splash-icon.png")}
             style={styles.splashSeal}
@@ -190,7 +193,7 @@ function Splash({
           {BEANS.map((b) => (
             <JumpBean key={`${b.x}-${b.delay}`} {...b} />
           ))}
-        </View>
+        </Animated.View>
       </Pressable>
     </Animated.View>
   );
@@ -282,18 +285,14 @@ export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: 
     setSplash(true);
     setSplashGone(false);
     setLeaving(false);
-    const id = setTimeout(() => setSplash(false), 2800);
+    const id = setTimeout(() => setSplash(false), 2200);
     return () => clearTimeout(id);
   }, [replayKey]);
 
   useEffect(() => {
     if (splash) return;
-    if (!firstLaunch) {
-      setSplashGone(true);
-      const id = setTimeout(() => enter.current(), 200);
-      return () => clearTimeout(id);
-    }
-    const id = setTimeout(() => setSplashGone(true), 400);
+    if (!firstLaunch) enter.current();
+    const id = setTimeout(() => setSplashGone(true), 900);
     return () => clearTimeout(id);
   }, [splash, firstLaunch]);
 
@@ -336,24 +335,24 @@ const styles = StyleSheet.create({
   },
   bean: {
     position: "absolute",
-    width: 18,
-    height: 26,
+    width: 14,
+    height: 20,
     alignItems: "center",
     justifyContent: "center",
   },
   beanBody: {
-    width: 16,
-    height: 24,
-    borderRadius: 8,
+    width: 12,
+    height: 18,
+    borderRadius: 7,
     backgroundColor: "#2a1810",
   },
   beanCrease: {
     position: "absolute",
-    width: 2,
-    height: 14,
+    width: 1.5,
+    height: 11,
     borderRadius: 1,
     backgroundColor: "#c4a484",
-    opacity: 0.75,
+    opacity: 0.7,
   },
   onboard: {
     flex: 1,
