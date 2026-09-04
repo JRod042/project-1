@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Image, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { colors, fonts, radii } from "../theme";
 import {
@@ -10,7 +10,6 @@ import {
   type Product,
   type ShopifyVariant,
 } from "../lib/catalog";
-import { productUrl } from "../lib/shopify";
 import { useCart } from "../lib/cart";
 import { PressableScale } from "../components/PressableScale";
 import { ProductCard } from "../components/ProductCard";
@@ -202,13 +201,6 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
               </View>
             </View>
           ) : null}
-
-          <PressableScale
-            onPress={() => void Linking.openURL(productUrl(product.handle))}
-            style={styles.storeLink}
-          >
-            <Text style={styles.backText}>View on rusticopr.com</Text>
-          </PressableScale>
         </ScrollView>
 
         <View style={styles.dock}>

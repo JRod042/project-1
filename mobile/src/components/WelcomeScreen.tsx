@@ -3,7 +3,6 @@ import {
   Animated,
   Easing,
   Image,
-  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -46,12 +45,20 @@ const SLIDES = [
 
 type Props = {
   onEnter: () => void;
-  /** First launch / replay: show onboard after splash. Returning: splash then shop. */
+  onReady?: () => void;
   firstLaunch: boolean;
   replayKey?: number;
 };
 
-function Splash({ fading, onSkip }: { fading: boolean; onSkip: () => void }) {
+function Splash({
+  fading,
+  onSkip,
+  onReady,
+}: {
+  fading: boolean;
+  onSkip: () => void;
+  onReady?: () => void;
+}) {
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -69,7 +76,7 @@ function Splash({ fading, onSkip }: { fading: boolean; onSkip: () => void }) {
       style={[styles.splash, { opacity }]}
     >
       <StatusBar style="light" />
-      <Pressable style={styles.splashHit} onPress={onSkip} accessibilityLabel="Continue">
+      <Pressable style={styles.splashHit} onPress={onSkip} accessibilityLabel="Continue" onLayout={onReady}>
         <View style={styles.splashLockup}>
           <Image
             source={require("../../assets/splash-icon.png")}
@@ -151,37 +158,39 @@ function Onboard({ onDone }: { onDone: () => void }) {
         <Pressable onPress={onDone} style={styles.primary} accessibilityRole="button">
           <Text style={styles.primaryText}>Get started</Text>
         </Pressable>
-        <Pressable onPress={() => void Linking.openURL(brand.siteUrl)} style={styles.secondary}>
-          <Text style={styles.secondaryText}>Visit rusticopr.com</Text>
-        </Pressable>
       </View>
     </SafeAreaView>
   );
 }
 
 /**
- * Starbucks-structured launch, Casa identity:
- * cream splash (tap to skip) → onboard on first launch → shop.
- * Returning: brief splash, then shop. Timer is not gated on storage.
+ * Kraft splash every launch (tap to skip). First launch: onboard after splash.
+ * Returning: splash, then shop. Native splash stays up until this paints.
  */
-export function WelcomeScreen({ onEnter, firstLaunch, replayKey = 0 }: Props) {
+export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: Props) {
   const [splash, setSplash] = useState(true);
   const [splashGone, setSplashGone] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const enter = useRef(onEnter);
+  enter.current = onEnter;
 
   useEffect(() => {
     setSplash(true);
     setSplashGone(false);
     setLeaving(false);
-    const id = setTimeout(() => setSplash(false), 1800);
+    const id = setTimeout(() => setSplash(false), 2200);
     return () => clearTimeout(id);
   }, [replayKey]);
 
   useEffect(() => {
     if (splash) return;
-    const id = setTimeout(() => setSplashGone(true), 420);
+    if (!firstLaunch) {
+      const id = setTimeout(() => enter.current(), 400);
+      return () => clearTimeout(id);
+    }
+    const id = setTimeout(() => setSplashGone(true), 400);
     return () => clearTimeout(id);
-  }, [splash]);
+  }, [splash, firstLaunch]);
 
   const finish = () => {
     setLeaving(true);
@@ -193,7 +202,7 @@ export function WelcomeScreen({ onEnter, firstLaunch, replayKey = 0 }: Props) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={splashGone && !showOnboard ? "none" : "auto"}>
       {showOnboard ? <Onboard onDone={finish} /> : null}
-      {!splashGone ? <Splash fading={!splash} onSkip={() => setSplash(false)} /> : null}
+      {!splashGone ? <Splash fading={!splash} onSkip={() => setSplash(false)} onReady={onReady} /> : null}
     </View>
   );
 }
@@ -214,9 +223,9 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   splashSeal: {
-    width: 168,
-    height: 168,
-    borderRadius: 36,
+    width: 220,
+    height: 220,
+    borderRadius: 48,
   },
   splashBrand: {
     color: LINEN,
