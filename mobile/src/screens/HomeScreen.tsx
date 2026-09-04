@@ -56,17 +56,6 @@ export function HomeScreen({ onOpenProduct }: Props) {
 
   const discover = origins().filter((p) => p.id !== colombia.id).slice(0, 6);
 
-  const buyColombia = () => {
-    cart.add({
-      productId: colombia.id,
-      variantId: colombia.defaultVariantId,
-      variantTitle: colombia.variants?.[0]?.title ?? colombia.subtitle,
-      price: colombia.price,
-      qty: 1,
-    });
-    cart.flash("Added to bag");
-  };
-
   return (
     <ScreenFade>
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -77,23 +66,17 @@ export function HomeScreen({ onOpenProduct }: Props) {
           </View>
         </View>
 
-        <View style={styles.hero}>
-          <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.heroWell} haptic={false}>
-            <Image source={{ uri: colombia.image }} style={styles.heroImg} resizeMode="contain" />
-          </PressableScale>
-          {colombia.badge ? <Text style={styles.heroKicker}>{colombia.badge.toUpperCase()}</Text> : null}
-          <Text style={styles.heroName}>{colombia.name}</Text>
-          {colombia.notes ? <Text style={styles.heroNotes}>{colombia.notes}</Text> : null}
-          <Text style={styles.heroPrice}>{formatPrice(colombia.price)}</Text>
-          <View style={styles.pills}>
-            <PressableScale onPress={buyColombia} style={styles.pillFill} accessibilityLabel="Add Colombia to bag">
-              <Text style={styles.pillFillText}>Add to bag</Text>
-            </PressableScale>
-            <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.pillQuiet} haptic={false}>
-              <Text style={styles.pillQuietText}>The bag</Text>
-            </PressableScale>
+        <PressableScale
+          onPress={() => onOpenProduct(colombia.id)}
+          style={[styles.familyCard, styles.colombiaCard]}
+          haptic={false}
+          accessibilityLabel="Colombia"
+        >
+          <View style={styles.familyPhoto}>
+            <Image source={{ uri: colombia.image }} style={styles.familyImg} resizeMode="contain" />
           </View>
-        </View>
+          <Text style={styles.familyName}>Colombia</Text>
+        </PressableScale>
 
         <View style={[styles.familyGrid, { paddingHorizontal: gutter, gap }]}>
           {FAMILIES.map((f) => (
@@ -259,48 +242,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.3,
   },
-  hero: { paddingBottom: 18 },
-  heroWell: {
+  colombiaCard: {
     marginHorizontal: 20,
-    aspectRatio: 1.05,
-    borderRadius: radii.lg,
-    backgroundColor: colors.paper,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  heroImg: { width: "72%", height: "72%" },
-  heroKicker: {
-    marginTop: 16,
-    paddingHorizontal: 20,
-    color: colors.brass,
-    fontFamily: fonts.bodyMed,
-    fontSize: 11,
-    letterSpacing: 1.8,
-  },
-  heroName: {
-    marginTop: 6,
-    paddingHorizontal: 20,
-    color: colors.ink,
-    fontFamily: fonts.display,
-    fontSize: 32,
-    letterSpacing: -0.5,
-    lineHeight: 36,
-  },
-  heroNotes: {
-    marginTop: 6,
-    paddingHorizontal: 20,
-    color: colors.linenDim,
-    fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  heroPrice: {
-    marginTop: 8,
-    paddingHorizontal: 20,
-    color: colors.ink,
-    fontFamily: fonts.bodyBold,
-    fontSize: 17,
+    marginBottom: 4,
+    height: 220,
   },
   promo: {
     marginHorizontal: 20,
