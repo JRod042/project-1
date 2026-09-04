@@ -9,7 +9,7 @@ This repo (`JRod042/project-1`, `mobile/`) is the **TestFlight app**. All shop, 
 - **No Linux computer and no Mac as runtime.**
 - iPhone / iPad is the only device Jorge operates.
 - Builds and submits via Expo Application Services (EAS) + TestFlight only.
-- Cart is on-device (AsyncStorage). Checkout is rusticopr.com Shopify in a WebView (`CheckoutScreen`).
+- Cart is on-device (AsyncStorage). Checkout is rusticopr.com Shopify in an in-app Safari sheet (`CheckoutScreen`).
 - Never collect card numbers in-app.
 
 ## What the app is
@@ -28,7 +28,7 @@ This repo (`JRod042/project-1`, `mobile/`) is the **TestFlight app**. All shop, 
 iPhone / iPad (Expo → TestFlight)
         │
         ├── local cart (AsyncStorage)
-        └── Check Out → CheckoutScreen (WebView)
+        └── Check Out → CheckoutScreen (in-app Safari sheet)
                 └── https://rusticopr.com/cart/{variantId}:{qty}
                     (Storefront cartCreate when token is present)
 ```
