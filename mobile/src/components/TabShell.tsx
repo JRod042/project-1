@@ -8,7 +8,7 @@ export type TabId = "shop" | "ritual" | "story" | "bag";
 const TABS: { id: TabId; label: string }[] = [
   { id: "shop", label: "Shop" },
   { id: "ritual", label: "Ritual" },
-  { id: "story", label: "Story" },
+  { id: "story", label: "You" },
   { id: "bag", label: "Bag" },
 ];
 
