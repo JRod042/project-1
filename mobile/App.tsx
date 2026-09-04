@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { NativeModules, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import {
   ColorScheme,
   ShopifyCheckoutSheetProvider,
+  useShopifyCheckoutSheet,
 } from "@shopify/checkout-sheet-kit";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -24,10 +25,9 @@ import { CartScreen } from "./src/screens/CartScreen";
 import { ProductScreen } from "./src/screens/ProductScreen";
 import { RitualScreen } from "./src/screens/RitualScreen";
 import { StoryScreen } from "./src/screens/StoryScreen";
-import { CheckoutScreen } from "./src/screens/CheckoutScreen";
 import { ShopifySheet } from "./src/components/ShopifySheet";
 import { CartProvider, useCart } from "./src/lib/cart";
-import { ShopifyAuthProvider } from "./src/lib/shopifyAuth";
+import { ShopifyAuthProvider, useShopifyAuth } from "./src/lib/shopifyAuth";
 import {
   clearWelcomeSeen,
   loadWelcomeSeen,
@@ -38,7 +38,11 @@ import { GlassPanel } from "./src/components/GlassPanel";
 import { SearchSheet } from "./src/components/SearchSheet";
 import { colors, fonts, radii } from "./src/theme";
 import { formatPrice } from "./src/lib/catalog";
-import { SHOPIFY_ACCOUNT_URL } from "./src/lib/shopify";
+import {
+  SHOPIFY_ACCOUNT_URL,
+  cartPermalink,
+  resolveCheckoutUrl,
+} from "./src/lib/shopify";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -67,6 +71,8 @@ type Screen =
 
 function ShopApp() {
   const cart = useCart();
+  const auth = useShopifyAuth();
+  const kit = useShopifyCheckoutSheet();
   const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({
     Fraunces_600SemiBold,
@@ -84,6 +90,8 @@ function ShopApp() {
   const [search, setSearch] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const readyUrl = useRef<string | null>(null);
   const lastCount = useRef(cart.count);
   const [pop, setPop] = useState(false);
 
@@ -95,6 +103,41 @@ function ShopApp() {
       })
       .finally(() => setReady(true));
   }, []);
+
+  useEffect(() => {
+    const sub = kit.addEventListener("completed", () => {
+      cart.clear();
+      setCheckoutOpen(false);
+      setFallbackUrl(null);
+      setScreen({ kind: "tab", tab: "shop" });
+    });
+    return () => {
+      sub?.remove();
+    };
+  }, [kit, cart]);
+
+  useEffect(() => {
+    if (!cart.count) {
+      readyUrl.current = null;
+      return;
+    }
+    const lines = cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty }));
+    const permalink = cartPermalink(lines, auth.session?.customer.email);
+    readyUrl.current = permalink;
+    void resolveCheckoutUrl(lines, {
+      token: auth.session?.token,
+      email: auth.session?.customer.email,
+    })
+      .then((url) => {
+        readyUrl.current = url;
+        try {
+          kit.preload(url);
+        } catch {
+          /* native module optional until EAS lands */
+        }
+      })
+      .catch(() => undefined);
+  }, [cart.lines, cart.count, auth.session?.token, auth.session?.customer.email, kit]);
 
   useEffect(() => {
     if (cart.count > lastCount.current) {
@@ -120,6 +163,15 @@ function ShopApp() {
 
   const startCheckout = () => {
     if (!cart.count) return;
+    const lines = cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty }));
+    const url =
+      readyUrl.current ??
+      cartPermalink(lines, auth.session?.customer.email);
+    if (NativeModules.ShopifyCheckoutSheetKit) {
+      kit.present(url);
+      return;
+    }
+    setFallbackUrl(url);
     setCheckoutOpen(true);
   };
 
@@ -182,7 +234,7 @@ function ShopApp() {
                   }}
                 />
               ) : (
-                <CartScreen onOpenProduct={openProduct} />
+                <CartScreen onOpenProduct={openProduct} onCheckout={startCheckout} />
               )}
             </View>
 
@@ -255,12 +307,19 @@ function ShopApp() {
           />
         ) : null}
 
-        {checkoutOpen ? (
+        {checkoutOpen && fallbackUrl ? (
           <View style={styles.checkoutOverlay}>
-            <CheckoutScreen
-              onClose={() => setCheckoutOpen(false)}
-              onDone={() => {
+            <ShopifySheet
+              url={fallbackUrl}
+              title="Checkout"
+              onClose={() => {
                 setCheckoutOpen(false);
+                setFallbackUrl(null);
+              }}
+              onComplete={() => {
+                cart.clear();
+                setCheckoutOpen(false);
+                setFallbackUrl(null);
                 setScreen({ kind: "tab", tab: "shop" });
               }}
             />

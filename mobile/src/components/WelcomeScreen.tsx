@@ -289,7 +289,8 @@ export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: 
   useEffect(() => {
     if (splash) return;
     if (!firstLaunch) {
-      const id = setTimeout(() => enter.current(), 400);
+      setSplashGone(true);
+      const id = setTimeout(() => enter.current(), 200);
       return () => clearTimeout(id);
     }
     const id = setTimeout(() => setSplashGone(true), 400);
