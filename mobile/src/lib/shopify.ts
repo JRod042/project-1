@@ -2,7 +2,6 @@ import Constants from "expo-constants";
 import { brand } from "./catalog";
 
 const STORE_URL = "https://rusticopr.com";
-export const SHOPIFY_ACCOUNT_URL = "https://account.rusticopr.com";
 const SHOP_DOMAIN =
   (Constants.expoConfig?.extra as any)?.shopifyDomain ||
   process.env.EXPO_PUBLIC_SHOPIFY_DOMAIN ||

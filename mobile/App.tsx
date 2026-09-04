@@ -38,11 +38,7 @@ import { GlassPanel } from "./src/components/GlassPanel";
 import { SearchSheet } from "./src/components/SearchSheet";
 import { colors, fonts, radii } from "./src/theme";
 import { formatPrice } from "./src/lib/catalog";
-import {
-  SHOPIFY_ACCOUNT_URL,
-  cartPermalink,
-  resolveCheckoutUrl,
-} from "./src/lib/shopify";
+import { cartPermalink, resolveCheckoutUrl } from "./src/lib/shopify";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -89,7 +85,6 @@ function ShopApp() {
   const [screen, setScreen] = useState<Screen>({ kind: "tab", tab: "shop" });
   const [search, setSearch] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const readyUrl = useRef<string | null>(null);
   const lastCount = useRef(cart.count);
@@ -180,7 +175,7 @@ function ShopApp() {
     setScreen({ kind: "product", productId: id, back: tab });
   const openTab = (next: TabId) => setScreen({ kind: "tab", tab: next });
   const onProduct = screen.kind === "product";
-  const hideTabs = onProduct || checkoutOpen || accountOpen;
+  const hideTabs = onProduct || checkoutOpen;
   const firstLaunch = !welcomeSeen;
 
   if (!fontsLoaded || !ready) {
@@ -225,7 +220,6 @@ function ShopApp() {
               ) : tab === "story" ? (
                 <StoryScreen
                   onOpenProduct={openProduct}
-                  onOpenAccount={() => setAccountOpen(true)}
                   onReplayWelcome={() => {
                     void clearWelcomeSeen();
                     setWelcomeSeen(false);
@@ -326,15 +320,6 @@ function ShopApp() {
           </View>
         ) : null}
 
-        {accountOpen ? (
-          <View style={styles.checkoutOverlay}>
-            <ShopifySheet
-              url={SHOPIFY_ACCOUNT_URL}
-              title="Shopify account"
-              onClose={() => setAccountOpen(false)}
-            />
-          </View>
-        ) : null}
       </View>
   );
 }

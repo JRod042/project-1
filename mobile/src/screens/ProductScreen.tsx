@@ -174,7 +174,15 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
             </Text>
             <Text style={styles.price}>{formatPrice(price)}</Text>
             {product.notes ? <Text style={styles.notes}>{product.notes}</Text> : null}
-            {product.detail ? <Text style={styles.detail}>{product.detail}</Text> : null}
+            {product.category === "coffee" ? (
+              <View style={styles.originStory}>
+                <Text style={styles.kicker}>ORIGIN</Text>
+                <Text style={styles.originTitle}>{product.origin ?? product.name}</Text>
+                {product.detail ? <Text style={styles.detail}>{product.detail}</Text> : null}
+              </View>
+            ) : product.detail ? (
+              <Text style={styles.detail}>{product.detail}</Text>
+            ) : null}
           </View>
 
           {variants.length > 1 ? (
@@ -265,6 +273,20 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 16,
     lineHeight: 24,
+  },
+  originStory: {
+    marginTop: 16,
+    backgroundColor: colors.paper,
+    borderRadius: radii.lg,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 6,
+  },
+  originTitle: {
+    color: colors.ink,
+    fontFamily: fonts.displaySoft,
+    fontSize: 22,
+    letterSpacing: -0.3,
   },
   detail: {
     color: colors.linenMuted,

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import {
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { colors, fonts, radii } from "../theme";
-import { brand, colombia } from "../lib/catalog";
+import { colombia, originStories, type Product } from "../lib/catalog";
 import { PressableScale } from "../components/PressableScale";
 import { ScreenFade } from "../components/ScreenFade";
 import { useShopifyAuth } from "../lib/shopifyAuth";
@@ -35,10 +37,9 @@ const REVIEWS = [
 type Props = {
   onOpenProduct: (id: string) => void;
   onReplayWelcome: () => void;
-  onOpenAccount: () => void;
 };
 
-export function StoryScreen({ onOpenProduct, onReplayWelcome, onOpenAccount }: Props) {
+export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
   const auth = useShopifyAuth();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -50,6 +51,7 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome, onOpenAccount }: P
   const [note, setNote] = useState("");
 
   async function submit() {
+    if (busy) return;
     setError("");
     setNote("");
     setBusy(true);
@@ -90,175 +92,249 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome, onOpenAccount }: P
   const name = customer
     ? [customer.firstName, customer.lastName].filter(Boolean).join(" ")
     : "";
+  const creating = mode === "up";
 
   return (
     <ScreenFade>
-      <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.head}>
-          <Text style={styles.title}>You</Text>
-          <Text style={styles.sub}>
-            {customer
-              ? "Your Casa Rústico account at rusticopr.com."
-              : "Sign in with your Casa Rústico Shopify account."}
-          </Text>
-        </View>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={52}
+      >
+        <ScrollView
+          style={styles.root}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
+        >
+          <View style={styles.head}>
+            <Text style={styles.title}>You</Text>
+            <Text style={styles.sub}>
+              {!auth.ready
+                ? "Your Casa Rústico account at rusticopr.com."
+                : customer
+                  ? "Connected to Shopify at rusticopr.com."
+                  : "Sign in with the same Casa Rústico account you use on rusticopr.com."}
+            </Text>
+          </View>
 
-        {customer ? (
-          <View style={styles.signed}>
-            <Text style={styles.kicker}>SHOPIFY</Text>
-            <Text style={styles.h2}>{name || "Signed in"}</Text>
-            <Text style={styles.body}>{customer.email}</Text>
-            {customer.orders.slice(0, 4).map((o) => (
-              <View key={o.id} style={styles.orderRow}>
-                <Text style={styles.orderTitle}>#{o.number} · {o.title}</Text>
-                <Text style={styles.orderMeta}>
-                  {new Date(o.placedAt).toLocaleDateString()} · ${Number(o.total).toFixed(2)}
-                </Text>
+          <View style={styles.cardPad}>
+            {!auth.ready ? (
+              <View style={styles.accountSlot}>
+                <Text style={styles.kicker}>SHOPIFY</Text>
+                <Text style={styles.h2}>Account</Text>
+                <Text style={styles.body}>Checking your session…</Text>
+              </View>
+            ) : customer ? (
+              <View style={styles.accountSlot}>
+                <Text style={styles.kicker}>SHOPIFY</Text>
+                <Text style={styles.h2}>{name || "Signed in"}</Text>
+                <Text style={styles.body}>{customer.email}</Text>
+                {customer.orders.slice(0, 4).map((o) => (
+                  <View key={o.id} style={styles.orderRow}>
+                    <Text style={styles.orderTitle}>
+                      #{o.number} · {o.title}
+                    </Text>
+                    <Text style={styles.orderMeta}>
+                      {new Date(o.placedAt).toLocaleDateString()} · ${Number(o.total).toFixed(2)}
+                    </Text>
+                  </View>
+                ))}
+                <PressableScale onPress={() => void auth.signOut()} style={styles.ghost}>
+                  <Text style={styles.ghostText}>Sign out</Text>
+                </PressableScale>
+              </View>
+            ) : (
+              <View style={styles.accountSlot}>
+                <View style={styles.tabs}>
+                  <PressableScale
+                    onPress={() => {
+                      setMode("in");
+                      setError("");
+                      setNote("");
+                    }}
+                    style={[styles.tab, !creating && styles.tabOn]}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: !creating }}
+                  >
+                    <Text style={[styles.tabText, !creating && styles.tabTextOn]}>Sign in</Text>
+                  </PressableScale>
+                  <PressableScale
+                    onPress={() => {
+                      setMode("up");
+                      setError("");
+                      setNote("");
+                    }}
+                    style={[styles.tab, creating && styles.tabOn]}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: creating }}
+                  >
+                    <Text style={[styles.tabText, creating && styles.tabTextOn]}>Create</Text>
+                  </PressableScale>
+                </View>
+                <View
+                  style={[styles.nameRow, !creating && styles.reservedHidden]}
+                  pointerEvents={creating ? "auto" : "none"}
+                  accessibilityElementsHidden={!creating}
+                  importantForAccessibility={creating ? "yes" : "no-hide-descendants"}
+                >
+                  <TextInput
+                    style={[styles.input, styles.half]}
+                    placeholder="First name"
+                    placeholderTextColor={colors.linenMuted}
+                    autoComplete="given-name"
+                    textContentType="givenName"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.half]}
+                    placeholder="Last name"
+                    placeholderTextColor={colors.linenMuted}
+                    autoComplete="family-name"
+                    textContentType="familyName"
+                    value={lastName}
+                    onChangeText={setLastName}
+                  />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={colors.linenMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  keyboardType="email-address"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={colors.linenMuted}
+                  secureTextEntry
+                  autoComplete="password"
+                  textContentType="password"
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <View style={styles.msgSlot}>
+                  {error ? <Text style={styles.err}>{error}</Text> : null}
+                  {note ? <Text style={styles.ok}>{note}</Text> : null}
+                </View>
+                <PressableScale
+                  onPress={() => void submit()}
+                  style={[styles.cta, busy && styles.ctaBusy]}
+                  disabled={busy}
+                >
+                  <Text style={styles.ctaText}>
+                    {busy ? "Connecting…" : creating ? "Create account" : "Sign in"}
+                  </Text>
+                </PressableScale>
+                <View style={creating ? styles.reservedHidden : undefined} pointerEvents={creating ? "none" : "auto"}>
+                  <PressableScale onPress={() => void recover()} style={styles.ghost} disabled={busy}>
+                    <Text style={styles.ghostText}>Forgot password</Text>
+                  </PressableScale>
+                </View>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.cardPad}>
+            <Text style={styles.h2}>Origins</Text>
+            <Text style={styles.body}>
+              One row per bag. Tap to open that coffee — origin story lives on the product page.
+            </Text>
+            <View style={styles.originList}>
+              {originStories().map((coffee) => (
+                <OriginRow key={coffee.id} coffee={coffee} onPress={() => onOpenProduct(coffee.id)} />
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.cardPad}>
+            <Text style={styles.h2}>The house mark</Text>
+            <Text style={styles.body}>
+              A short honest menu and a house mark you can wear and drink from. Growing origin is
+              listed on each coffee.
+            </Text>
+            <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.cta}>
+              <Text style={styles.ctaText}>Start with Colombia</Text>
+            </PressableScale>
+          </View>
+
+          <View style={styles.cardPad}>
+            <Text style={styles.h2}>From the house</Text>
+            {REVIEWS.map((r) => (
+              <View key={r.name} style={styles.review}>
+                <Text style={styles.body}>“{r.quote}”</Text>
+                <Text style={styles.kicker}>{r.name}</Text>
               </View>
             ))}
-            <View style={styles.row}>
-              <PressableScale
-                onPress={onOpenAccount}
-                style={styles.ctaLight}
-              >
-                <Text style={styles.ctaLightText}>Open Shopify account</Text>
-              </PressableScale>
-              <PressableScale onPress={() => void auth.signOut()} style={styles.ghost}>
-                <Text style={styles.ghostText}>Sign out</Text>
-              </PressableScale>
-            </View>
           </View>
-        ) : (
-          <View style={styles.cardPad}>
-            <View style={styles.tabs}>
-              <PressableScale
-                onPress={() => { setMode("in"); setError(""); }}
-                style={[styles.tab, mode === "in" && styles.tabOn]}
-              >
-                <Text style={[styles.tabText, mode === "in" && styles.tabTextOn]}>Sign in</Text>
-              </PressableScale>
-              <PressableScale
-                onPress={() => { setMode("up"); setError(""); }}
-                style={[styles.tab, mode === "up" && styles.tabOn]}
-              >
-                <Text style={[styles.tabText, mode === "up" && styles.tabTextOn]}>Create</Text>
-              </PressableScale>
-            </View>
-            {mode === "up" ? (
-              <View style={styles.nameRow}>
-                <TextInput
-                  style={[styles.input, styles.half]}
-                  placeholder="First name"
-                  placeholderTextColor={colors.linenMuted}
-                  autoComplete="given-name"
-                  value={firstName}
-                  onChangeText={setFirstName}
-                />
-                <TextInput
-                  style={[styles.input, styles.half]}
-                  placeholder="Last name"
-                  placeholderTextColor={colors.linenMuted}
-                  autoComplete="family-name"
-                  value={lastName}
-                  onChangeText={setLastName}
-                />
-              </View>
-            ) : null}
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={colors.linenMuted}
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={colors.linenMuted}
-              secureTextEntry
-              autoComplete={mode === "in" ? "password" : "new-password"}
-              value={password}
-              onChangeText={setPassword}
-            />
-            {error ? <Text style={styles.err}>{error}</Text> : null}
-            {note ? <Text style={styles.ok}>{note}</Text> : null}
-            <PressableScale onPress={() => void submit()} style={styles.cta}>
-              <Text style={styles.ctaText}>
-                {busy ? "Connecting…" : mode === "in" ? "Sign in with Shopify" : "Create Shopify account"}
-              </Text>
-            </PressableScale>
-            <PressableScale
-              onPress={onOpenAccount}
-              style={styles.outline}
-            >
-              <Text style={styles.outlineText}>Continue on Shopify</Text>
-            </PressableScale>
-            {mode === "in" ? (
-              <PressableScale onPress={() => void recover()} style={styles.ghost}>
-                <Text style={styles.ghostText}>Forgot password</Text>
-              </PressableScale>
-            ) : null}
-          </View>
-        )}
 
-        {brand.landscapes.map((place) => (
-          <View key={place.id} style={styles.card}>
-            <Image source={{ uri: place.image }} style={styles.hero} resizeMode="cover" />
-            <View style={styles.caption}>
-              <Text style={styles.kicker}>{place.kicker.toUpperCase()}</Text>
-              <Text style={styles.h2}>{place.title}</Text>
-              <Text style={styles.body}>{place.copy}</Text>
-            </View>
-          </View>
-        ))}
-
-        <View style={styles.cardPad}>
-          <Text style={styles.h2}>The house mark</Text>
-          <Text style={styles.body}>
-            A short honest menu and a house mark you can wear and drink from. Growing origin is
-            listed on each coffee.
-          </Text>
-          <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.cta}>
-            <Text style={styles.ctaText}>Start with Colombia</Text>
+          <PressableScale onPress={onReplayWelcome} style={styles.replay}>
+            <Text style={styles.replayText}>Replay intro</Text>
           </PressableScale>
-        </View>
-
-        <View style={styles.cardPad}>
-          <Text style={styles.h2}>From the house</Text>
-          {REVIEWS.map((r) => (
-            <View key={r.name} style={styles.review}>
-              <Text style={styles.body}>“{r.quote}”</Text>
-              <Text style={styles.kicker}>{r.name}</Text>
-            </View>
-          ))}
-        </View>
-
-        <PressableScale onPress={onReplayWelcome} style={styles.replay}>
-          <Text style={styles.replayText}>Replay intro</Text>
-        </PressableScale>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </ScreenFade>
   );
 }
 
+function OriginRow({ coffee, onPress }: { coffee: Product; onPress: () => void }) {
+  const place = coffee.origin ?? coffee.subtitle;
+  return (
+    <PressableScale
+      onPress={onPress}
+      style={styles.originRow}
+      haptic={false}
+      accessibilityRole="button"
+      accessibilityLabel={`${coffee.name}. ${place}. Open product.`}
+    >
+      <Image source={{ uri: coffee.image }} style={styles.originThumb} resizeMode="cover" />
+      <View style={styles.originMeta}>
+        <Text style={styles.originName}>{coffee.name}</Text>
+        <Text style={styles.originPlace} numberOfLines={1}>
+          {place}
+          {coffee.notes ? ` · ${coffee.notes}` : ""}
+        </Text>
+      </View>
+      <Text style={styles.originChevron}>›</Text>
+    </PressableScale>
+  );
+}
+
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingBottom: 180 },
   head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
   title: { color: colors.ink, fontFamily: fonts.display, fontSize: 34, letterSpacing: -0.6, lineHeight: 40 },
   sub: { marginTop: 8, color: colors.linenDim, fontFamily: fonts.body, fontSize: 16, lineHeight: 23 },
-  card: {
-    marginHorizontal: 20,
-    marginBottom: 14,
-    backgroundColor: colors.paper,
-    borderRadius: radii.lg,
-    overflow: "hidden",
+  originList: { marginTop: 6 },
+  originRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minHeight: 64,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.line,
   },
-  hero: { height: 188, width: "100%", backgroundColor: colors.kraft },
-  caption: { paddingHorizontal: 20, paddingVertical: 18, gap: 6 },
+  originThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: colors.bg,
+  },
+  originMeta: { flex: 1, minWidth: 0 },
+  originName: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
+  originPlace: { marginTop: 2, color: colors.linenMuted, fontFamily: fonts.body, fontSize: 13 },
+  originChevron: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 22, lineHeight: 24 },
   kicker: {
     color: colors.brass,
     fontFamily: fonts.bodyMed,
@@ -287,15 +363,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     gap: 10,
   },
-  signed: {
-    marginHorizontal: 20,
-    marginBottom: 14,
-    backgroundColor: colors.ink,
-    borderRadius: radii.lg,
-    paddingHorizontal: 20,
-    paddingVertical: 22,
-    gap: 6,
-  },
+  accountSlot: { gap: 10, minHeight: 220 },
   cta: {
     alignSelf: "flex-start",
     marginTop: 8,
@@ -304,30 +372,18 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: radii.pill,
   },
+  ctaBusy: { opacity: 0.7 },
   ctaText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
-  ctaLight: {
-    alignSelf: "flex-start",
-    marginTop: 8,
-    backgroundColor: colors.linen,
-    paddingHorizontal: 20,
-    paddingVertical: 13,
-    borderRadius: radii.pill,
-  },
-  ctaLightText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 14 },
-  outline: {
-    alignSelf: "stretch",
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: colors.lineBright,
-    paddingVertical: 13,
-    borderRadius: radii.pill,
-    alignItems: "center",
-  },
-  outlineText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 14 },
   ghost: { paddingVertical: 8, minHeight: 44, justifyContent: "center" },
   ghostText: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 14 },
-  tabs: { flexDirection: "row", backgroundColor: colors.bg, borderRadius: radii.pill, padding: 4, gap: 4 },
-  tab: { flex: 1, alignItems: "center", paddingVertical: 9, borderRadius: radii.pill },
+  tabs: {
+    flexDirection: "row",
+    backgroundColor: colors.bg,
+    borderRadius: radii.pill,
+    padding: 4,
+    gap: 4,
+  },
+  tab: { flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: radii.pill },
   tabOn: { backgroundColor: colors.ink },
   tabText: { color: colors.linenMuted, fontFamily: fonts.bodyMed, fontSize: 14 },
   tabTextOn: { color: colors.linen },
@@ -343,13 +399,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   nameRow: { flexDirection: "row", gap: 8 },
+  reservedHidden: { opacity: 0 },
   half: { flex: 1 },
+  msgSlot: { minHeight: 20, justifyContent: "center" },
   err: { color: colors.danger, fontFamily: fonts.body, fontSize: 13 },
   ok: { color: colors.success, fontFamily: fonts.body, fontSize: 13 },
-  orderRow: { paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(245,234,216,0.15)" },
-  orderTitle: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
-  orderMeta: { color: "rgba(245,234,216,0.65)", fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 8 },
+  orderRow: {
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.line,
+  },
+  orderTitle: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 14 },
+  orderMeta: { color: colors.linenMuted, fontFamily: fonts.body, fontSize: 12, marginTop: 2 },
   review: {
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
