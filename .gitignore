@@ -12,3 +12,8 @@ mobile/.expo/
 *.p8
 *.p12
 *.mobileprovision
+
+# ASC web capture output — never commit shop screenshots
+mobile/artifacts/
+mobile/artifacts/asc-screenshots/
+mobile/artifacts/asc-screenshots/*.png

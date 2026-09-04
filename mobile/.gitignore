@@ -37,8 +37,10 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# ASC web capture output
+# ASC web capture output — never commit shop screenshots
 artifacts/
+artifacts/asc-screenshots/
+artifacts/asc-screenshots/*.png
 
 # tooling
 .claude/
