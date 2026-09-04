@@ -14,7 +14,7 @@ You do **not** need a Mac or any home server.
 ## What this build is
 
 Casa Rústico **customer shop** (Home / Coffee / Ritual / Story + bag).  
-Checkout on rusticopr.com **inside the app** (Shopify WebView). No OpenClaw, no LAN gateway, no SYS, no fake card form.
+Checkout on rusticopr.com **inside the app** (Shopify in an in-app Safari sheet). No OpenClaw, no LAN gateway, no SYS, no fake card form.
 
 ---
 
@@ -49,7 +49,7 @@ Checkout on rusticopr.com **inside the app** (Shopify WebView). No OpenClaw, no 
 ### If submit says the build number was already used
 
 Bump `ios.buildNumber` in `mobile/app.config.js`, commit, rebuild, then submit again.  
-`autoIncrement` is **not** enabled. Current value on this branch: **29**.
+`autoIncrement` is **not** enabled. Current value on this branch: **30**.
 
 ### If the build is green but nothing appears in TestFlight
 
@@ -63,7 +63,7 @@ You almost always have not submitted yet.
 
 ## After install
 
-Open the app → Welcome → Enter the shop → Colombia hero → add a bag → **Check Out**. Shopify checkout stays in the app. Promo **MORNING10**. Close returns to the bag; a completed order returns to the shop.
+Open the app → Welcome → Enter the shop → Colombia hero → add a bag → **Check Out**. Shopify checkout opens over the app. Close returns to the bag. Promo **MORNING10**. Close returns to the bag; a completed order returns to the shop.
 
 ---
 

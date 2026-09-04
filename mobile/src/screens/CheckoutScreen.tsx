@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { WebView } from "react-native-webview";
-import type { WebViewNavigation } from "react-native-webview";
+import * as WebBrowser from "expo-web-browser";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts, radii } from "../theme";
 import { useCart } from "../lib/cart";
-import { isCheckoutCompleteUrl, resolveCheckoutUrl } from "../lib/shopify";
+import { resolveCheckoutUrl } from "../lib/shopify";
 import { PressableScale } from "../components/PressableScale";
 
 type Props = {
@@ -13,102 +12,52 @@ type Props = {
   onDone?: () => void;
 };
 
-type Phase = "loading" | "ready" | "done" | "error";
+type Phase = "loading" | "open" | "error";
 
-export function CheckoutScreen({ onClose, onDone }: Props) {
+export function CheckoutScreen({ onClose }: Props) {
   const cart = useCart();
   const insets = useSafeAreaInsets();
-  const webRef = useRef<WebView>(null);
   const [phase, setPhase] = useState<Phase>("loading");
-  const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const finished = useRef(false);
+  const running = useRef(false);
+  const lines = useRef(cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })));
+
+  const start = useCallback(async () => {
+    if (running.current) return;
+    running.current = true;
+    setPhase("loading");
+    setError(null);
+    try {
+      const url = await resolveCheckoutUrl(lines.current);
+      setPhase("open");
+      await WebBrowser.openBrowserAsync(url, {
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+        dismissButtonStyle: "close",
+        controlsColor: "#8B5E3C",
+        toolbarColor: "#F5EAD8",
+        enableBarCollapsing: false,
+        showTitle: true,
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not start checkout");
+      setPhase("error");
+      running.current = false;
+    }
+  }, [onClose]);
 
   useEffect(() => {
-    let alive = true;
-    resolveCheckoutUrl(cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })))
-      .then((next) => {
-        if (!alive) return;
-        setUrl(next);
-        setPhase("ready");
-      })
-      .catch((err) => {
-        if (!alive) return;
-        setError(err instanceof Error ? err.message : "Could not start checkout");
-        setPhase("error");
-      });
-    return () => {
-      alive = false;
-    };
-    // Mounted only when Check Out is tapped — capture those lines.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const complete = () => {
-    if (finished.current) return;
-    finished.current = true;
-    cart.clear();
-    cart.flash("Order placed");
-    setPhase("done");
-  };
-
-  const maybeComplete = (next: string | undefined) => {
-    if (next && isCheckoutCompleteUrl(next)) complete();
-  };
-
-  const onNav = (nav: WebViewNavigation) => {
-    maybeComplete(nav.url);
-  };
-
-  const onShouldStart = (req: { url: string }) => {
-    const next = req.url;
-    if (!next) return true;
-    if (isCheckoutCompleteUrl(next)) {
-      complete();
-      return false;
-    }
-    // Keep payment in this WebView — block Shop app / App Store handoff.
-    if (
-      next.startsWith("itms") ||
-      next.startsWith("market:") ||
-      next.startsWith("intent:") ||
-      next.startsWith("shop-app://") ||
-      next.startsWith("shopify://")
-    ) {
-      return false;
-    }
-    return true;
-  };
-
-  const onOpenWindow = (event: { nativeEvent: { targetUrl: string } }) => {
-    const next = event.nativeEvent.targetUrl;
-    if (!next) return;
-    if (isCheckoutCompleteUrl(next)) {
-      complete();
-      return;
-    }
-    webRef.current?.injectJavaScript(
-      `window.location.href = ${JSON.stringify(next)}; true;`,
-    );
-  };
-
-  if (phase === "done") {
-    return (
-      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <Text style={styles.title}>Thank you.</Text>
-        <Text style={styles.copy}>Your order is confirmed. A receipt is on the way.</Text>
-        <PressableScale onPress={() => (onDone ? onDone() : onClose())} style={styles.cta}>
-          <Text style={styles.ctaText}>Back to shop</Text>
-        </PressableScale>
-      </View>
-    );
-  }
+    void start();
+  }, [start]);
 
   if (phase === "error") {
     return (
       <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <Text style={styles.title}>Checkout paused.</Text>
         <Text style={styles.copy}>{error ?? "Something went wrong starting checkout."}</Text>
+        <PressableScale onPress={() => void start()} style={styles.cta}>
+          <Text style={styles.ctaText}>Try again</Text>
+        </PressableScale>
         <PressableScale onPress={onClose} style={styles.ghost}>
           <Text style={styles.ghostText}>Back to bag</Text>
         </PressableScale>
@@ -116,43 +65,13 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
     );
   }
 
-  if (phase === "loading" || !url) {
-    return (
-      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <ActivityIndicator color={colors.brass} />
-        <Text style={styles.copy}>Preparing checkout...</Text>
-        <PressableScale onPress={onClose}>
-          <Text style={styles.link}>Cancel</Text>
-        </PressableScale>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.sheet}>
-      <View style={[styles.bar, { paddingTop: insets.top }]}>
-        <PressableScale onPress={onClose} accessibilityLabel="Close checkout">
-          <Text style={styles.barAction}>Close</Text>
-        </PressableScale>
-        <Text style={styles.barTitle}>Checkout</Text>
-        <View style={styles.barSpacer} />
-      </View>
-      <WebView
-        ref={webRef}
-        source={{ uri: url }}
-        onNavigationStateChange={onNav}
-        onShouldStartLoadWithRequest={onShouldStart}
-        onOpenWindow={onOpenWindow}
-        setSupportMultipleWindows
-        startInLoadingState
-        javaScriptEnabled
-        domStorageEnabled
-        sharedCookiesEnabled
-        thirdPartyCookiesEnabled
-        allowsBackForwardNavigationGestures
-        originWhitelist={["https://*", "http://*"]}
-        style={styles.web}
-      />
+    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <ActivityIndicator color={colors.brass} />
+      <Text style={styles.copy}>Opening Shopify checkout...</Text>
+      <PressableScale onPress={onClose}>
+        <Text style={styles.link}>Cancel</Text>
+      </PressableScale>
     </View>
   );
 }
@@ -166,22 +85,6 @@ const styles = StyleSheet.create({
     padding: 28,
     gap: 16,
   },
-  sheet: { flex: 1, backgroundColor: colors.bg },
-  bar: {
-    minHeight: 52,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.line,
-    backgroundColor: colors.bg,
-  },
-  barTitle: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
-  barAction: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 16, width: 64 },
-  barSpacer: { width: 64 },
-  web: { flex: 1, backgroundColor: colors.paper },
   title: { color: colors.ink, fontFamily: fonts.display, fontSize: 34, letterSpacing: -0.5 },
   copy: {
     color: colors.linenDim,
