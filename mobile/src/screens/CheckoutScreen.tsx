@@ -5,12 +5,7 @@ import type { WebViewNavigation } from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts, radii } from "../theme";
 import { useCart } from "../lib/cart";
-import {
-  isCheckoutCompleteUrl,
-  isExternalCheckoutHandoff,
-  keepCheckoutInApp,
-  resolveCheckoutUrl,
-} from "../lib/shopify";
+import { isCheckoutCompleteUrl, resolveCheckoutUrl } from "../lib/shopify";
 import { PressableScale } from "../components/PressableScale";
 
 type Props = {
@@ -34,7 +29,7 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
     resolveCheckoutUrl(cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })))
       .then((next) => {
         if (!alive) return;
-        setUrl(keepCheckoutInApp(next));
+        setUrl(next);
         setPhase("ready");
       })
       .catch((err) => {
@@ -57,16 +52,12 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
     setPhase("done");
   };
 
-  const loadInWebView = (next: string) => {
-    const safe = keepCheckoutInApp(next);
-    setUrl(safe);
-    webRef.current?.injectJavaScript(
-      `window.location.replace(${JSON.stringify(safe)}); true;`,
-    );
+  const maybeComplete = (next: string | undefined) => {
+    if (next && isCheckoutCompleteUrl(next)) complete();
   };
 
   const onNav = (nav: WebViewNavigation) => {
-    if (nav.url && isCheckoutCompleteUrl(nav.url)) complete();
+    maybeComplete(nav.url);
   };
 
   const onShouldStart = (req: { url: string }) => {
@@ -76,8 +67,14 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
       complete();
       return false;
     }
-    if (isExternalCheckoutHandoff(next)) {
-      loadInWebView(next);
+    // Keep payment in this WebView — block Shop app / App Store handoff.
+    if (
+      next.startsWith("itms") ||
+      next.startsWith("market:") ||
+      next.startsWith("intent:") ||
+      next.startsWith("shop-app://") ||
+      next.startsWith("shopify://")
+    ) {
       return false;
     }
     return true;
@@ -90,7 +87,9 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
       complete();
       return;
     }
-    loadInWebView(next);
+    webRef.current?.injectJavaScript(
+      `window.location.href = ${JSON.stringify(next)}; true;`,
+    );
   };
 
   if (phase === "done") {
@@ -144,7 +143,7 @@ export function CheckoutScreen({ onClose, onDone }: Props) {
         onNavigationStateChange={onNav}
         onShouldStartLoadWithRequest={onShouldStart}
         onOpenWindow={onOpenWindow}
-        setSupportMultipleWindows={false}
+        setSupportMultipleWindows
         startInLoadingState
         javaScriptEnabled
         domStorageEnabled
