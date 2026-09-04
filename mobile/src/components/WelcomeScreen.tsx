@@ -51,62 +51,6 @@ type Props = {
   replayKey?: number;
 };
 
-function BeanMark({ size = 112 }: { size?: number }) {
-  const beanW = size * 0.28;
-  const beanH = size * 0.4;
-  return (
-    <View style={[mark.seal, { width: size, height: size, borderRadius: size / 2 }]}>
-      <View
-        style={[
-          mark.ring,
-          {
-            width: size - 8,
-            height: size - 8,
-            borderRadius: (size - 8) / 2,
-          },
-        ]}
-      />
-      <View
-        style={[
-          mark.bean,
-          {
-            width: beanW,
-            height: beanH,
-            borderRadius: beanW,
-          },
-        ]}
-      />
-      <View style={[mark.crease, { height: beanH * 0.72 }]} />
-    </View>
-  );
-}
-
-const mark = StyleSheet.create({
-  seal: {
-    backgroundColor: INK,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  ring: {
-    position: "absolute",
-    borderWidth: 1.4,
-    borderColor: BRASS,
-    opacity: 0.85,
-  },
-  bean: {
-    backgroundColor: BRASS,
-    transform: [{ rotate: "-8deg" }],
-  },
-  crease: {
-    position: "absolute",
-    width: 2.4,
-    backgroundColor: INK,
-    borderRadius: 2,
-    transform: [{ rotate: "-12deg" }],
-    opacity: 0.7,
-  },
-});
-
 function Splash({ fading, onSkip }: { fading: boolean; onSkip: () => void }) {
   const opacity = useRef(new Animated.Value(1)).current;
 
@@ -124,10 +68,14 @@ function Splash({ fading, onSkip }: { fading: boolean; onSkip: () => void }) {
       pointerEvents={fading ? "none" : "auto"}
       style={[styles.splash, { opacity }]}
     >
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <Pressable style={styles.splashHit} onPress={onSkip} accessibilityLabel="Continue">
         <View style={styles.splashLockup}>
-          <BeanMark />
+          <Image
+            source={require("../../assets/splash-icon.png")}
+            style={styles.splashSeal}
+            resizeMode="cover"
+          />
           <Text style={styles.splashBrand}>CASA RÚSTICO</Text>
           <Text style={styles.splashTitle}>Mountain mornings.</Text>
           <Text style={styles.splashGo}>The culture of the cup.</Text>
@@ -253,7 +201,7 @@ export function WelcomeScreen({ onEnter, firstLaunch, replayKey = 0 }: Props) {
 const styles = StyleSheet.create({
   splash: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: LINEN,
+    backgroundColor: "#9c704b",
     zIndex: 20,
   },
   splashHit: {
@@ -265,15 +213,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 18,
   },
+  splashSeal: {
+    width: 168,
+    height: 168,
+    borderRadius: 36,
+  },
   splashBrand: {
-    color: INK,
+    color: LINEN,
     fontFamily: fonts.bodyBold,
     fontSize: 13,
     letterSpacing: 5.6,
     marginRight: -5.6,
   },
   splashTitle: {
-    color: INK,
+    color: LINEN,
     fontFamily: fonts.display,
     fontSize: 28,
     letterSpacing: -0.4,
@@ -281,7 +234,7 @@ const styles = StyleSheet.create({
     marginTop: -4,
   },
   splashGo: {
-    color: BRASS_DIM,
+    color: "rgba(245,234,216,0.78)",
     fontFamily: fonts.body,
     fontSize: 14,
     marginTop: -8,
