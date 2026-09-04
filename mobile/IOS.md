@@ -14,7 +14,7 @@ You do **not** need a Mac or any home server.
 ## What this build is
 
 Casa Rústico **customer shop** (Home / Coffee / Ritual / Story + bag).  
-Checkout on rusticopr.com **inside a WebView**. Cart permalink with skip_shop_pay — no Safari, no Shop app. You-tab login is Storefront GraphQL. Kraft splash on every launch.
+Checkout is **Shopify Checkout Kit** (native sheet). Pay is an in-app button. No Safari, no Shop app. Kraft splash on every launch.
 
 ---
 
@@ -49,7 +49,7 @@ Checkout on rusticopr.com **inside a WebView**. Cart permalink with skip_shop_pa
 ### If submit says the build number was already used
 
 Bump `ios.buildNumber` in `mobile/app.config.js`, commit, rebuild, then submit again.  
-`autoIncrement` is **not** enabled. Current value on this branch: **41**.
+`autoIncrement` is **not** enabled. Current value on this branch: **42**.
 
 ### If the build is green but nothing appears in TestFlight
 

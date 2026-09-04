@@ -16,7 +16,7 @@ const config = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.jrod042.omni",
-    buildNumber: "41",
+    buildNumber: "42",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Casa Rustico",
@@ -29,7 +29,7 @@ const config = {
   },
   android: {
     package: "com.jrod042.omni",
-    versionCode: 41,
+    versionCode: 42,
     adaptiveIcon: {
       backgroundColor: "#9c704b",
       foregroundImage: "./assets/android-icon-foreground.png",
