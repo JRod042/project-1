@@ -19,7 +19,6 @@ import { colors, fonts, radii } from "../theme";
 
 const LINEN = "#f5ead8";
 const INK = "#120e0b";
-const BRASS = "#c4a484";
 const BRASS_DIM = "#8a6e52";
 
 const SLIDES = [
@@ -50,87 +49,6 @@ type Props = {
   replayKey?: number;
 };
 
-const BEANS = [
-  { x: -36, y: 16, peak: -20, rot: "-18deg", rotEnd: "8deg", delay: 160 },
-  { x: 38, y: 14, peak: -18, rot: "16deg", rotEnd: "-6deg", delay: 340 },
-] as const;
-
-function JumpBean({
-  x,
-  y,
-  peak,
-  rot,
-  rotEnd,
-  delay,
-}: {
-  x: number;
-  y: number;
-  peak: number;
-  rot: string;
-  rotEnd: string;
-  delay: number;
-}) {
-  const t = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const hop = Animated.sequence([
-      Animated.delay(delay),
-      Animated.timing(t, {
-        toValue: 1,
-        duration: 1180,
-        easing: Easing.bezier(0.22, 1, 0.36, 1),
-        useNativeDriver: true,
-      }),
-    ]);
-    hop.start();
-    return () => hop.stop();
-  }, [delay, t]);
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        styles.bean,
-        {
-          opacity: t.interpolate({
-            inputRange: [0, 0.12, 0.78, 1],
-            outputRange: [0, 1, 1, 0],
-          }),
-          transform: [
-            {
-              translateX: t.interpolate({
-                inputRange: [0, 1],
-                outputRange: [x, 0],
-              }),
-            },
-            {
-              translateY: t.interpolate({
-                inputRange: [0, 0.52, 1],
-                outputRange: [y, peak, 6],
-              }),
-            },
-            {
-              rotate: t.interpolate({
-                inputRange: [0, 1],
-                outputRange: [rot, rotEnd],
-              }),
-            },
-            {
-              scale: t.interpolate({
-                inputRange: [0, 0.55, 1],
-                outputRange: [1, 1, 0.28],
-              }),
-            },
-          ],
-        },
-      ]}
-    >
-      <View style={styles.beanBody} />
-      <View style={styles.beanCrease} />
-    </Animated.View>
-  );
-}
-
 function Splash({
   fading,
   onSkip,
@@ -141,30 +59,21 @@ function Splash({
   onReady?: () => void;
 }) {
   const opacity = useRef(new Animated.Value(1)).current;
-  const scale = useRef(new Animated.Value(1)).current;
   const [canSkip, setCanSkip] = useState(false);
 
   useEffect(() => {
     if (!fading) return;
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 860,
-        easing: Easing.inOut(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scale, {
-        toValue: 0.96,
-        duration: 860,
-        easing: Easing.inOut(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fading, opacity, scale]);
+    Animated.timing(opacity, {
+      toValue: 0,
+      duration: 720,
+      easing: Easing.inOut(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  }, [fading, opacity]);
 
   useEffect(() => {
-    const ready = setTimeout(() => onReady?.(), 280);
-    const skip = setTimeout(() => setCanSkip(true), 1000);
+    const ready = setTimeout(() => onReady?.(), 160);
+    const skip = setTimeout(() => setCanSkip(true), 700);
     return () => {
       clearTimeout(ready);
       clearTimeout(skip);
@@ -184,16 +93,11 @@ function Splash({
         }}
         accessibilityLabel="Continue"
       >
-        <Animated.View style={[styles.splashLockup, { transform: [{ scale }] }]}>
-          <Image
-            source={require("../../assets/splash-icon.png")}
-            style={styles.splashSeal}
-            resizeMode="cover"
-          />
-          {BEANS.map((b) => (
-            <JumpBean key={`${b.x}-${b.delay}`} {...b} />
-          ))}
-        </Animated.View>
+        <Image
+          source={require("../../assets/splash-icon.png")}
+          style={styles.splashSeal}
+          resizeMode="contain"
+        />
       </Pressable>
     </Animated.View>
   );
@@ -271,8 +175,8 @@ function Onboard({ onDone }: { onDone: () => void }) {
 }
 
 /**
- * Kraft splash every launch (tap to skip). First launch: onboard after splash.
- * Returning: splash, then shop. Native splash stays up until this paints.
+ * Still kraft seal every launch (same crop as the native splash).
+ * Fade only — no overlay beans, no scale. Tap to skip after a beat.
  */
 export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: Props) {
   const [splash, setSplash] = useState(true);
@@ -285,14 +189,14 @@ export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: 
     setSplash(true);
     setSplashGone(false);
     setLeaving(false);
-    const id = setTimeout(() => setSplash(false), 2200);
+    const id = setTimeout(() => setSplash(false), 1600);
     return () => clearTimeout(id);
   }, [replayKey]);
 
   useEffect(() => {
     if (splash) return;
     if (!firstLaunch) enter.current();
-    const id = setTimeout(() => setSplashGone(true), 900);
+    const id = setTimeout(() => setSplashGone(true), 760);
     return () => clearTimeout(id);
   }, [splash, firstLaunch]);
 
@@ -322,37 +226,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  splashLockup: {
-    width: 220,
-    height: 220,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   splashSeal: {
     width: 220,
     height: 220,
-    borderRadius: 48,
-  },
-  bean: {
-    position: "absolute",
-    width: 14,
-    height: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  beanBody: {
-    width: 12,
-    height: 18,
-    borderRadius: 7,
-    backgroundColor: "#2a1810",
-  },
-  beanCrease: {
-    position: "absolute",
-    width: 1.5,
-    height: 11,
-    borderRadius: 1,
-    backgroundColor: "#c4a484",
-    opacity: 0.7,
   },
   onboard: {
     flex: 1,
@@ -434,15 +310,5 @@ const styles = StyleSheet.create({
     color: LINEN,
     fontFamily: fonts.bodyBold,
     fontSize: 16,
-  },
-  secondary: {
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  secondaryText: {
-    color: BRASS_DIM,
-    fontFamily: fonts.bodyMed,
-    fontSize: 14,
   },
 });
