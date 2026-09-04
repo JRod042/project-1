@@ -8,9 +8,10 @@ import { ScreenFade } from "../components/ScreenFade";
 
 type Props = {
   onOpenProduct: (id: string) => void;
+  onCheckout: () => void;
 };
 
-export function CartScreen({ onOpenProduct }: Props) {
+export function CartScreen({ onOpenProduct, onCheckout }: Props) {
   const cart = useCart();
   const mug = gear()[0];
   const hasCoffee = cart.lines.some((l) => getProduct(l.productId)?.category === "coffee");
@@ -100,6 +101,13 @@ export function CartScreen({ onOpenProduct }: Props) {
               </View>
             </View>
           ) : null}
+          <PressableScale
+            onPress={onCheckout}
+            style={styles.checkout}
+            accessibilityLabel="Check out"
+          >
+            <Text style={styles.ctaText}>Check Out · {formatPrice(cart.subtotal)}</Text>
+          </PressableScale>
         </ScrollView>
       </View>
     </ScreenFade>
@@ -122,6 +130,15 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
   },
   ctaText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
+  checkout: {
+    marginHorizontal: 20,
+    marginTop: 24,
+    minHeight: 56,
+    borderRadius: radii.pill,
+    backgroundColor: colors.ink,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   list: { paddingBottom: 220 },
   row: {
     flexDirection: "row",
