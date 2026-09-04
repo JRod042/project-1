@@ -1,0 +1,66 @@
+# Submit the latest production iOS build for App Store review (live, not TestFlight).
+name: iOS App Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "App Store version string if a new version must be created"
+        required: false
+        default: "0.5.7"
+
+concurrency:
+  group: ios-app-store
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Write App Store Connect API key
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${APPLE_API_KEY_P8:-}" ]; then
+            echo "APPLE_API_KEY_P8 secret is missing"
+            exit 1
+          fi
+          printf '%s\n' "$APPLE_API_KEY_P8" > "$GITHUB_WORKSPACE/asc-api-key.p8"
+          echo "EXPO_ASC_API_KEY_PATH=$GITHUB_WORKSPACE/asc-api-key.p8" >> "$GITHUB_ENV"
+
+      - name: Ensure latest IPA is on App Store Connect
+        env:
+          EXPO_ASC_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          eas submit --platform ios --profile production --latest --non-interactive --no-wait || true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Submit for App Review
+        env:
+          EXPO_ASC_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APP_VERSION: ${{ inputs.version }}
+        run: |
+          pip install --quiet "pyjwt[crypto]" requests
+          python3 "$GITHUB_WORKSPACE/.github/scripts/submit_app_store.py"
