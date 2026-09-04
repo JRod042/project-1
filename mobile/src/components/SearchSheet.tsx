@@ -45,6 +45,7 @@ export function SearchSheet({ open, onClose, onOpenProduct }: Props) {
             <Text style={styles.cancelText}>✕</Text>
           </PressableScale>
         </View>
+        <Text style={styles.hint}>{q.trim() ? "Matches" : "Origins, capsules, and gear"}</Text>
         {q.trim() ? (
           list.length ? (
             <CatalogGrid
@@ -57,9 +58,7 @@ export function SearchSheet({ open, onClose, onOpenProduct }: Props) {
           ) : (
             <Text style={styles.empty}>No matches for “{q.trim()}”.</Text>
           )
-        ) : (
-          <Text style={styles.empty}>Search origins, capsules, and gear.</Text>
-        )}
+        ) : null}
       </SafeAreaView>
     </Modal>
   );
@@ -94,9 +93,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cancelText: { color: colors.ink, fontSize: 18, fontFamily: fonts.bodyMed },
+  hint: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
+    color: colors.ink,
+    fontFamily: fonts.displaySoft,
+    fontSize: 20,
+    letterSpacing: -0.3,
+  },
   empty: {
     paddingHorizontal: 20,
-    paddingTop: 32,
+    paddingTop: 28,
     textAlign: "center",
     color: colors.linenMuted,
     fontFamily: fonts.body,

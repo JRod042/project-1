@@ -17,7 +17,7 @@ Expo app in `mobile/`:
 - Bag with in-app Shopify checkout (`MORNING10`)
 - Cart on-device only — no accounts
 
-Checkout never collects cards in-app. Check Out loads rusticopr.com Shopify inside a WebView (`CheckoutScreen`). Safari is only used if `CHECKOUT_IN_APP` is false.
+Checkout never collects cards in-app. Check Out presents Shopify Checkout Kit in-app (`ShopifySheet` WebView fallback). Never Safari or the Shop app.
 
 ## Not this product
 

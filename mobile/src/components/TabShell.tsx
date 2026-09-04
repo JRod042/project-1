@@ -93,7 +93,7 @@ const g = StyleSheet.create({
     justifyContent: "center",
   },
   wellOn: {
-    backgroundColor: "rgba(255,255,255,0.62)",
+    backgroundColor: "rgba(255,253,248,0.78)",
   },
   grid: {
     width: 14,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     color: colors.linenMuted,
     fontFamily: fonts.bodyMed,
     fontSize: 10,
-    letterSpacing: 0,
+    letterSpacing: 0.2,
     textAlign: "center",
     width: "100%",
   },

@@ -98,7 +98,7 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome, onOpenAccount }: P
           <Text style={styles.title}>You</Text>
           <Text style={styles.sub}>
             {customer
-              ? "Connected to Shopify at rusticopr.com."
+              ? "Your Casa Rústico account at rusticopr.com."
               : "Sign in with your Casa Rústico Shopify account."}
           </Text>
         </View>
@@ -209,14 +209,14 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome, onOpenAccount }: P
             <Image source={{ uri: place.image }} style={styles.hero} resizeMode="cover" />
             <View style={styles.caption}>
               <Text style={styles.kicker}>{place.kicker.toUpperCase()}</Text>
-              <Text style={styles.h2}>{place.title}.</Text>
+              <Text style={styles.h2}>{place.title}</Text>
               <Text style={styles.body}>{place.copy}</Text>
             </View>
           </View>
         ))}
 
         <View style={styles.cardPad}>
-          <Text style={styles.h2}>The house mark.</Text>
+          <Text style={styles.h2}>The house mark</Text>
           <Text style={styles.body}>
             A short honest menu and a house mark you can wear and drink from. Growing origin is
             listed on each coffee.
@@ -227,7 +227,7 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome, onOpenAccount }: P
         </View>
 
         <View style={styles.cardPad}>
-          <Text style={styles.h2}>From the house.</Text>
+          <Text style={styles.h2}>From the house</Text>
           {REVIEWS.map((r) => (
             <View key={r.name} style={styles.review}>
               <Text style={styles.body}>“{r.quote}”</Text>
@@ -248,17 +248,17 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingBottom: 180 },
   head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 16 },
-  title: { color: colors.ink, fontFamily: fonts.display, fontSize: 32, letterSpacing: -0.6 },
-  sub: { marginTop: 6, color: colors.linenDim, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
+  title: { color: colors.ink, fontFamily: fonts.display, fontSize: 34, letterSpacing: -0.6, lineHeight: 40 },
+  sub: { marginTop: 8, color: colors.linenDim, fontFamily: fonts.body, fontSize: 16, lineHeight: 23 },
   card: {
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 14,
     backgroundColor: colors.paper,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     overflow: "hidden",
   },
-  hero: { height: 200, width: "100%", backgroundColor: colors.kraft },
-  caption: { paddingHorizontal: 20, paddingVertical: 18, gap: 4 },
+  hero: { height: 188, width: "100%", backgroundColor: colors.kraft },
+  caption: { paddingHorizontal: 20, paddingVertical: 18, gap: 6 },
   kicker: {
     color: colors.brass,
     fontFamily: fonts.bodyMed,
@@ -269,6 +269,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontFamily: fonts.displaySoft,
     fontSize: 24,
+    letterSpacing: -0.3,
   },
   body: {
     marginTop: 8,
@@ -279,20 +280,20 @@ const styles = StyleSheet.create({
   },
   cardPad: {
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 14,
     backgroundColor: colors.paper,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     paddingHorizontal: 20,
     paddingVertical: 20,
     gap: 10,
   },
   signed: {
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 14,
     backgroundColor: colors.ink,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingVertical: 22,
     gap: 6,
   },
   cta: {
@@ -325,14 +326,14 @@ const styles = StyleSheet.create({
   outlineText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 14 },
   ghost: { paddingVertical: 8, minHeight: 44, justifyContent: "center" },
   ghostText: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 14 },
-  tabs: { flexDirection: "row", backgroundColor: colors.bg, borderRadius: 12, padding: 4, gap: 4 },
-  tab: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 10 },
+  tabs: { flexDirection: "row", backgroundColor: colors.bg, borderRadius: radii.pill, padding: 4, gap: 4 },
+  tab: { flex: 1, alignItems: "center", paddingVertical: 9, borderRadius: radii.pill },
   tabOn: { backgroundColor: colors.ink },
   tabText: { color: colors.linenMuted, fontFamily: fonts.bodyMed, fontSize: 14 },
   tabTextOn: { color: colors.linen },
   input: {
-    height: 46,
-    borderRadius: 12,
+    height: 48,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.bg,

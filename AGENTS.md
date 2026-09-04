@@ -9,7 +9,7 @@ This repo (`JRod042/project-1`, `mobile/`) is the **TestFlight app**. All shop, 
 - **No Linux computer and no Mac as runtime.**
 - iPhone / iPad is the only device Jorge operates.
 - Builds and submits via Expo Application Services (EAS) + TestFlight only.
-- Cart is on-device (AsyncStorage). Checkout is rusticopr.com Shopify in an in-app Safari sheet (`CheckoutScreen`).
+- Cart is on-device (AsyncStorage). Checkout is rusticopr.com Shopify via Shopify Checkout Kit (present-on-tap). `ShopifySheet` WebView is the fallback (`skip_shop_pay`). Never Safari / Shop app.
 - Never collect card numbers in-app.
 
 ## What the app is
@@ -28,12 +28,13 @@ This repo (`JRod042/project-1`, `mobile/`) is the **TestFlight app**. All shop, 
 iPhone / iPad (Expo → TestFlight)
         │
         ├── local cart (AsyncStorage)
-        └── Check Out → CheckoutScreen (in-app Safari sheet)
+        └── Check Out → Shopify Checkout Kit present(url)
+                └── ShopifySheet WebView fallback (skip_shop_pay)
                 └── https://rusticopr.com/cart/{variantId}:{qty}
                     (Storefront cartCreate when token is present)
 ```
 
-Safari is a fallback only if `CHECKOUT_IN_APP` is false. Do not hand off to the browser by default.
+Do not hand off to Safari or the Shop app.
 
 ## Engineering rules
 
@@ -42,7 +43,7 @@ Safari is a fallback only if `CHECKOUT_IN_APP` is false. Do not hand off to the 
 3. Do not revive OpenClaw, legacy Omni server, SYS screens, floor maps, or book-a-table.
 4. Keep welcome screens brand-original (Appllama geometry is reference only). First-run is cream splash + Colombia onboard.
 5. After native-config changes: document the next TestFlight rebuild.
-6. Check Out must present `CheckoutScreen`. Do not `Linking.openURL` the cart permalink unless the gate is off.
+6. Check Out must present Shopify Checkout Kit, or `ShopifySheet` if the native module is not on the binary. Do not `Linking.openURL` the cart permalink.
 
 ## Primary docs
 

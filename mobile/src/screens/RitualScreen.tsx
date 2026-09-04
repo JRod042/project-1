@@ -85,17 +85,18 @@ export function RitualScreen({ onOpenProduct }: Props) {
     <ScreenFade>
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.head}>
-          <Text style={styles.title}>Ritual.</Text>
+          <Text style={styles.title}>Ritual</Text>
           <Text style={styles.sub}>How we drink the house bag.</Text>
         </View>
         <BrewTimer />
-        <View style={styles.block}>
-          <Text style={styles.kicker}>COLOMBIA</Text>
-          <Text style={styles.h2}>{colombia.notes}</Text>
-          <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.cta}>
-            <Text style={styles.ctaText}>Shop the bag · {formatPrice(colombia.price)}</Text>
-          </PressableScale>
-        </View>
+        <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.colombia} haptic={false}>
+          <Image source={{ uri: colombia.image }} style={styles.colombiaImg} resizeMode="contain" />
+          <View style={styles.colombiaMeta}>
+            <Text style={styles.kicker}>COLOMBIA</Text>
+            <Text style={styles.h2}>{colombia.notes}</Text>
+            <Text style={styles.ctaInline}>Shop the bag · {formatPrice(colombia.price)}</Text>
+          </View>
+        </PressableScale>
         {METHODS.map((m) => (
           <View key={m.name} style={styles.method}>
             <View style={styles.methodHead}>
@@ -109,8 +110,8 @@ export function RitualScreen({ onOpenProduct }: Props) {
         ))}
         {mug ? (
           <PressableScale onPress={() => onOpenProduct(mug.id)} style={styles.mugRow}>
-            <Image source={{ uri: mug.image }} style={styles.mugImg} />
-            <View>
+            <Image source={{ uri: mug.image }} style={styles.mugImg} resizeMode="contain" />
+            <View style={{ flex: 1 }}>
               <Text style={styles.name}>{mug.name}</Text>
               <Text style={styles.muted}>
                 {mug.subtitle} · {formatPrice(mug.price)}
@@ -127,7 +128,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingBottom: 180 },
   head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
-  title: { color: colors.ink, fontFamily: fonts.display, fontSize: 32, letterSpacing: -0.6 },
+  title: { color: colors.ink, fontFamily: fonts.display, fontSize: 34, letterSpacing: -0.6, lineHeight: 40 },
   sub: { marginTop: 6, color: colors.linenDim, fontFamily: fonts.body, fontSize: 15, lineHeight: 22 },
   kicker: {
     color: colors.brass,
@@ -149,23 +150,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
   },
-  cta: {
-    alignSelf: "flex-start",
-    marginTop: 16,
-    backgroundColor: colors.ink,
-    paddingHorizontal: 20,
-    paddingVertical: 13,
-    borderRadius: radii.pill,
+  colombia: {
+    marginHorizontal: 20,
+    marginTop: 28,
+    backgroundColor: colors.paper,
+    borderRadius: radii.lg,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
   },
-  ctaText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
+  colombiaImg: { width: 88, height: 88 },
+  colombiaMeta: { flex: 1, minWidth: 0 },
+  ctaInline: {
+    marginTop: 10,
+    color: colors.brass,
+    fontFamily: fonts.bodyBold,
+    fontSize: 14,
+  },
   timer: {
     marginHorizontal: 20,
     marginTop: 12,
     backgroundColor: colors.paper,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: 20,
+    borderRadius: radii.lg,
+    padding: 22,
   },
   clock: {
     marginTop: 10,
@@ -194,24 +202,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
   },
   resetText: { color: colors.ink, fontFamily: fonts.bodyMed, fontSize: 14 },
-  block: { paddingHorizontal: 20, paddingTop: 28 },
   method: {
     marginHorizontal: 20,
-    paddingVertical: 18,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.line,
+    marginTop: 10,
+    backgroundColor: colors.paper,
+    borderRadius: radii.lg,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
   },
   methodHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
   ratio: { color: colors.brass, fontFamily: fonts.body, fontSize: 14 },
   mugRow: {
-    margin: 20,
+    marginHorizontal: 20,
+    marginTop: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
     backgroundColor: colors.paper,
-    borderRadius: radii.sm,
-    padding: 12,
+    borderRadius: radii.lg,
+    padding: 14,
   },
-  mugImg: { width: 80, height: 80, borderRadius: 8, backgroundColor: colors.kraft },
+  mugImg: { width: 80, height: 80, borderRadius: radii.md, backgroundColor: colors.bg },
   name: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
 });

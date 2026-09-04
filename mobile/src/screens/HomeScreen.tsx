@@ -5,6 +5,7 @@ import {
   apparel,
   brand,
   coffees,
+  colombia,
   formatPrice,
   mugs,
   origins,
@@ -53,7 +54,18 @@ export function HomeScreen({ onOpenProduct }: Props) {
     );
   }
 
-  const discover = origins().slice(0, 6);
+  const discover = origins().filter((p) => p.id !== colombia.id).slice(0, 6);
+
+  const buyColombia = () => {
+    cart.add({
+      productId: colombia.id,
+      variantId: colombia.defaultVariantId,
+      variantTitle: colombia.variants?.[0]?.title ?? colombia.subtitle,
+      price: colombia.price,
+      qty: 1,
+    });
+    cart.flash("Added to bag");
+  };
 
   return (
     <ScreenFade>
@@ -62,6 +74,24 @@ export function HomeScreen({ onOpenProduct }: Props) {
           <Text style={styles.title}>Shop</Text>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>CR</Text>
+          </View>
+        </View>
+
+        <View style={styles.hero}>
+          <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.heroWell} haptic={false}>
+            <Image source={{ uri: colombia.image }} style={styles.heroImg} resizeMode="contain" />
+          </PressableScale>
+          {colombia.badge ? <Text style={styles.heroKicker}>{colombia.badge.toUpperCase()}</Text> : null}
+          <Text style={styles.heroName}>{colombia.name}</Text>
+          {colombia.notes ? <Text style={styles.heroNotes}>{colombia.notes}</Text> : null}
+          <Text style={styles.heroPrice}>{formatPrice(colombia.price)}</Text>
+          <View style={styles.pills}>
+            <PressableScale onPress={buyColombia} style={styles.pillFill} accessibilityLabel="Add Colombia to bag">
+              <Text style={styles.pillFillText}>Add to bag</Text>
+            </PressableScale>
+            <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.pillQuiet} haptic={false}>
+              <Text style={styles.pillQuietText}>The bag</Text>
+            </PressableScale>
           </View>
         </View>
 
@@ -91,7 +121,7 @@ export function HomeScreen({ onOpenProduct }: Props) {
         </PressableScale>
 
         <View style={styles.sectionRow}>
-          <Text style={styles.section}>Discover</Text>
+          <Text style={styles.section}>More origins</Text>
           <PressableScale onPress={() => setFamily("origins")}>
             <Text style={styles.seeAll}>See all</Text>
           </PressableScale>
@@ -136,7 +166,7 @@ function FamilyCollection({
           <PressableScale onPress={onBack} style={styles.backText} haptic={false}>
             <Text style={styles.backGlyph}>‹ Shop</Text>
           </PressableScale>
-          <Text style={styles.title}>Shop {label}</Text>
+          <Text style={styles.title}>{label}</Text>
         </View>
 
         {hero ? (
@@ -149,7 +179,7 @@ function FamilyCollection({
             {hero.notes ? <Text style={styles.featureNotes}>{hero.notes}</Text> : null}
             <View style={styles.pills}>
               <PressableScale onPress={buyHero} style={styles.pillFill}>
-                <Text style={styles.pillFillText}>Buy</Text>
+                <Text style={styles.pillFillText}>Add to bag</Text>
               </PressableScale>
               <PressableScale onPress={() => onOpenProduct(hero.id)} style={styles.pillQuiet} haptic={false}>
                 <Text style={styles.pillQuietText}>Learn more</Text>
@@ -160,7 +190,7 @@ function FamilyCollection({
 
         {rest.length > 0 ? (
           <>
-            <Text style={[styles.section, { paddingHorizontal: 20 }]}>The rest</Text>
+            <Text style={[styles.section, { paddingHorizontal: 20 }]}>Also in {label.toLowerCase()}</Text>
             <CatalogGrid products={rest} onOpen={onOpenProduct} />
           </>
         ) : null}
@@ -182,9 +212,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.ink,
-    fontFamily: fonts.bodyBold,
+    fontFamily: fonts.display,
     fontSize: 34,
-    letterSpacing: -0.7,
+    letterSpacing: -0.6,
     lineHeight: 40,
   },
   avatar: {
@@ -205,12 +235,12 @@ const styles = StyleSheet.create({
   familyGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    paddingTop: 4,
+    paddingTop: 8,
     paddingBottom: 8,
   },
   familyCard: {
     backgroundColor: colors.paper,
-    borderRadius: 22,
+    borderRadius: radii.lg,
     overflow: "hidden",
   },
   familyPhoto: {
@@ -225,14 +255,57 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingTop: 4,
     color: colors.ink,
+    fontFamily: fonts.displaySoft,
+    fontSize: 18,
+    letterSpacing: -0.3,
+  },
+  hero: { paddingBottom: 18 },
+  heroWell: {
+    marginHorizontal: 20,
+    aspectRatio: 1.05,
+    borderRadius: radii.lg,
+    backgroundColor: colors.paper,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  heroImg: { width: "72%", height: "72%" },
+  heroKicker: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    color: colors.brass,
+    fontFamily: fonts.bodyMed,
+    fontSize: 11,
+    letterSpacing: 1.8,
+  },
+  heroName: {
+    marginTop: 6,
+    paddingHorizontal: 20,
+    color: colors.ink,
+    fontFamily: fonts.display,
+    fontSize: 32,
+    letterSpacing: -0.5,
+    lineHeight: 36,
+  },
+  heroNotes: {
+    marginTop: 6,
+    paddingHorizontal: 20,
+    color: colors.linenDim,
+    fontFamily: fonts.body,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  heroPrice: {
+    marginTop: 8,
+    paddingHorizontal: 20,
+    color: colors.ink,
     fontFamily: fonts.bodyBold,
     fontSize: 17,
-    letterSpacing: -0.3,
   },
   promo: {
     marginHorizontal: 20,
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 4,
     backgroundColor: colors.kraft,
     borderRadius: radii.lg,
     paddingHorizontal: 20,
@@ -267,8 +340,8 @@ const styles = StyleSheet.create({
   },
   section: {
     color: colors.ink,
-    fontFamily: fonts.bodyBold,
-    fontSize: 20,
+    fontFamily: fonts.displaySoft,
+    fontSize: 22,
     letterSpacing: -0.3,
     paddingTop: 10,
     paddingBottom: 10,
@@ -281,7 +354,7 @@ const styles = StyleSheet.create({
   featureWell: {
     marginHorizontal: 20,
     aspectRatio: 1,
-    borderRadius: 24,
+    borderRadius: radii.lg,
     backgroundColor: colors.paper,
     alignItems: "center",
     justifyContent: "center",
@@ -292,7 +365,7 @@ const styles = StyleSheet.create({
     marginTop: 18,
     paddingHorizontal: 20,
     color: colors.ink,
-    fontFamily: fonts.bodyBold,
+    fontFamily: fonts.display,
     fontSize: 28,
     letterSpacing: -0.5,
   },
@@ -330,7 +403,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 22,
     borderRadius: radii.pill,
-    backgroundColor: "rgba(255,253,248,0.7)",
+    backgroundColor: colors.paper,
     alignItems: "center",
     justifyContent: "center",
   },
