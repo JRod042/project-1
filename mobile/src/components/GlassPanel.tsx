@@ -2,19 +2,52 @@ import { type ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import { GlassView } from "expo-glass-effect";
 import { colors } from "../theme";
+import { useChromeMaterial } from "../lib/liquidGlass";
 
 type Props = {
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
   intensity?: number;
+  interactive?: boolean;
+  variant?: "regular" | "clear";
 };
 
 /**
- * iOS 26 Liquid Glass — frost + specular highlight + inner rim.
- * Use on chrome only (tab bar, orbs, docks). Never on product tiles.
+ * System chrome only (tab bar, nav, sheets, docks). Never wrap product tiles.
+ * iOS 26+ / iOS 27: native Liquid Glass. Older iOS + Android: frost fallback.
  */
-export function GlassPanel({ children, style, intensity = 44 }: Props) {
+export function GlassPanel({
+  children,
+  style,
+  contentStyle,
+  intensity = 48,
+  interactive = false,
+  variant = "regular",
+}: Props) {
+  const { native, reduce } = useChromeMaterial();
+  const inner = <View style={[styles.inner, contentStyle]}>{children}</View>;
+
+  if (reduce) {
+    return <View style={[styles.solid, style]}>{inner}</View>;
+  }
+
+  if (native) {
+    return (
+      <GlassView
+        glassEffectStyle={variant}
+        tintColor={colors.glassTint}
+        colorScheme="light"
+        isInteractive={interactive}
+        style={[styles.native, style]}
+      >
+        {inner}
+      </GlassView>
+    );
+  }
+
   return (
     <BlurView intensity={intensity} tint="extraLight" style={[styles.shell, style]}>
       <LinearGradient
@@ -30,12 +63,19 @@ export function GlassPanel({ children, style, intensity = 44 }: Props) {
         style={StyleSheet.absoluteFill}
       />
       <View pointerEvents="none" style={styles.rim} />
-      <View style={styles.inner}>{children}</View>
+      {inner}
     </BlurView>
   );
 }
 
 const styles = StyleSheet.create({
+  native: {},
+  solid: {
+    overflow: "hidden",
+    backgroundColor: colors.glassStrong,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+  },
   shell: {
     overflow: "hidden",
     backgroundColor: colors.glass,
@@ -43,7 +83,11 @@ const styles = StyleSheet.create({
     borderColor: colors.glassBorder,
   },
   rim: {
-    ...StyleSheet.absoluteFill,
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(255,255,255,0.45)",
   },

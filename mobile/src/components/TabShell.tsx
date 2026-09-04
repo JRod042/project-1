@@ -51,35 +51,33 @@ function Glyph({ id, on }: { id: TabId; on: boolean }) {
 
 export function TabShell({ active, onChange, bagCount = 0 }: Props) {
   return (
-    <GlassPanel style={styles.capsule}>
-      <View style={styles.row}>
-        {TABS.map((t) => {
-          const on = t.id === active;
-          return (
-            <View key={t.id} style={styles.cell}>
-              <PressableScale
-                onPress={() => onChange(t.id)}
-                style={styles.tab}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: on }}
-                accessibilityLabel={t.label}
-              >
-                <View>
-                  <Glyph id={t.id} on={on} />
-                  {t.id === "bag" && bagCount > 0 ? (
-                    <View style={styles.badge}>
-                      <Text style={styles.badgeText}>{bagCount > 9 ? "9+" : bagCount}</Text>
-                    </View>
-                  ) : null}
-                </View>
-                <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
-                  {t.label}
-                </Text>
-              </PressableScale>
-            </View>
-          );
-        })}
-      </View>
+    <GlassPanel style={styles.bar} contentStyle={styles.row} interactive>
+      {TABS.map((t) => {
+        const on = t.id === active;
+        return (
+          <View key={t.id} style={styles.cell}>
+            <PressableScale
+              onPress={() => onChange(t.id)}
+              style={styles.tab}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={t.label}
+            >
+              <View>
+                <Glyph id={t.id} on={on} />
+                {t.id === "bag" && bagCount > 0 ? (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{bagCount > 9 ? "9+" : bagCount}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
+                {t.label}
+              </Text>
+            </PressableScale>
+          </View>
+        );
+      })}
     </GlassPanel>
   );
 }
@@ -93,7 +91,7 @@ const g = StyleSheet.create({
     justifyContent: "center",
   },
   wellOn: {
-    backgroundColor: "rgba(255,253,248,0.78)",
+    backgroundColor: "rgba(255,253,248,0.42)",
   },
   grid: {
     width: 14,
@@ -140,14 +138,14 @@ const g = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  capsule: {
+  bar: {
     flex: 1,
     minWidth: 0,
-    height: 62,
-    borderRadius: 31,
+    height: 64,
+    borderRadius: 32,
     shadowColor: "#120e0b",
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },
     elevation: 14,
   },
@@ -160,7 +158,7 @@ const styles = StyleSheet.create({
   cell: { flex: 1, minWidth: 0 },
   tab: {
     width: "100%",
-    height: 62,
+    height: 64,
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 4,
