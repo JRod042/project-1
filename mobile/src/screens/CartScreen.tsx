@@ -11,7 +11,7 @@ type Props = {
   onCheckout: () => void;
 };
 
-export function CartScreen({ onOpenProduct, onCheckout }: Props) {
+export function CartScreen({ onOpenProduct }: Props) {
   const cart = useCart();
   const mug = gear()[0];
   const hasCoffee = cart.lines.some((l) => getProduct(l.productId)?.category === "coffee");
@@ -22,9 +22,9 @@ export function CartScreen({ onOpenProduct, onCheckout }: Props) {
     return (
       <ScreenFade>
         <View style={styles.emptyRoot}>
-          <Text style={styles.title}>Bag.</Text>
+          <Text style={styles.title}>Bag</Text>
           <Text style={styles.empty}>Your bag is empty.</Text>
-          <Text style={styles.sub}>Start with Colombia, the house bag.</Text>
+          <Text style={styles.sub}>Colombia leads. The house bag is waiting.</Text>
           <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.cta}>
             <Text style={styles.ctaText}>Shop Colombia</Text>
           </PressableScale>
@@ -37,7 +37,7 @@ export function CartScreen({ onOpenProduct, onCheckout }: Props) {
     <ScreenFade>
       <View style={styles.root}>
         <View style={styles.header}>
-          <Text style={styles.title}>Bag.</Text>
+          <Text style={styles.title}>Bag</Text>
           <Text style={styles.sub}>
             {cart.count} {cart.count === 1 ? "item" : "items"}
           </Text>
@@ -101,13 +101,6 @@ export function CartScreen({ onOpenProduct, onCheckout }: Props) {
               </View>
             </View>
           ) : null}
-          <PressableScale
-            onPress={onCheckout}
-            style={styles.checkout}
-            accessibilityLabel="Check out"
-          >
-            <Text style={styles.ctaText}>Check Out · {formatPrice(cart.subtotal)}</Text>
-          </PressableScale>
         </ScrollView>
       </View>
     </ScreenFade>
@@ -118,37 +111,29 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   emptyRoot: { flex: 1, backgroundColor: colors.bg, padding: 20, paddingTop: 4, paddingBottom: 160 },
   header: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
-  title: { color: colors.ink, fontFamily: fonts.display, fontSize: 36, letterSpacing: -0.6 },
+  title: { color: colors.ink, fontFamily: fonts.display, fontSize: 34, letterSpacing: -0.6, lineHeight: 40 },
   sub: { marginTop: 6, color: colors.linenDim, fontFamily: fonts.body, fontSize: 15 },
-  empty: { marginTop: 8, color: colors.linenDim, fontFamily: fonts.body, fontSize: 16 },
+  empty: { marginTop: 18, color: colors.ink, fontFamily: fonts.displaySoft, fontSize: 22, letterSpacing: -0.3 },
   cta: {
     alignSelf: "flex-start",
     marginTop: 24,
     backgroundColor: colors.ink,
-    paddingHorizontal: 20,
+    paddingHorizontal: 22,
     paddingVertical: 14,
     borderRadius: radii.pill,
   },
-  ctaText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 14 },
-  checkout: {
-    marginHorizontal: 20,
-    marginTop: 24,
-    minHeight: 56,
-    borderRadius: radii.pill,
-    backgroundColor: colors.ink,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  list: { paddingBottom: 220 },
+  ctaText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 15 },
+  list: { paddingBottom: 220, paddingTop: 4 },
   row: {
     flexDirection: "row",
     gap: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.line,
+    marginHorizontal: 20,
+    marginBottom: 10,
+    padding: 14,
+    backgroundColor: colors.paper,
+    borderRadius: radii.lg,
   },
-  thumb: { width: 80, height: 80, borderRadius: 16, backgroundColor: colors.paper },
+  thumb: { width: 80, height: 80, borderRadius: radii.md, backgroundColor: colors.bg },
   meta: { flex: 1 },
   name: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
   variant: { marginTop: 2, color: colors.linenMuted, fontFamily: fonts.body, fontSize: 13 },
@@ -173,10 +158,12 @@ const styles = StyleSheet.create({
   remove: { marginLeft: "auto", paddingVertical: 8 },
   removeText: { color: colors.linenMuted, fontFamily: fonts.bodyMed, fontSize: 13 },
   promo: {
-    margin: 20,
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 8,
     backgroundColor: colors.kraft,
-    borderRadius: radii.md,
-    padding: 16,
+    borderRadius: radii.lg,
+    padding: 18,
   },
   kicker: {
     color: colors.brass,

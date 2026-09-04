@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { colors, fonts, radii } from "../theme";
 import {
@@ -54,7 +55,7 @@ function VariantPicker({
   if (!twoAxis) {
     return (
       <View style={styles.block}>
-        <Text style={styles.label}>{labels[0]}</Text>
+        <Text style={[styles.label, styles.labelPad]}>{labels[0]}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {variants.map((v) => {
             const on = v.id === variantId;
@@ -85,7 +86,7 @@ function VariantPicker({
   return (
     <View>
       <View style={styles.block}>
-        <Text style={styles.label}>{labels[0]}</Text>
+        <Text style={[styles.label, styles.labelPad]}>{labels[0]}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {colors0.map((c) => {
             const on = c === color;
@@ -99,7 +100,7 @@ function VariantPicker({
       </View>
       {sizes.length > 1 || product.id.startsWith("cr-hoodie") ? (
         <View style={styles.block}>
-          <Text style={styles.label}>{labels[1] ?? "Size"}</Text>
+          <Text style={[styles.label, styles.labelPad]}>{labels[1] ?? "Size"}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
             {sizes.map((s) => {
               const on = s === size;
@@ -118,6 +119,7 @@ function VariantPicker({
 
 export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
   const product = getProduct(productId);
+  const insets = useSafeAreaInsets();
   const cart = useCart();
   const variants = product?.variants ?? [];
   const [variantId, setVariantId] = useState(product?.defaultVariantId ?? 0);
@@ -160,11 +162,13 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
   return (
     <ScreenFade>
       <View style={styles.root}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-          <Image source={{ uri: product.image }} style={styles.hero} resizeMode="cover" />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+          <View style={styles.heroWell}>
+            <Image source={{ uri: product.image }} style={styles.hero} resizeMode="contain" />
+          </View>
           <View style={styles.body}>
             {product.badge ? <Text style={styles.kicker}>{product.badge.toUpperCase()}</Text> : null}
-            <Text style={styles.name}>{product.name}.</Text>
+            <Text style={styles.name}>{product.name}</Text>
             <Text style={styles.meta}>
               {[product.origin, product.roast].filter(Boolean).join(" · ")}
             </Text>
@@ -194,7 +198,7 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
           </View>
 
           {pair && pair.id !== product.id ? (
-            <View style={styles.block}>
+            <View style={[styles.block, styles.labelPad]}>
               <Text style={styles.kicker}>PAIR WITH</Text>
               <View style={{ width: 160, marginTop: 12 }}>
                 <ProductCard product={pair} onPress={() => onOpenProduct(pair.id)} />
@@ -203,10 +207,10 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
           ) : null}
         </ScrollView>
 
-        <View style={styles.dock}>
+        <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 14) }]}>
           <Text style={styles.dockPrice}>{formatPrice(price * qty)}</Text>
           <PressableScale onPress={addToBag} style={styles.add}>
-            <Text style={styles.addText}>{added ? "Added" : "Add to Bag"}</Text>
+            <Text style={styles.addText}>{added ? "Added" : "Add to bag"}</Text>
           </PressableScale>
         </View>
       </View>
@@ -223,8 +227,18 @@ const styles = StyleSheet.create({
     margin: 24,
   },
     backText: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 15 },
-  hero: { width: "100%", aspectRatio: 1, backgroundColor: colors.kraft },
-  body: { paddingHorizontal: 20, paddingTop: 24, gap: 6 },
+  heroWell: {
+    marginHorizontal: 20,
+    marginTop: 4,
+    aspectRatio: 1,
+    borderRadius: radii.lg,
+    backgroundColor: colors.paper,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  hero: { width: "78%", height: "78%" },
+  body: { paddingHorizontal: 20, paddingTop: 22, gap: 6 },
   kicker: {
     color: colors.brass,
     fontFamily: fonts.bodyMed,
@@ -234,8 +248,9 @@ const styles = StyleSheet.create({
   name: {
     color: colors.ink,
     fontFamily: fonts.display,
-    fontSize: 36,
+    fontSize: 34,
     letterSpacing: -0.6,
+    lineHeight: 40,
   },
   meta: { color: colors.linenMuted, fontFamily: fonts.body, fontSize: 14 },
   price: {
@@ -257,14 +272,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
   },
-  block: { marginTop: 24, paddingLeft: 20 },
+  block: { marginTop: 24 },
   label: {
     color: colors.linenMuted,
     fontFamily: fonts.bodyMed,
     fontSize: 12,
     letterSpacing: 0.4,
-    paddingHorizontal: 20,
   },
+  labelPad: { paddingHorizontal: 20 },
   chips: { paddingHorizontal: 20, paddingTop: 10, gap: 8 },
   chip: {
     paddingHorizontal: 14,
@@ -300,7 +315,6 @@ const styles = StyleSheet.create({
     minWidth: 22,
     textAlign: "center",
   },
-  storeLink: { paddingHorizontal: 20, paddingVertical: 28 },
   dock: {
     position: "absolute",
     left: 0,
@@ -310,7 +324,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingTop: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.line,
     backgroundColor: colors.paper,
