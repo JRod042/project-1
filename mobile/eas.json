@@ -10,6 +10,9 @@
         "simulator": false,
         "resourceClass": "m-medium"
       },
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "APP_ENV": "preview",
         "EXPO_USE_PRECOMPILED_MODULES": "0",
@@ -20,6 +23,9 @@
       "distribution": "store",
       "ios": {
         "resourceClass": "m-medium"
+      },
+      "android": {
+        "buildType": "app-bundle"
       },
       "env": {
         "APP_ENV": "production",
@@ -37,6 +43,10 @@
         "appleTeamId": "FY5H9V76QL",
         "bundleIdentifier": "com.jrod042.omni",
         "ascAppId": "6797235230"
+      },
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
       }
     }
   }
