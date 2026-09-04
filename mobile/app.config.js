@@ -2,7 +2,7 @@
 const config = {
   name: "Casa Rustico",
   slug: "omni",
-  version: "0.5.10",
+  version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
@@ -16,7 +16,7 @@ const config = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: "com.jrod042.omni",
-    buildNumber: "35",
+    buildNumber: "36",
     usesAppleSignIn: false,
     infoPlist: {
       CFBundleDisplayName: "Casa Rustico",
@@ -29,6 +29,7 @@ const config = {
   },
   android: {
     package: "com.jrod042.omni",
+    versionCode: 36,
     adaptiveIcon: {
       backgroundColor: "#9c704b",
       foregroundImage: "./assets/android-icon-foreground.png",
@@ -36,6 +37,11 @@ const config = {
       monochromeImage: "./assets/android-icon-monochrome.png",
     },
     predictiveBackGestureEnabled: false,
+    softwareKeyboardLayoutMode: "resize",
+  },
+  androidStatusBar: {
+    backgroundColor: "#9c704b",
+    barStyle: "light-content",
   },
   web: {
     favicon: "./assets/favicon.png",
@@ -48,7 +54,7 @@ const config = {
       {
         backgroundColor: "#9c704b",
         image: "./assets/splash-icon.png",
-        imageWidth: 200,
+        imageWidth: 280,
       },
     ],
     [
@@ -57,6 +63,10 @@ const config = {
         ios: {
           deploymentTarget: "16.4",
           privacyManifestAggregationEnabled: false,
+        },
+        android: {
+          minSdkVersion: 26,
+          targetSdkVersion: 35,
         },
       },
     ],

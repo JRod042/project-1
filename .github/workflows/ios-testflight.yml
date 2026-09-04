@@ -1,5 +1,5 @@
-# Trigger from GitHub on iPad: Actions → iOS TestFlight → Run workflow
-name: iOS TestFlight
+# iPhone TestFlight + Android Play bundle. Trigger: Actions → Casa Rústico store.
+name: Casa Rústico store
 
 on:
   workflow_dispatch:
@@ -13,18 +13,22 @@ on:
           - production
           - preview
       submit:
-        description: "Submit to TestFlight after build"
+        description: "Submit iOS to TestFlight after build"
         required: true
         default: true
         type: boolean
 
 concurrency:
-  group: ios-testflight
+  group: casa-store-${{ github.event.inputs.profile }}
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, android]
     defaults:
       run:
         working-directory: mobile
@@ -52,6 +56,7 @@ jobs:
         run: eas whoami
 
       - name: Write App Store Connect API key (optional)
+        if: matrix.platform == 'ios'
         env:
           APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
         run: |
@@ -63,23 +68,22 @@ jobs:
             echo "No APPLE_API_KEY_P8 secret — submit will use Expo-stored Apple credentials if configured"
           fi
 
-      - name: Build iOS
+      - name: Build
         env:
           EXPO_ASC_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: |
           set -euo pipefail
           PROFILE="${{ inputs.profile }}"
-          # Build alone does NOT put the app in TestFlight — --auto-submit uploads to ASC.
-          if [ "${{ inputs.submit }}" = "true" ]; then
+          PLATFORM="${{ matrix.platform }}"
+          if [ "$PLATFORM" = "ios" ] && [ "${{ inputs.submit }}" = "true" ]; then
             eas build --platform ios --profile "$PROFILE" --non-interactive --auto-submit
           else
-            eas build --platform ios --profile "$PROFILE" --non-interactive
-            echo "::warning::Built without submit. IPA is on Expo only. Run Submit in Expo or re-run with submit=true."
+            eas build --platform "$PLATFORM" --profile "$PROFILE" --non-interactive
           fi
 
-      - name: Reminder
-        if: ${{ inputs.submit == true }}
+      - name: Try Android Play submit
+        if: matrix.platform == 'android' && inputs.submit == true
+        continue-on-error: true
         run: |
-          echo "After auto-submit, open App Store Connect → Activity (Processing), then TestFlight."
-          echo "Check Apple ID email for ITMS rejection messages if the build never appears."
+          eas submit --platform android --profile "${{ inputs.profile }}" --latest --non-interactive --no-wait
