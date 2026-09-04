@@ -7,13 +7,12 @@ import {
   TextInput,
   View,
 } from "react-native";
-import * as WebBrowser from "expo-web-browser";
 import { colors, fonts, radii } from "../theme";
 import { brand, colombia } from "../lib/catalog";
 import { PressableScale } from "../components/PressableScale";
 import { ScreenFade } from "../components/ScreenFade";
 import { useShopifyAuth } from "../lib/shopifyAuth";
-import { SHOPIFY_ACCOUNT_URL, shopifyRecover } from "../lib/shopify";
+import { shopifyRecover } from "../lib/shopify";
 
 const REVIEWS = [
   {
@@ -36,9 +35,10 @@ const REVIEWS = [
 type Props = {
   onOpenProduct: (id: string) => void;
   onReplayWelcome: () => void;
+  onOpenAccount: () => void;
 };
 
-export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
+export function StoryScreen({ onOpenProduct, onReplayWelcome, onOpenAccount }: Props) {
   const auth = useShopifyAuth();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -118,7 +118,7 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
             ))}
             <View style={styles.row}>
               <PressableScale
-                onPress={() => void WebBrowser.openBrowserAsync(SHOPIFY_ACCOUNT_URL)}
+                onPress={onOpenAccount}
                 style={styles.ctaLight}
               >
                 <Text style={styles.ctaLightText}>Open Shopify account</Text>
@@ -191,7 +191,7 @@ export function StoryScreen({ onOpenProduct, onReplayWelcome }: Props) {
               </Text>
             </PressableScale>
             <PressableScale
-              onPress={() => void WebBrowser.openBrowserAsync(SHOPIFY_ACCOUNT_URL)}
+              onPress={onOpenAccount}
               style={styles.outline}
             >
               <Text style={styles.outlineText}>Continue on Shopify</Text>

@@ -1,82 +1,87 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import * as WebBrowser from "expo-web-browser";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts, radii } from "../theme";
 import { useCart } from "../lib/cart";
 import { resolveCheckoutUrl } from "../lib/shopify";
 import { useShopifyAuth } from "../lib/shopifyAuth";
 import { PressableScale } from "../components/PressableScale";
+import { ShopifySheet } from "../components/ShopifySheet";
 
 type Props = {
   onClose: () => void;
   onDone?: () => void;
 };
 
-type Phase = "loading" | "open" | "error";
-
-export function CheckoutScreen({ onClose }: Props) {
+export function CheckoutScreen({ onClose, onDone }: Props) {
   const cart = useCart();
   const auth = useShopifyAuth();
   const insets = useSafeAreaInsets();
-  const [phase, setPhase] = useState<Phase>("loading");
+  const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const running = useRef(false);
+  const [tick, setTick] = useState(0);
   const lines = useRef(cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty })));
 
-  const start = useCallback(async () => {
-    if (running.current) return;
-    running.current = true;
-    setPhase("loading");
-    setError(null);
-    try {
-      const url = await resolveCheckoutUrl(lines.current, {
-        token: auth.session?.token,
-        email: auth.session?.customer.email,
-      });
-      setPhase("open");
-      await WebBrowser.openBrowserAsync(url, {
-        presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-        dismissButtonStyle: "close",
-        controlsColor: "#8B5E3C",
-        toolbarColor: "#F5EAD8",
-        enableBarCollapsing: false,
-        showTitle: true,
-      });
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not start checkout");
-      setPhase("error");
-      running.current = false;
-    }
-  }, [onClose, auth.session?.token, auth.session?.customer.email]);
-
   useEffect(() => {
-    void start();
-  }, [start]);
+    let alive = true;
+    setError(null);
+    setUrl(null);
+    void (async () => {
+      try {
+        const next = await resolveCheckoutUrl(lines.current, {
+          token: auth.session?.token,
+          email: auth.session?.customer.email,
+        });
+        if (alive) setUrl(next);
+      } catch (err) {
+        if (alive) setError(err instanceof Error ? err.message : "Could not start checkout");
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [tick, auth.session?.token, auth.session?.customer.email]);
 
-  if (phase === "error") {
+  if (url) {
     return (
-      <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <Text style={styles.title}>Checkout paused.</Text>
-        <Text style={styles.copy}>{error ?? "Something went wrong starting checkout."}</Text>
-        <PressableScale onPress={() => void start()} style={styles.cta}>
-          <Text style={styles.ctaText}>Try again</Text>
-        </PressableScale>
-        <PressableScale onPress={onClose} style={styles.ghost}>
-          <Text style={styles.ghostText}>Back to bag</Text>
-        </PressableScale>
-      </View>
+      <ShopifySheet
+        url={url}
+        title="Checkout"
+        onClose={onClose}
+        onComplete={() => {
+          cart.clear();
+          onDone?.();
+          onClose();
+        }}
+      />
     );
   }
 
   return (
     <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <ActivityIndicator color={colors.brass} />
-      <Text style={styles.copy}>Opening Shopify checkout...</Text>
-      <PressableScale onPress={onClose}>
-        <Text style={styles.link}>Cancel</Text>
-      </PressableScale>
+      {error ? (
+        <>
+          <Text style={styles.title}>Checkout paused.</Text>
+          <Text style={styles.copy}>{error}</Text>
+          <PressableScale
+            onPress={() => setTick((n) => n + 1)}
+            style={styles.cta}
+          >
+            <Text style={styles.ctaText}>Try again</Text>
+          </PressableScale>
+          <PressableScale onPress={onClose} style={styles.ghost}>
+            <Text style={styles.ghostText}>Back to bag</Text>
+          </PressableScale>
+        </>
+      ) : (
+        <>
+          <ActivityIndicator color={colors.brass} />
+          <Text style={styles.copy}>Opening Shopify checkout in the app…</Text>
+          <PressableScale onPress={onClose}>
+            <Text style={styles.link}>Cancel</Text>
+          </PressableScale>
+        </>
+      )}
     </View>
   );
 }
