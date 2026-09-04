@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Linking, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -21,7 +21,7 @@ import { ProductScreen } from "./src/screens/ProductScreen";
 import { RitualScreen } from "./src/screens/RitualScreen";
 import { StoryScreen } from "./src/screens/StoryScreen";
 import { CheckoutScreen } from "./src/screens/CheckoutScreen";
-import { CHECKOUT_IN_APP } from "./src/components/CheckoutGate";
+import { ShopifySheet } from "./src/components/ShopifySheet";
 import { CartProvider, useCart } from "./src/lib/cart";
 import { ShopifyAuthProvider } from "./src/lib/shopifyAuth";
 import {
@@ -34,7 +34,7 @@ import { GlassPanel } from "./src/components/GlassPanel";
 import { SearchSheet } from "./src/components/SearchSheet";
 import { colors, fonts, radii } from "./src/theme";
 import { formatPrice } from "./src/lib/catalog";
-import { cartPermalink } from "./src/lib/shopify";
+import { SHOPIFY_ACCOUNT_URL } from "./src/lib/shopify";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -60,6 +60,7 @@ function ShopApp() {
   const [screen, setScreen] = useState<Screen>({ kind: "tab", tab: "shop" });
   const [search, setSearch] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const lastCount = useRef(cart.count);
   const [pop, setPop] = useState(false);
 
@@ -97,13 +98,7 @@ function ShopApp() {
 
   const startCheckout = () => {
     if (!cart.count) return;
-    if (CHECKOUT_IN_APP) {
-      setCheckoutOpen(true);
-      return;
-    }
-    void Linking.openURL(
-      cartPermalink(cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty }))),
-    );
+    setCheckoutOpen(true);
   };
 
   const tab: TabId = screen.kind === "tab" ? screen.tab : screen.back;
@@ -111,7 +106,7 @@ function ShopApp() {
     setScreen({ kind: "product", productId: id, back: tab });
   const openTab = (next: TabId) => setScreen({ kind: "tab", tab: next });
   const onProduct = screen.kind === "product";
-  const hideTabs = onProduct || checkoutOpen;
+  const hideTabs = onProduct || checkoutOpen || accountOpen;
   const firstLaunch = !welcomeSeen;
 
   if (!fontsLoaded || !ready) {
@@ -156,6 +151,7 @@ function ShopApp() {
               ) : tab === "story" ? (
                 <StoryScreen
                   onOpenProduct={openProduct}
+                  onOpenAccount={() => setAccountOpen(true)}
                   onReplayWelcome={() => {
                     void clearWelcomeSeen();
                     setWelcomeSeen(false);
@@ -244,6 +240,16 @@ function ShopApp() {
                 setCheckoutOpen(false);
                 setScreen({ kind: "tab", tab: "shop" });
               }}
+            />
+          </View>
+        ) : null}
+
+        {accountOpen ? (
+          <View style={styles.checkoutOverlay}>
+            <ShopifySheet
+              url={SHOPIFY_ACCOUNT_URL}
+              title="Shopify account"
+              onClose={() => setAccountOpen(false)}
             />
           </View>
         ) : null}

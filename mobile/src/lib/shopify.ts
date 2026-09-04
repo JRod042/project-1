@@ -37,12 +37,22 @@ export function variantGid(id: string | number) {
   return raw.startsWith("gid://") ? raw : `gid://shopify/ProductVariant/${raw}`;
 }
 
+export function stayInAppUrl(url: string) {
+  try {
+    const u = new URL(url);
+    u.searchParams.set("skip_shop_pay", "true");
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 export async function resolveCheckoutUrl(
   lines: { variantId: string | number; qty: number }[],
   identity?: { token?: string; email?: string },
 ): Promise<string> {
   const valid = lines.filter((l) => l.qty > 0 && l.variantId);
-  if (!valid.length) return cartPermalink([]);
+  if (!valid.length) return stayInAppUrl(cartPermalink([]));
 
   if (isStorefrontEnabled()) {
     try {
@@ -53,12 +63,12 @@ export async function resolveCheckoutUrl(
         })),
         identity,
       );
-      if (url) return url;
+      if (url) return stayInAppUrl(url);
     } catch {
       // fall through to permalink
     }
   }
-  return cartPermalink(valid);
+  return stayInAppUrl(cartPermalink(valid));
 }
 
 export function isCheckoutCompleteUrl(url: string) {
