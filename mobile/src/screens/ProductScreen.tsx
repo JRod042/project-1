@@ -15,6 +15,7 @@ import { useCart } from "../lib/cart";
 import { PressableScale } from "../components/PressableScale";
 import { ProductCard } from "../components/ProductCard";
 import { ScreenFade } from "../components/ScreenFade";
+import { GlassPanel } from "../components/GlassPanel";
 
 type Props = {
   productId: string;
@@ -174,7 +175,15 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
             </Text>
             <Text style={styles.price}>{formatPrice(price)}</Text>
             {product.notes ? <Text style={styles.notes}>{product.notes}</Text> : null}
-            {product.detail ? <Text style={styles.detail}>{product.detail}</Text> : null}
+            {product.category === "coffee" ? (
+              <View style={styles.originStory}>
+                <Text style={styles.kicker}>ORIGIN</Text>
+                <Text style={styles.originTitle}>{product.origin ?? product.name}</Text>
+                {product.detail ? <Text style={styles.detail}>{product.detail}</Text> : null}
+              </View>
+            ) : product.detail ? (
+              <Text style={styles.detail}>{product.detail}</Text>
+            ) : null}
           </View>
 
           {variants.length > 1 ? (
@@ -207,12 +216,15 @@ export function ProductScreen({ productId, onBack, onOpenProduct }: Props) {
           ) : null}
         </ScrollView>
 
-        <View style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+        <GlassPanel
+          style={[styles.dock, { paddingBottom: Math.max(insets.bottom, 14) }]}
+          contentStyle={styles.dockInner}
+        >
           <Text style={styles.dockPrice}>{formatPrice(price * qty)}</Text>
           <PressableScale onPress={addToBag} style={styles.add}>
             <Text style={styles.addText}>{added ? "Added" : "Add to bag"}</Text>
           </PressableScale>
-        </View>
+        </GlassPanel>
       </View>
     </ScreenFade>
   );
@@ -266,6 +278,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
+  originStory: {
+    marginTop: 16,
+    backgroundColor: colors.paper,
+    borderRadius: radii.lg,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 6,
+  },
+  originTitle: {
+    color: colors.ink,
+    fontFamily: fonts.displaySoft,
+    fontSize: 22,
+    letterSpacing: -0.3,
+  },
   detail: {
     color: colors.linenMuted,
     fontFamily: fonts.body,
@@ -317,17 +343,21 @@ const styles = StyleSheet.create({
   },
   dock: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: 12,
+    right: 12,
+    bottom: 8,
+    minHeight: 72,
+    borderRadius: 28,
+    overflow: "hidden",
+  },
+  dockInner: {
+    flexGrow: 0,
+    minHeight: 72,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.line,
-    backgroundColor: colors.paper,
     gap: 16,
   },
   dockPrice: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },

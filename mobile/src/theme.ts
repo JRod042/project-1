@@ -1,6 +1,6 @@
 /**
  * Casa Rústico — cream page, paper surfaces, kraft wells, espresso ink.
- * Liquid Glass is chrome only (tab bar, orbs, docks). Content stays solid.
+ * Liquid Glass is chrome only (tab bar, nav, sheets, docks). Content stays solid.
  */
 export const colors = {
   bg: "#f5ead8",
@@ -20,10 +20,11 @@ export const colors = {
   success: "#6b9b72",
   line: "rgba(18, 14, 11, 0.10)",
   lineBright: "rgba(18, 14, 11, 0.16)",
-  glass: "rgba(255, 253, 248, 0.42)",
+  glass: "rgba(255, 253, 248, 0.36)",
   glassStrong: "rgba(255, 253, 248, 0.72)",
   glassBorder: "rgba(255, 255, 255, 0.55)",
   glassHighlight: "rgba(255, 255, 255, 0.82)",
+  glassTint: "rgba(245, 234, 216, 0.28)",
   tabGlass: "#f5ead8",
 };
 

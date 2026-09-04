@@ -13,8 +13,9 @@ You do **not** need a Mac or any home server.
 
 ## What this build is
 
-Casa Rústico **customer shop** (Home / Coffee / Ritual / Story + bag).  
-Checkout is **Shopify Checkout Kit** (native sheet). Pay is an in-app button. No Safari, no Shop app. Kraft splash on every launch.
+Casa Rústico **customer shop** (Shop / Ritual / You / Bag).  
+Checkout is **Shopify Checkout Kit** (native sheet, present-on-tap). Pay is an in-app button. No Safari, no Shop app. Kraft splash on every launch.  
+Chrome is **Apple Liquid Glass** (`expo-glass-effect`) on iOS 26+ / iOS 27; frost fallback on older iOS and Android. Kraft cards stay solid.
 
 ---
 
@@ -49,7 +50,7 @@ Checkout is **Shopify Checkout Kit** (native sheet). Pay is an in-app button. No
 ### If submit says the build number was already used
 
 Bump `ios.buildNumber` and `android.versionCode` together in `mobile/app.config.js`, commit, rebuild, then submit again.  
-`autoIncrement` is **not** enabled. Current value on this branch: **47**.
+`autoIncrement` is **not** enabled. Current value on this branch: **49**.
 
 ### If the build is green but nothing appears in TestFlight
 
@@ -72,4 +73,4 @@ Open the app → Welcome → Enter the shop → Colombia hero → add a bag → 
 - Bundle stays `com.jrod042.omni` for continuity with the existing ASC listing.
 - Never change `eas.json` / bundle IDs unless you intend a new listing.
 - Prefer Expo browser **Build → Submit** until GitHub Actions is confirmed green.
-- Checkout is Shopify Checkout Kit + WebView fallback. A new EAS iOS production build is required for TestFlight (build **47**). Kit is a native module — both platforms must ship the same binary.
+- Checkout is Shopify Checkout Kit + WebView fallback. A new EAS iOS **and** Android production build is required for TestFlight (build **49**). Kit and Liquid Glass are native modules — both platforms must ship the same binary.

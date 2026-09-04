@@ -38,11 +38,7 @@ import { GlassPanel } from "./src/components/GlassPanel";
 import { SearchSheet } from "./src/components/SearchSheet";
 import { colors, fonts, radii } from "./src/theme";
 import { formatPrice } from "./src/lib/catalog";
-import {
-  SHOPIFY_ACCOUNT_URL,
-  cartPermalink,
-  resolveCheckoutUrl,
-} from "./src/lib/shopify";
+import { cartPermalink, resolveCheckoutUrl } from "./src/lib/shopify";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -89,7 +85,6 @@ function ShopApp() {
   const [screen, setScreen] = useState<Screen>({ kind: "tab", tab: "shop" });
   const [search, setSearch] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const readyUrl = useRef<string | null>(null);
   const lastCount = useRef(cart.count);
@@ -180,7 +175,7 @@ function ShopApp() {
     setScreen({ kind: "product", productId: id, back: tab });
   const openTab = (next: TabId) => setScreen({ kind: "tab", tab: next });
   const onProduct = screen.kind === "product";
-  const hideTabs = onProduct || checkoutOpen || accountOpen;
+  const hideTabs = onProduct || checkoutOpen;
   const firstLaunch = !welcomeSeen;
 
   if (!fontsLoaded || !ready) {
@@ -194,21 +189,33 @@ function ShopApp() {
         {showShop ? (
           <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
             <StatusBar style="dark" />
-            <View style={styles.storeBar}>
+            <GlassPanel style={styles.storeChrome} contentStyle={styles.storeBar}>
               {onProduct ? (
                 <PressableScale
                   onPress={() => setScreen({ kind: "tab", tab: screen.back })}
+                  style={styles.navHit}
                   accessibilityLabel="Back"
                 >
-                  <GlassPanel style={styles.backOrb}>
-                    <Text style={styles.backGlyph}>‹</Text>
-                  </GlassPanel>
+                  <Text style={styles.backGlyph}>‹</Text>
                 </PressableScale>
               ) : (
                 <Text style={styles.barMark}>CASA RÚSTICO</Text>
               )}
-              <View style={styles.bagGhost} />
-            </View>
+              {onProduct ? (
+                <View style={styles.navHit} />
+              ) : (
+                <PressableScale
+                  onPress={() => setSearch(true)}
+                  style={[styles.navHit, pop && styles.bagPop]}
+                  accessibilityLabel="Search"
+                >
+                  <View style={styles.mag}>
+                    <View style={styles.magRing} />
+                    <View style={styles.magHandle} />
+                  </View>
+                </PressableScale>
+              )}
+            </GlassPanel>
 
             <View style={styles.body}>
               {screen.kind === "product" ? (
@@ -225,7 +232,6 @@ function ShopApp() {
               ) : tab === "story" ? (
                 <StoryScreen
                   onOpenProduct={openProduct}
-                  onOpenAccount={() => setAccountOpen(true)}
                   onReplayWelcome={() => {
                     void clearWelcomeSeen();
                     setWelcomeSeen(false);
@@ -271,21 +277,7 @@ function ShopApp() {
                     </PressableScale>
                   )
                 ) : null}
-                <View style={styles.dockRow}>
-                  <TabShell active={tab} onChange={openTab} bagCount={cart.count} />
-                  <PressableScale
-                    onPress={() => setSearch(true)}
-                    style={[styles.searchHit, pop && styles.bagPop]}
-                    accessibilityLabel="Search"
-                  >
-                    <GlassPanel style={styles.searchOrb}>
-                      <View style={styles.mag}>
-                        <View style={styles.magRing} />
-                        <View style={styles.magHandle} />
-                      </View>
-                    </GlassPanel>
-                  </PressableScale>
-                </View>
+                <TabShell active={tab} onChange={openTab} bagCount={cart.count} />
               </View>
             )}
             <SearchSheet
@@ -326,15 +318,6 @@ function ShopApp() {
           </View>
         ) : null}
 
-        {accountOpen ? (
-          <View style={styles.checkoutOverlay}>
-            <ShopifySheet
-              url={SHOPIFY_ACCOUNT_URL}
-              title="Shopify account"
-              onClose={() => setAccountOpen(false)}
-            />
-          </View>
-        ) : null}
       </View>
   );
 }
@@ -357,8 +340,13 @@ const styles = StyleSheet.create({
   boot: { flex: 1, backgroundColor: "#9c704b" },
   safe: { flex: 1, backgroundColor: colors.bg },
   body: { flex: 1 },
+  storeChrome: {
+    height: 52,
+    marginHorizontal: 12,
+    marginBottom: 4,
+    borderRadius: 26,
+  },
   storeBar: {
-    height: 48,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -371,16 +359,11 @@ const styles = StyleSheet.create({
     letterSpacing: 3.4,
     marginLeft: 4,
   },
-  backOrb: {
+  navHit: {
     width: 44,
     height: 44,
-    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#120e0b",
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
   },
   backGlyph: {
     color: colors.ink,
@@ -390,7 +373,6 @@ const styles = StyleSheet.create({
     marginTop: -2,
     marginLeft: -1,
   },
-  bagGhost: { width: 44, height: 44 },
   bagPop: { transform: [{ scale: 1.08 }] },
   dockWrap: {
     position: "absolute",
@@ -399,27 +381,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: 16,
     gap: 12,
-  },
-  dockRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  searchHit: {
-    width: 62,
-    height: 62,
-  },
-  searchOrb: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#120e0b",
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 14,
   },
   mag: { width: 18, height: 18 },
   magRing: {

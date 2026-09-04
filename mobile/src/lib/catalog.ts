@@ -36,29 +36,6 @@ export const brand = {
   siteUrl: "https://rusticopr.com",
   heroImage: `${FILES}/pr-cordillera-central-vista.jpg?v=1785364119`,
   ritualImage: `${FILES}/pr-hacienda-lealtad-landscape.jpg?v=1785364131`,
-  landscapes: [
-    {
-      id: "jayuya",
-      title: "Jayuya",
-      kicker: "The look",
-      image: `${FILES}/pr-jayuya-mountain.jpg?v=1785364136`,
-      copy: "Mountain mornings. The Cordillera as the house mark.",
-    },
-    {
-      id: "hacienda",
-      title: "Hacienda Lealtad",
-      kicker: "The house",
-      image: `${FILES}/pr-hacienda-lealtad-landscape.jpg?v=1785364131`,
-      copy: "Hacienda memory — the culture of the cup.",
-    },
-    {
-      id: "toro",
-      title: "Toro Negro",
-      kicker: "The highlands",
-      image: `${FILES}/pr-toro-negro-panorama.jpg?v=1785364138`,
-      copy: "Rooted in coffee country. Ships from the U.S.",
-    },
-  ],
 };
 
 export const products: Product[] = [
@@ -581,6 +558,15 @@ export function coffees() {
 
 export function origins() {
   return products.filter((p) => p.category === "coffee" && p.id !== "cr-capsules");
+}
+
+/** You-tab origin list — Colombia first, then the rest of the bag menu. */
+export function originStories() {
+  return origins().slice().sort((a, b) => {
+    if (a.id === "cr-colombia") return -1;
+    if (b.id === "cr-colombia") return 1;
+    return 0;
+  });
 }
 
 export function gear() {
