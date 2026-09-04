@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, fonts, radii } from "../theme";
 import { useCart } from "../lib/cart";
 import { resolveCheckoutUrl } from "../lib/shopify";
+import { useShopifyAuth } from "../lib/shopifyAuth";
 import { PressableScale } from "../components/PressableScale";
 
 type Props = {
@@ -16,6 +17,7 @@ type Phase = "loading" | "open" | "error";
 
 export function CheckoutScreen({ onClose }: Props) {
   const cart = useCart();
+  const auth = useShopifyAuth();
   const insets = useSafeAreaInsets();
   const [phase, setPhase] = useState<Phase>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +30,10 @@ export function CheckoutScreen({ onClose }: Props) {
     setPhase("loading");
     setError(null);
     try {
-      const url = await resolveCheckoutUrl(lines.current);
+      const url = await resolveCheckoutUrl(lines.current, {
+        token: auth.session?.token,
+        email: auth.session?.customer.email,
+      });
       setPhase("open");
       await WebBrowser.openBrowserAsync(url, {
         presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
@@ -44,7 +49,7 @@ export function CheckoutScreen({ onClose }: Props) {
       setPhase("error");
       running.current = false;
     }
-  }, [onClose]);
+  }, [onClose, auth.session?.token, auth.session?.customer.email]);
 
   useEffect(() => {
     void start();

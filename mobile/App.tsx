@@ -23,6 +23,7 @@ import { StoryScreen } from "./src/screens/StoryScreen";
 import { CheckoutScreen } from "./src/screens/CheckoutScreen";
 import { CHECKOUT_IN_APP } from "./src/components/CheckoutGate";
 import { CartProvider, useCart } from "./src/lib/cart";
+import { ShopifyAuthProvider } from "./src/lib/shopifyAuth";
 import {
   clearWelcomeSeen,
   loadWelcomeSeen,
@@ -253,9 +254,11 @@ function ShopApp() {
 export default function App() {
   return (
     <CartProvider>
+      <ShopifyAuthProvider>
       <SafeAreaProvider>
         <ShopApp />
       </SafeAreaProvider>
+      </ShopifyAuthProvider>
     </CartProvider>
   );
 }
