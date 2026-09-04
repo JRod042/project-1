@@ -129,7 +129,8 @@ function Splash({ fading, onSkip }: { fading: boolean; onSkip: () => void }) {
         <View style={styles.splashLockup}>
           <BeanMark />
           <Text style={styles.splashBrand}>CASA RÚSTICO</Text>
-          <Text style={styles.splashGo}>GO</Text>
+          <Text style={styles.splashTitle}>Mountain mornings.</Text>
+          <Text style={styles.splashGo}>The culture of the cup.</Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -224,7 +225,7 @@ export function WelcomeScreen({ onEnter, firstLaunch, replayKey = 0 }: Props) {
     setSplash(true);
     setSplashGone(false);
     setLeaving(false);
-    const id = setTimeout(() => setSplash(false), 1400);
+    const id = setTimeout(() => setSplash(false), 1800);
     return () => clearTimeout(id);
   }, [replayKey]);
 
@@ -271,13 +272,20 @@ const styles = StyleSheet.create({
     letterSpacing: 5.6,
     marginRight: -5.6,
   },
+  splashTitle: {
+    color: INK,
+    fontFamily: fonts.display,
+    fontSize: 28,
+    letterSpacing: -0.4,
+    textAlign: "center",
+    marginTop: -4,
+  },
   splashGo: {
     color: BRASS_DIM,
-    fontFamily: fonts.bodyMed,
-    fontSize: 11,
-    letterSpacing: 4.4,
-    marginTop: -6,
-    marginRight: -4.4,
+    fontFamily: fonts.body,
+    fontSize: 14,
+    marginTop: -8,
+    textAlign: "center",
   },
   onboard: {
     flex: 1,
