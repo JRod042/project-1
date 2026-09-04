@@ -1,4 +1,4 @@
-# Casa Rustico — iOS / TestFlight
+# Casa Rustico — iOS / Android store
 
 **Display name:** Casa Rustico  
 **Bundle ID:** `com.jrod042.omni`  
@@ -16,6 +16,19 @@ You do **not** need a Mac or any home server.
 Casa Rústico **customer shop** (Shop / Ritual / You / Bag).  
 Checkout is **Shopify Checkout Kit** (native sheet, present-on-tap). Pay is an in-app button. No Safari, no Shop app. Kraft splash on every launch.  
 Chrome is **Apple Liquid Glass** (`expo-glass-effect`) on iOS 26+ / iOS 27; frost fallback on older iOS and Android. Kraft cards stay solid.
+
+---
+
+## Production (live stores)
+
+GitHub Actions → **Casa Rústico store** · profile **production** · submit **true**.
+
+| Store | What EAS does | What you still do |
+| --- | --- | --- |
+| iPhone | Uploads the binary to App Store Connect. After processing it appears in TestFlight. | App Store Connect → version 1.0.0 → select this build → **Submit for Review**. Apple does not auto-release. |
+| Android | Uploads the AAB to Play **production** and completes the release. | Play Console must already have the listing (privacy, content rating, store listing). First-ever Play upload had to be manual; after that this path is live. |
+
+Current store build: **49**.
 
 ---
 
@@ -37,40 +50,31 @@ Chrome is **Apple Liquid Glass** (`expo-glass-effect`) on iOS 26+ / iOS 27; fros
 
 ---
 
-## Build + TestFlight
+## Build + TestFlight / Play
 
 1. Expo → **@jrod42/omni** → **Builds** → **Build from GitHub**
 2. Branch: **`main`** (latest)
-3. Platform: **iOS** · Profile: **production**
+3. Platform: **iOS** and **Android** · Profile: **production**
 4. Wait for a **green build**
-5. Open that build → **Submit** to App Store Connect (**required** — green Expo build ≠ TestFlight)
-6. App Store Connect → Activity → TestFlight → Ready to Test
-7. On device: open **TestFlight** → install **Casa Rustico**
+5. iOS: open that build → **Submit** to App Store Connect if Actions did not auto-submit
+6. App Store Connect → Activity → TestFlight → Ready to Test, then **Submit for Review** for the live store
+7. On device: TestFlight → install **Casa Rustico** until Apple approves the public listing
 
 ### If submit says the build number was already used
 
 Bump `ios.buildNumber` and `android.versionCode` together in `mobile/app.config.js`, commit, rebuild, then submit again.  
 `autoIncrement` is **not** enabled. Current value on this branch: **49**.
 
-### If the build is green but nothing appears in TestFlight
-
-You almost always have not submitted yet.
-
-1. Open the finished production build on Expo
-2. Tap **Submit**
-3. Check App Store Connect → Activity for Processing
-
 ---
 
 ## After install
 
-Open the app → Welcome → Enter the shop → Colombia hero → add a bag → **Check Out**. Shopify checkout opens over the app. Close returns to the bag. Promo **MORNING10**. Close returns to the bag; a completed order returns to the shop.
+Open the app → kraft seal → shop → Colombia → add a bag → **Check Out**. Shopify checkout opens over the app. Promo **MORNING10**.
 
 ---
 
 ## Notes
 
 - Bundle stays `com.jrod042.omni` for continuity with the existing ASC listing.
-- Never change `eas.json` / bundle IDs unless you intend a new listing.
-- Prefer Expo browser **Build → Submit** until GitHub Actions is confirmed green.
-- Checkout is Shopify Checkout Kit + WebView fallback. A new EAS iOS **and** Android production build is required for TestFlight (build **49**). Kit and Liquid Glass are native modules — both platforms must ship the same binary.
+- Never change bundle IDs unless you intend a new listing.
+- Checkout is Shopify Checkout Kit + WebView fallback. Kit and Liquid Glass are native modules — both platforms must ship the same binary.
