@@ -52,12 +52,28 @@ export function stayInAppUrl(url: string) {
   }
 }
 
-/** Permalink only. Storefront checkoutUrl kicks out to Shop Pay / Safari. */
+/** Storefront checkoutUrl for Checkout Kit. Permalink fallback. Skip Shop Pay. */
 export async function resolveCheckoutUrl(
   lines: { variantId: string | number; qty: number }[],
   identity?: { token?: string; email?: string },
 ): Promise<string> {
   const valid = lines.filter((l) => l.qty > 0 && l.variantId);
+  if (!valid.length) return cartPermalink([]);
+
+  if (isStorefrontEnabled()) {
+    try {
+      const url = await createCheckoutUrl(
+        valid.map((l) => ({
+          merchandiseId: variantGid(l.variantId),
+          quantity: l.qty,
+        })),
+        identity,
+      );
+      if (url) return stayInAppUrl(url);
+    } catch {
+      // permalink fallback
+    }
+  }
   return cartPermalink(valid, identity?.email);
 }
 

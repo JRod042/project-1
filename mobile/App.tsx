@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import {
+  ColorScheme,
+  ShopifyCheckoutSheetProvider,
+} from "@shopify/checkout-sheet-kit";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
@@ -37,6 +41,25 @@ import { formatPrice } from "./src/lib/catalog";
 import { SHOPIFY_ACCOUNT_URL } from "./src/lib/shopify";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+const CHECKOUT_KIT = {
+  colorScheme: ColorScheme.light,
+  preloading: true,
+  colors: {
+    ios: {
+      backgroundColor: "#f5ead8",
+      tintColor: "#8B5E3C",
+      closeButtonColor: "#120e0b",
+    },
+    android: {
+      backgroundColor: "#f5ead8",
+      progressIndicator: "#8B5E3C",
+      headerBackgroundColor: "#f5ead8",
+      headerTextColor: "#120e0b",
+      closeButtonColor: "#120e0b",
+    },
+  },
+};
 
 type Screen =
   | { kind: "tab"; tab: TabId }
@@ -261,9 +284,11 @@ export default function App() {
   return (
     <CartProvider>
       <ShopifyAuthProvider>
-      <SafeAreaProvider>
-        <ShopApp />
-      </SafeAreaProvider>
+        <SafeAreaProvider>
+          <ShopifyCheckoutSheetProvider configuration={CHECKOUT_KIT}>
+            <ShopApp />
+          </ShopifyCheckoutSheetProvider>
+        </SafeAreaProvider>
       </ShopifyAuthProvider>
     </CartProvider>
   );

@@ -60,6 +60,7 @@ function Splash({
   onReady?: () => void;
 }) {
   const opacity = useRef(new Animated.Value(1)).current;
+  const [canSkip, setCanSkip] = useState(false);
 
   useEffect(() => {
     Animated.timing(opacity, {
@@ -70,13 +71,30 @@ function Splash({
     }).start();
   }, [fading, opacity]);
 
+  useEffect(() => {
+    const ready = setTimeout(() => onReady?.(), 280);
+    const skip = setTimeout(() => setCanSkip(true), 1000);
+    return () => {
+      clearTimeout(ready);
+      clearTimeout(skip);
+    };
+    // Native splash hides once; skip is delayed so the kraft seal is seen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <Animated.View
       pointerEvents={fading ? "none" : "auto"}
       style={[styles.splash, { opacity }]}
     >
       <StatusBar style="light" />
-      <Pressable style={styles.splashHit} onPress={onSkip} accessibilityLabel="Continue" onLayout={onReady}>
+      <Pressable
+        style={styles.splashHit}
+        onPress={() => {
+          if (canSkip) onSkip();
+        }}
+        accessibilityLabel="Continue"
+      >
         <View style={styles.splashLockup}>
           <Image
             source={require("../../assets/splash-icon.png")}
