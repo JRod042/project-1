@@ -37,6 +37,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# ASC web capture output
+artifacts/
+
 # tooling
 .claude/
 AGENTS.md

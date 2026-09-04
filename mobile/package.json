@@ -10,6 +10,7 @@
     "prebuild:ios": "expo prebuild --platform ios --clean",
     "android": "expo run:android",
     "web": "expo start --web",
+    "screenshots:asc": "node scripts/capture-asc-screenshots.mjs",
     "eas:build:ios": "npx eas-cli build --platform ios --profile production",
     "eas:submit:ios": "npx eas-cli submit --platform ios --profile production",
     "typecheck": "tsc --noEmit"
@@ -34,12 +35,15 @@
     "expo-status-bar": "~57.0.1",
     "expo-web-browser": "~15.0.10",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.2",
     "react-native-safe-area-context": "~5.7.0",
+    "react-native-web": "^0.21.2",
     "react-native-webview": "13.16.1"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "playwright": "^1.56.1",
     "typescript": "~6.0.3"
   }
 }

@@ -68,6 +68,12 @@ Open the app → Welcome → Enter the shop → Colombia hero → add a bag → 
 
 ---
 
+## ASC screenshots without a Mac
+
+Linux cannot run the iOS Simulator. Shop home + product can be captured from
+the existing Expo web target — see **[ASC_SCREENSHOTS.md](./ASC_SCREENSHOTS.md)**.
+Device / TestFlight shots are still the source of truth for Liquid Glass chrome.
+
 ## Notes
 
 - Bundle stays `com.jrod042.omni` for continuity with the existing ASC listing.
