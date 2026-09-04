@@ -264,7 +264,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  boot: { flex: 1, backgroundColor: "#f5ead8" },
+  boot: { flex: 1, backgroundColor: "#9c704b" },
   safe: { flex: 1, backgroundColor: colors.bg },
   body: { flex: 1 },
   storeBar: {
