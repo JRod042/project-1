@@ -50,6 +50,94 @@ type Props = {
   replayKey?: number;
 };
 
+const BEANS = [
+  { x: 110, y: 96, peak: -42, rot: "-28deg", rotEnd: "12deg", delay: 80 },
+  { x: -118, y: 88, peak: -46, rot: "22deg", rotEnd: "-10deg", delay: 280 },
+  { x: 8, y: 128, peak: -52, rot: "6deg", rotEnd: "4deg", delay: 480 },
+  { x: 96, y: -92, peak: -28, rot: "16deg", rotEnd: "-8deg", delay: 680 },
+  { x: -100, y: -86, peak: -30, rot: "-14deg", rotEnd: "8deg", delay: 880 },
+] as const;
+
+function JumpBean({
+  x,
+  y,
+  peak,
+  rot,
+  rotEnd,
+  delay,
+}: {
+  x: number;
+  y: number;
+  peak: number;
+  rot: string;
+  rotEnd: string;
+  delay: number;
+}) {
+  const t = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(t, {
+          toValue: 1,
+          duration: 920,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.delay(280),
+        Animated.timing(t, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [delay, t]);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.bean,
+        {
+          opacity: t.interpolate({
+            inputRange: [0, 0.08, 0.72, 1],
+            outputRange: [0, 1, 1, 0],
+          }),
+          transform: [
+            {
+              translateX: t.interpolate({
+                inputRange: [0, 1],
+                outputRange: [x, 0],
+              }),
+            },
+            {
+              translateY: t.interpolate({
+                inputRange: [0, 0.48, 1],
+                outputRange: [y, peak, 8],
+              }),
+            },
+            {
+              rotate: t.interpolate({
+                inputRange: [0, 1],
+                outputRange: [rot, rotEnd],
+              }),
+            },
+            {
+              scale: t.interpolate({
+                inputRange: [0, 0.7, 1],
+                outputRange: [1, 1, 0.22],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <View style={styles.beanBody} />
+      <View style={styles.beanCrease} />
+    </Animated.View>
+  );
+}
+
 function Splash({
   fading,
   onSkip,
@@ -78,8 +166,6 @@ function Splash({
       clearTimeout(ready);
       clearTimeout(skip);
     };
-    // Native splash hides once; skip is delayed so the kraft seal is seen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -101,9 +187,9 @@ function Splash({
             style={styles.splashSeal}
             resizeMode="cover"
           />
-          <Text style={styles.splashBrand}>CASA RÚSTICO</Text>
-          <Text style={styles.splashTitle}>Mountain mornings.</Text>
-          <Text style={styles.splashGo}>The culture of the cup.</Text>
+          {BEANS.map((b) => (
+            <JumpBean key={`${b.x}-${b.delay}`} {...b} />
+          ))}
         </View>
       </Pressable>
     </Animated.View>
@@ -196,7 +282,7 @@ export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: 
     setSplash(true);
     setSplashGone(false);
     setLeaving(false);
-    const id = setTimeout(() => setSplash(false), 2200);
+    const id = setTimeout(() => setSplash(false), 2800);
     return () => clearTimeout(id);
   }, [replayKey]);
 
@@ -237,35 +323,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   splashLockup: {
+    width: 220,
+    height: 220,
     alignItems: "center",
-    gap: 18,
+    justifyContent: "center",
   },
   splashSeal: {
     width: 220,
     height: 220,
     borderRadius: 48,
   },
-  splashBrand: {
-    color: LINEN,
-    fontFamily: fonts.bodyBold,
-    fontSize: 13,
-    letterSpacing: 5.6,
-    marginRight: -5.6,
+  bean: {
+    position: "absolute",
+    width: 18,
+    height: 26,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  splashTitle: {
-    color: LINEN,
-    fontFamily: fonts.display,
-    fontSize: 28,
-    letterSpacing: -0.4,
-    textAlign: "center",
-    marginTop: -4,
+  beanBody: {
+    width: 16,
+    height: 24,
+    borderRadius: 8,
+    backgroundColor: "#2a1810",
   },
-  splashGo: {
-    color: "rgba(245,234,216,0.78)",
-    fontFamily: fonts.body,
-    fontSize: 14,
-    marginTop: -8,
-    textAlign: "center",
+  beanCrease: {
+    position: "absolute",
+    width: 2,
+    height: 14,
+    borderRadius: 1,
+    backgroundColor: "#c4a484",
+    opacity: 0.75,
   },
   onboard: {
     flex: 1,
