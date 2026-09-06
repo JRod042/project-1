@@ -12,7 +12,7 @@ import { colors, fonts, radii } from "../theme";
 import { PressableScale } from "../components/PressableScale";
 import { ScreenFade } from "../components/ScreenFade";
 import { StarsRing } from "../components/StarsRing";
-import { useRewards } from "../lib/rewards";
+import { useRewards, currentTier, nextTier } from "../lib/rewards";
 import { useShopifyAuth } from "../lib/shopifyAuth";
 import { shopifyRecover } from "../lib/shopify";
 
@@ -23,7 +23,9 @@ type Props = {
 
 export function YouScreen({ onOpenRewards, onReplayWelcome }: Props) {
   const auth = useShopifyAuth();
-  const { stars } = useRewards();
+  const { stars, lifetime } = useRewards();
+  const tier = currentTier(stars);
+  const upcoming = nextTier(stars);
   const [formOpen, setFormOpen] = useState(false);
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -249,7 +251,14 @@ export function YouScreen({ onOpenRewards, onReplayWelcome }: Props) {
           )}
 
           <PressableScale onPress={onOpenRewards} style={styles.card} haptic={false}>
+            <Text style={styles.kicker}>HACIENDA</Text>
+            <Text style={styles.h2}>{tier.name}</Text>
             <StarsRing stars={stars} />
+            <Text style={styles.body}>
+              {stars} stars · lifetime {lifetime}
+              {upcoming ? ` · ${upcoming.min - stars} to ${upcoming.name}` : " · top of the house"}
+            </Text>
+            <Text style={styles.body}>{tier.perks}</Text>
           </PressableScale>
 
           <PressableScale onPress={onReplayWelcome} style={styles.replay}>

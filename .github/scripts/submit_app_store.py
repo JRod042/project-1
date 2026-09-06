@@ -15,7 +15,7 @@ BASE = "https://api.appstoreconnect.apple.com/v1"
 KEY_ID = os.environ["EXPO_ASC_KEY_ID"]
 ISSUER = os.environ["EXPO_ASC_ISSUER_ID"]
 KEY_PATH = os.environ["EXPO_ASC_API_KEY_PATH"]
-WANTED_BUILD = os.environ.get("APP_BUILD_NUMBER", "52")
+WANTED_BUILD = os.environ.get("APP_BUILD_NUMBER", "53")
 WAIT_SECS = int(os.environ.get("ASC_BUILD_WAIT_SECS", "1200"))
 
 PRIVACY = "https://rusticopr.com/policies/privacy-policy"
@@ -25,8 +25,8 @@ EMAIL = "jorge.k.rodriguezvargas@gmail.com"
 FIRST = "Jorge"
 LAST = "Rodriguez"
 
-DEMO_EMAIL = "apple.review@casarustico.app"
-DEMO_PASSWORD = "CasaReview2026!"
+DEMO_EMAIL = "appreview@rusticopr.com"
+DEMO_PASSWORD = "CasaReview-51!"
 
 DESC = """Casa Rústico is the shop for single-origin coffee from rusticopr.com.
 
@@ -45,7 +45,7 @@ Username: {DEMO_EMAIL}
 Password: {DEMO_PASSWORD}
 Path: You tab → Sign in → enter the demo account. Sign-in is optional.
 
-Guest path (no login): Home → Colombia → Add to bag → Review bag → Check Out.
+Guest path (no login): Home or Order → pick any origin bag → Add to bag → Review bag → Check Out.
 Checkout is Shopify Checkout Sheet inside the app for rusticopr.com (physical coffee shipped to an address). Promo MORNING10.
 
 This app does NOT use In-App Purchase. It sells physical goods (bags of coffee, mug, capsules) fulfilled by Shopify. Payment is Shopify checkout, not IAP. Guideline 3.1.3(e) / 3.1.5 goods and services.
