@@ -61,6 +61,8 @@ jobs:
           EXPO_ASC_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
           APP_VERSION: ${{ inputs.version }}
+          APP_BUILD_NUMBER: "52"
+          ASC_BUILD_WAIT_SECS: "1800"
         run: |
           pip install --quiet "pyjwt[crypto]" requests
           python3 "$GITHUB_WORKSPACE/.github/scripts/submit_app_store.py"

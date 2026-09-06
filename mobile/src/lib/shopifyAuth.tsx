@@ -74,7 +74,7 @@ export function ShopifyAuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(
     async (email: string, password: string) => {
-      const tok = await shopifySignIn(email.trim(), password);
+      const tok = await shopifySignIn(email, password);
       await persist(tok.accessToken, tok.expiresAt);
     },
     [persist],

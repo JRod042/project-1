@@ -1,22 +1,9 @@
-import { useEffect, useRef, type ReactNode } from "react";
-import { Animated, StyleSheet } from "react-native";
-import { fadeSlideIn } from "../lib/motion";
+import { type ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
 
+/** Visible immediately. A 0→1 fade left Shop/You blank on iPad during App Review. */
 export function ScreenFade({ children }: { children: ReactNode }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const y = useRef(new Animated.Value(14)).current;
-
-  useEffect(() => {
-    fadeSlideIn(opacity, y);
-  }, [opacity, y]);
-
-  return (
-    <Animated.View
-      style={[styles.root, { opacity, transform: [{ translateY: y }] }]}
-    >
-      {children}
-    </Animated.View>
-  );
+  return <View style={styles.root}>{children}</View>;
 }
 
 const styles = StyleSheet.create({

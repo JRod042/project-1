@@ -51,7 +51,9 @@ export function CatalogGrid({
   const { width } = useWindowDimensions();
   const gutter = 20;
   const gap = 12;
-  const col = (width - gutter * 2 - gap) / 2;
+  const inner = width - gutter * 2;
+  const cols = inner >= 700 ? 3 : 2;
+  const col = (inner - gap * (cols - 1)) / cols;
   if (products.length === 0) {
     return <Text style={styles.empty}>No bags match that search.</Text>;
   }

@@ -13,7 +13,7 @@ type Props = {
   onOpenOrder: () => void;
   onOpenRewards: () => void;
   onOpenRitual: () => void;
-  onOpenYou: () => void;
+  onOpenStory: () => void;
 };
 
 function greeting() {
@@ -28,7 +28,7 @@ export function HomeScreen({
   onOpenOrder,
   onOpenRewards,
   onOpenRitual,
-  onOpenYou,
+  onOpenStory,
 }: Props) {
   const { stars } = useRewards();
   const cart = useCart();
@@ -44,9 +44,13 @@ export function HomeScreen({
         <Text style={styles.title}>{greeting()}</Text>
         <Text style={styles.lede}>The cup first. Checkout stays here.</Text>
 
-        <PressableScale onPress={onOpenRewards} style={styles.card} haptic={false}>
+        <PressableScale
+          onPress={onOpenRewards}
+          style={styles.card}
+          haptic={false}
+          accessibilityLabel="Hacienda Rewards"
+        >
           <StarsRing stars={stars} />
-          <Text style={styles.link}>See rewards →</Text>
         </PressableScale>
 
         <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.hero}>
@@ -80,7 +84,7 @@ export function HomeScreen({
             <Text style={styles.pairTitle}>Ritual</Text>
             <Text style={styles.pairHint}>3:00 house pour-over</Text>
           </PressableScale>
-          <PressableScale onPress={onOpenYou} style={styles.pairCard} haptic={false}>
+          <PressableScale onPress={onOpenStory} style={styles.pairCard} haptic={false}>
             <Text style={styles.pairKicker}>HOUSE</Text>
             <Text style={styles.pairTitle}>Story</Text>
             <Text style={styles.pairHint}>Cordillera, the cup</Text>
@@ -89,14 +93,11 @@ export function HomeScreen({
 
         <View style={styles.sectionRow}>
           <Text style={styles.section}>The short menu</Text>
-          <PressableScale onPress={onOpenOrder} haptic={false}>
+          <PressableScale onPress={onOpenOrder} haptic={false} accessibilityLabel="All coffees">
             <Text style={styles.seeAll}>All</Text>
           </PressableScale>
         </View>
         <CatalogGrid products={short} onOpen={onOpenProduct} />
-        <PressableScale onPress={onOpenOrder} style={styles.fullMenu}>
-          <Text style={styles.fullMenuText}>Shop the full menu</Text>
-        </PressableScale>
       </ScrollView>
     </ScreenFade>
   );
@@ -156,12 +157,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     borderRadius: radii.xl,
     padding: 16,
-  },
-  link: {
-    marginTop: 12,
-    color: colors.kraftDeep,
-    fontFamily: fonts.bodyMed,
-    fontSize: 14,
   },
   hero: {
     marginHorizontal: 20,
@@ -243,14 +238,4 @@ const styles = StyleSheet.create({
   },
   section: { color: colors.ink, fontFamily: fonts.displaySoft, fontSize: 22 },
   seeAll: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 15 },
-  fullMenu: {
-    marginHorizontal: 20,
-    marginTop: 12,
-    minHeight: 52,
-    borderRadius: radii.pill,
-    backgroundColor: colors.paper,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  fullMenuText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
 });

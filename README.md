@@ -12,10 +12,10 @@
 
 Expo app in `mobile/`:
 
-- Welcome (brand-original)
-- Home · Coffee · Ritual · Story
+- Welcome (brand-original kraft splash, then shop)
+- Home · Order · Rewards · You
+- Guest checkout — Shopify login on You is optional
 - Bag with in-app Shopify checkout (`MORNING10`)
-- Cart on-device only — no accounts
 
 Checkout never collects cards in-app. Check Out presents Shopify Checkout Kit in-app (`ShopifySheet` WebView fallback). Never Safari or the Shop app.
 

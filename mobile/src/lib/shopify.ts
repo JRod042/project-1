@@ -123,6 +123,8 @@ export type ShopifyCustomer = {
 };
 
 export async function shopifySignIn(email: string, password: string) {
+  const cleanEmail = email.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
+  const cleanPassword = password.replace(/[\u200B-\u200D\uFEFF]/g, "").trim();
   const data = await storefront<{
     customerAccessTokenCreate: {
       customerAccessToken: { accessToken: string; expiresAt: string } | null;
@@ -135,7 +137,7 @@ export async function shopifySignIn(email: string, password: string) {
         customerUserErrors { code message }
       }
     }`,
-    { input: { email, password } },
+    { input: { email: cleanEmail, password: cleanPassword } },
   );
   const err = data.customerAccessTokenCreate.customerUserErrors[0];
   if (err || !data.customerAccessTokenCreate.customerAccessToken) {
@@ -166,7 +168,7 @@ export async function shopifyCreateAccount(input: {
         customerUserErrors { code message }
       }
     }`,
-    { input: { ...input, acceptsMarketing: false } },
+    { input: { ...input, email: input.email.trim(), password: input.password.trim(), acceptsMarketing: false } },
   );
   const err = data.customerCreate.customerUserErrors[0];
   if (err || !data.customerCreate.customer) {

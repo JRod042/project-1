@@ -26,6 +26,7 @@ import { CartScreen } from "./src/screens/CartScreen";
 import { ProductScreen } from "./src/screens/ProductScreen";
 import { RitualScreen } from "./src/screens/RitualScreen";
 import { StoryScreen } from "./src/screens/StoryScreen";
+import { YouScreen } from "./src/screens/YouScreen";
 import { RewardsScreen } from "./src/screens/RewardsScreen";
 import { ShopifySheet } from "./src/components/ShopifySheet";
 import { CartProvider, useCart } from "./src/lib/cart";
@@ -68,6 +69,7 @@ type Screen =
   | { kind: "tab"; tab: TabId }
   | { kind: "product"; productId: string; back: TabId }
   | { kind: "ritual"; back: TabId }
+  | { kind: "story"; back: TabId }
   | { kind: "bag"; back: TabId };
 
 function ShopApp() {
@@ -163,6 +165,13 @@ function ShopApp() {
     SplashScreen.hideAsync().catch(() => undefined);
   };
 
+  const replayWelcome = () => {
+    void clearWelcomeSeen();
+    setWelcomeSeen(false);
+    setGateOn(true);
+    setWelcomeReplayKey((k) => k + 1);
+  };
+
   const startCheckout = () => {
     if (!cart.count) return;
     const lines = cart.lines.map((l) => ({ variantId: l.variantId, qty: l.qty }));
@@ -233,6 +242,8 @@ function ShopApp() {
                 />
               ) : screen.kind === "ritual" ? (
                 <RitualScreen onOpenProduct={openProduct} />
+              ) : screen.kind === "story" ? (
+                <StoryScreen onOpenProduct={openProduct} />
               ) : screen.kind === "bag" ? (
                 <CartScreen onOpenProduct={openProduct} />
               ) : tab === "home" ? (
@@ -241,21 +252,16 @@ function ShopApp() {
                   onOpenOrder={() => openTab("order")}
                   onOpenRewards={() => openTab("rewards")}
                   onOpenRitual={() => setScreen({ kind: "ritual", back: "home" })}
-                  onOpenYou={() => openTab("you")}
+                  onOpenStory={() => setScreen({ kind: "story", back: "home" })}
                 />
               ) : tab === "order" ? (
                 <ShopScreen onOpenProduct={openProduct} />
               ) : tab === "rewards" ? (
                 <RewardsScreen />
               ) : (
-                <StoryScreen
-                  onOpenProduct={openProduct}
-                  onReplayWelcome={() => {
-                    void clearWelcomeSeen();
-                    setWelcomeSeen(false);
-                    setGateOn(true);
-                    setWelcomeReplayKey((k) => k + 1);
-                  }}
+                <YouScreen
+                  onOpenRewards={() => openTab("rewards")}
+                  onReplayWelcome={replayWelcome}
                 />
               )}
             </View>
