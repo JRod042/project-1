@@ -246,7 +246,7 @@ export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: 
 
 const styles = StyleSheet.create({
   splash: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: colors.kraftSplash,
     zIndex: 20,
   },

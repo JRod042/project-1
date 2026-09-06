@@ -21,12 +21,15 @@ import * as SplashScreen from "expo-splash-screen";
 import { WelcomeScreen } from "./src/components/WelcomeScreen";
 import { TabShell, type TabId } from "./src/components/TabShell";
 import { HomeScreen } from "./src/screens/HomeScreen";
+import { ShopScreen } from "./src/screens/ShopScreen";
 import { CartScreen } from "./src/screens/CartScreen";
 import { ProductScreen } from "./src/screens/ProductScreen";
 import { RitualScreen } from "./src/screens/RitualScreen";
 import { StoryScreen } from "./src/screens/StoryScreen";
+import { RewardsScreen } from "./src/screens/RewardsScreen";
 import { ShopifySheet } from "./src/components/ShopifySheet";
 import { CartProvider, useCart } from "./src/lib/cart";
+import { RewardsProvider, useRewards } from "./src/lib/rewards";
 import { ShopifyAuthProvider, useShopifyAuth } from "./src/lib/shopifyAuth";
 import {
   clearWelcomeSeen,
@@ -47,12 +50,12 @@ const CHECKOUT_KIT = {
   preloading: true,
   colors: {
     ios: {
-      backgroundColor: "#f5ead8",
+      backgroundColor: "#F7F3EC",
       tintColor: "#8B5E3C",
       closeButtonColor: "#120e0b",
     },
     android: {
-      backgroundColor: "#f5ead8",
+      backgroundColor: "#F7F3EC",
       progressIndicator: "#8B5E3C",
       headerBackgroundColor: "#f5ead8",
       headerTextColor: "#120e0b",
@@ -63,11 +66,14 @@ const CHECKOUT_KIT = {
 
 type Screen =
   | { kind: "tab"; tab: TabId }
-  | { kind: "product"; productId: string; back: TabId };
+  | { kind: "product"; productId: string; back: TabId }
+  | { kind: "ritual"; back: TabId }
+  | { kind: "bag"; back: TabId };
 
 function ShopApp() {
   const cart = useCart();
   const auth = useShopifyAuth();
+  const rewards = useRewards();
   const kit = useShopifyCheckoutSheet();
   const insets = useSafeAreaInsets();
   const [fontsLoaded] = useFonts({
@@ -82,7 +88,7 @@ function ShopApp() {
   const [welcomeSeen, setWelcomeSeen] = useState(false);
   const [gateOn, setGateOn] = useState(true);
   const [welcomeReplayKey, setWelcomeReplayKey] = useState(0);
-  const [screen, setScreen] = useState<Screen>({ kind: "tab", tab: "shop" });
+  const [screen, setScreen] = useState<Screen>({ kind: "tab", tab: "home" });
   const [search, setSearch] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
@@ -104,7 +110,7 @@ function ShopApp() {
       cart.clear();
       setCheckoutOpen(false);
       setFallbackUrl(null);
-      setScreen({ kind: "tab", tab: "shop" });
+      setScreen({ kind: "tab", tab: "home" });
     });
     return () => {
       sub?.remove();
@@ -146,9 +152,10 @@ function ShopApp() {
 
   const enterShop = async () => {
     await saveWelcomeSeen();
+    await rewards.grantWelcome();
     setWelcomeSeen(true);
     setGateOn(false);
-    setScreen({ kind: "tab", tab: "shop" });
+    setScreen({ kind: "tab", tab: "home" });
     SplashScreen.hideAsync().catch(() => undefined);
   };
 
@@ -174,8 +181,7 @@ function ShopApp() {
   const openProduct = (id: string) =>
     setScreen({ kind: "product", productId: id, back: tab });
   const openTab = (next: TabId) => setScreen({ kind: "tab", tab: next });
-  const onProduct = screen.kind === "product";
-  const hideTabs = onProduct || checkoutOpen;
+  const onStacked = screen.kind !== "tab";
   const firstLaunch = !welcomeSeen;
 
   if (!fontsLoaded || !ready) {
@@ -190,7 +196,7 @@ function ShopApp() {
           <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
             <StatusBar style="dark" />
             <GlassPanel style={styles.storeChrome} contentStyle={styles.storeBar}>
-              {onProduct ? (
+              {onStacked ? (
                 <PressableScale
                   onPress={() => setScreen({ kind: "tab", tab: screen.back })}
                   style={styles.navHit}
@@ -201,7 +207,7 @@ function ShopApp() {
               ) : (
                 <Text style={styles.barMark}>CASA RÚSTICO</Text>
               )}
-              {onProduct ? (
+              {onStacked ? (
                 <View style={styles.navHit} />
               ) : (
                 <PressableScale
@@ -225,11 +231,23 @@ function ShopApp() {
                   onBack={() => setScreen({ kind: "tab", tab: screen.back })}
                   onOpenProduct={openProduct}
                 />
-              ) : tab === "shop" ? (
-                <HomeScreen onOpenProduct={openProduct} />
-              ) : tab === "ritual" ? (
+              ) : screen.kind === "ritual" ? (
                 <RitualScreen onOpenProduct={openProduct} />
-              ) : tab === "story" ? (
+              ) : screen.kind === "bag" ? (
+                <CartScreen onOpenProduct={openProduct} />
+              ) : tab === "home" ? (
+                <HomeScreen
+                  onOpenProduct={openProduct}
+                  onOpenOrder={() => openTab("order")}
+                  onOpenRewards={() => openTab("rewards")}
+                  onOpenRitual={() => setScreen({ kind: "ritual", back: "home" })}
+                  onOpenYou={() => openTab("you")}
+                />
+              ) : tab === "order" ? (
+                <ShopScreen onOpenProduct={openProduct} />
+              ) : tab === "rewards" ? (
+                <RewardsScreen />
+              ) : (
                 <StoryScreen
                   onOpenProduct={openProduct}
                   onReplayWelcome={() => {
@@ -239,27 +257,25 @@ function ShopApp() {
                     setWelcomeReplayKey((k) => k + 1);
                   }}
                 />
-              ) : (
-                <CartScreen onOpenProduct={openProduct} />
               )}
             </View>
 
             {cart.toast ? (
               <View
-                style={[styles.toast, { bottom: hideTabs ? 24 : 150 + insets.bottom }]}
+                style={[styles.toast, { bottom: checkoutOpen ? 24 : 150 + insets.bottom }]}
                 pointerEvents="none"
               >
                 <Text style={styles.toastText}>{cart.toast}</Text>
               </View>
             ) : null}
 
-            {hideTabs ? null : (
+            {checkoutOpen ? null : (
               <View
                 pointerEvents="box-none"
                 style={[styles.dockWrap, { paddingBottom: Math.max(insets.bottom, 8) }]}
               >
                 {cart.count > 0 ? (
-                  tab === "bag" ? (
+                  screen.kind === "bag" ? (
                     <PressableScale
                       onPress={startCheckout}
                       style={styles.review}
@@ -269,7 +285,10 @@ function ShopApp() {
                       <Text style={styles.reviewSub}>{formatPrice(cart.subtotal)}</Text>
                     </PressableScale>
                   ) : (
-                    <PressableScale onPress={() => openTab("bag")} style={styles.review}>
+                    <PressableScale
+                      onPress={() => setScreen({ kind: "bag", back: tab })}
+                      style={styles.review}
+                    >
                       <Text style={styles.reviewTitle}>Review bag</Text>
                       <Text style={styles.reviewSub}>
                         {cart.count} {cart.count === 1 ? "item" : "items"}
@@ -277,7 +296,7 @@ function ShopApp() {
                     </PressableScale>
                   )
                 ) : null}
-                <TabShell active={tab} onChange={openTab} bagCount={cart.count} />
+                {onStacked ? null : <TabShell active={tab} onChange={openTab} />}
               </View>
             )}
             <SearchSheet
@@ -312,7 +331,7 @@ function ShopApp() {
                 cart.clear();
                 setCheckoutOpen(false);
                 setFallbackUrl(null);
-                setScreen({ kind: "tab", tab: "shop" });
+                setScreen({ kind: "tab", tab: "home" });
               }}
             />
           </View>
@@ -325,13 +344,15 @@ function ShopApp() {
 export default function App() {
   return (
     <CartProvider>
-      <ShopifyAuthProvider>
-        <SafeAreaProvider>
-          <ShopifyCheckoutSheetProvider configuration={CHECKOUT_KIT}>
-            <ShopApp />
-          </ShopifyCheckoutSheetProvider>
-        </SafeAreaProvider>
-      </ShopifyAuthProvider>
+      <RewardsProvider>
+        <ShopifyAuthProvider>
+          <SafeAreaProvider>
+            <ShopifyCheckoutSheetProvider configuration={CHECKOUT_KIT}>
+              <ShopApp />
+            </ShopifyCheckoutSheetProvider>
+          </SafeAreaProvider>
+        </ShopifyAuthProvider>
+      </RewardsProvider>
     </CartProvider>
   );
 }

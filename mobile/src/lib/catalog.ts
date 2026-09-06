@@ -582,3 +582,19 @@ export function apparel() {
 }
 
 export const colombia = products[0];
+
+export const TIERS = [
+  { id: "vecino", name: "Vecino", min: 0, perks: "Stars on every order" },
+  { id: "hacienda", name: "Hacienda", min: 100, perks: "Free shipping on beans" },
+  { id: "cosecha", name: "Cosecha", min: 400, perks: "A free 12 oz bag each year" },
+] as const;
+
+export const REDEEMS = [
+  { stars: 150, value: 5, label: "$5 off" },
+  { stars: 300, value: 12, label: "$12 off" },
+  { stars: 500, value: 25, label: "Free 12 oz bag" },
+] as const;
+
+export const STARS_PER_DOLLAR = 2;
+export const WELCOME_STARS = 50;
+
