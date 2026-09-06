@@ -59,17 +59,23 @@ export function HomeScreen({ onOpenProduct }: Props) {
   return (
     <ScreenFade>
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View pointerEvents="none" style={styles.mistFar} />
+        <View pointerEvents="none" style={styles.mistNear} />
         <View style={styles.head}>
-          <Text style={styles.title}>Shop</Text>
+          <View>
+            <Text style={styles.kicker}>CASA RÚSTICO</Text>
+            <Text style={styles.title}>Shop</Text>
+          </View>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>CR</Text>
           </View>
         </View>
 
+
         <PressableScale
           onPress={() => onOpenProduct(colombia.id)}
           style={[styles.familyCard, styles.colombiaCard]}
-          haptic={false}
+          haptic
           accessibilityLabel="Colombia"
         >
           <View style={styles.familyPhoto}>
@@ -193,12 +199,39 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
   },
+  kicker: {
+    color: colors.kraftDeep,
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 2.4,
+    marginBottom: 4,
+  },
   title: {
     color: colors.ink,
     fontFamily: fonts.display,
     fontSize: 34,
     letterSpacing: -0.6,
     lineHeight: 40,
+  },
+  mistFar: {
+    position: "absolute",
+    top: 8,
+    left: -36,
+    width: "70%",
+    height: 48,
+    borderRadius: 999,
+    backgroundColor: colors.paper,
+    opacity: 0.4,
+  },
+  mistNear: {
+    position: "absolute",
+    top: 44,
+    right: -24,
+    width: "55%",
+    height: 32,
+    borderRadius: 999,
+    backgroundColor: colors.paper,
+    opacity: 0.22,
   },
   avatar: {
     width: 36,
