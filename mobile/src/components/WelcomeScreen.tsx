@@ -1,53 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  AccessibilityInfo,
   Animated,
   Easing,
   Image,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { brand, colombia } from "../lib/catalog";
 import { colors, fonts, radii } from "../theme";
 
-const LINEN = "#f5ead8";
-const INK = "#120e0b";
-const BRASS_DIM = "#8a6e52";
-const KRAFT = "#9c704b";
-
-/** Calm seal hold, then a slow crossfade into the shop. */
-const SEAL_HOLD_MS = 1700;
-const SEAL_FADE_MS = 820;
+/** Escape-format Hallow hold: seal + three dots, then one cream CTA. */
+const SEAL_HOLD_MS = 2200;
+const SEAL_FADE_MS = 720;
 const NATIVE_HIDE_MS = 240;
-const SKIP_AFTER_MS = 1200;
-
-const SLIDES = [
-  {
-    kicker: "House favorite",
-    title: "Colombia leads.",
-    body: "Dried orange, berry, chocolate. The bag we pour first.",
-    image: colombia.image,
-  },
-  {
-    kicker: "The look",
-    title: "From the highlands.",
-    body: "Puerto Rico in the mark. Single-origin in the cup. Ships from the U.S.",
-    image: brand.heroImage,
-  },
-  {
-    kicker: "Home bar",
-    title: "Ready to pour.",
-    body: `${brand.promo} for 10% off. Origins, capsules, and house-mark gear.`,
-    image: brand.ritualImage,
-  },
-] as const;
+const SKIP_AFTER_MS = 1100;
+const INTERACT_MS = 1400;
 
 type Props = {
   onEnter: () => void;
@@ -56,36 +27,66 @@ type Props = {
   replayKey?: number;
 };
 
+function PulseDot({ delay, reduced }: { delay: number; reduced: boolean }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (reduced) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(scale, {
+          toValue: 1.45,
+          duration: 420,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 420,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.delay(280),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [delay, reduced, scale]);
+  return <Animated.View style={[styles.dot, { transform: [{ scale }] }]} />;
+}
+
 function Splash({
   fading,
   onSkip,
   onReady,
+  reduced,
 }: {
   fading: boolean;
   onSkip: () => void;
   onReady?: () => void;
+  reduced: boolean;
 }) {
   const opacity = useRef(new Animated.Value(1)).current;
-  const [canSkip, setCanSkip] = useState(false);
+  const [canSkip, setCanSkip] = useState(reduced);
 
   useEffect(() => {
     if (!fading) return;
     Animated.timing(opacity, {
       toValue: 0,
-      duration: SEAL_FADE_MS,
+      duration: reduced ? 120 : SEAL_FADE_MS,
       easing: Easing.inOut(Easing.quad),
       useNativeDriver: true,
     }).start();
-  }, [fading, opacity]);
+  }, [fading, opacity, reduced]);
 
   useEffect(() => {
     const ready = setTimeout(() => onReady?.(), NATIVE_HIDE_MS);
-    const skip = setTimeout(() => setCanSkip(true), SKIP_AFTER_MS);
+    const skip = setTimeout(() => setCanSkip(true), reduced ? 80 : SKIP_AFTER_MS);
     return () => {
       clearTimeout(ready);
       clearTimeout(skip);
     };
-  }, []);
+  }, [onReady, reduced]);
 
   return (
     <Animated.View
@@ -105,124 +106,140 @@ function Splash({
           style={styles.splashSeal}
           resizeMode="contain"
         />
+        <View style={styles.dots}>
+          <PulseDot delay={0} reduced={reduced} />
+          <PulseDot delay={160} reduced={reduced} />
+          <PulseDot delay={300} reduced={reduced} />
+        </View>
+        <Text style={styles.splashWord}>Casa Rústico</Text>
       </Pressable>
     </Animated.View>
   );
 }
 
-function Onboard({ onDone }: { onDone: () => void }) {
-  const { width, height } = useWindowDimensions();
-  const [index, setIndex] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
-  const short = height < 700;
+function EnterHouse({ onDone, reduced }: { onDone: () => void; reduced: boolean }) {
+  const rise = useRef(new Animated.Value(reduced ? 1 : 0)).current;
+  const [ready, setReady] = useState(reduced);
 
-  const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = e.nativeEvent.contentOffset.x;
-    const next = Math.round(x / Math.max(width, 1));
-    setIndex(Math.max(0, Math.min(SLIDES.length - 1, next)));
-  };
-
-  const go = (i: number) => {
-    const next = Math.max(0, Math.min(SLIDES.length - 1, i));
-    setIndex(next);
-    scrollRef.current?.scrollTo({ x: next * width, animated: true });
-  };
-
-  const slide = SLIDES[index];
+  useEffect(() => {
+    if (reduced) return;
+    Animated.timing(rise, {
+      toValue: 1,
+      duration: 480,
+      delay: 80,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    const id = setTimeout(() => setReady(true), INTERACT_MS);
+    return () => clearTimeout(id);
+  }, [reduced, rise]);
 
   return (
-    <SafeAreaView style={styles.onboard} edges={["top", "left", "right", "bottom"]}>
+    <SafeAreaView style={styles.enter} edges={["top", "left", "right", "bottom"]}>
       <StatusBar style="dark" />
-      <Pressable onPress={onDone} style={styles.skip} hitSlop={12} accessibilityLabel="Skip">
-        <Text style={styles.skipText}>Skip</Text>
-      </Pressable>
-
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={onScrollEnd}
-        style={styles.pager}
-        decelerationRate="fast"
+      <View pointerEvents="none" style={styles.mistFar} />
+      <View pointerEvents="none" style={styles.mistNear} />
+      <Animated.View
+        style={[
+          styles.enterCopy,
+          {
+            opacity: rise,
+            transform: [
+              {
+                translateY: rise.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [16, 0],
+                }),
+              },
+            ],
+          },
+        ]}
       >
-        {SLIDES.map((s) => (
-          <View key={s.title} style={[styles.slide, { width }]}>
-            <View style={[styles.photo, short && { flex: 0.9 }]}>
-              <Image source={{ uri: s.image }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      <View style={styles.dots}>
-        {SLIDES.map((s, i) => (
-          <Pressable
-            key={s.title}
-            onPress={() => go(i)}
-            style={[styles.dot, i === index && styles.dotOn]}
-            accessibilityLabel={`Slide ${i + 1}`}
-          />
-        ))}
-      </View>
-
-      <View style={styles.copy}>
-        <Text style={styles.kicker}>{slide.kicker.toUpperCase()}</Text>
-        <Text style={styles.title}>{slide.title}</Text>
-        {!short ? <Text style={styles.body}>{slide.body}</Text> : null}
-      </View>
-
-      <View style={styles.actions}>
-        <Pressable onPress={onDone} style={styles.primary} accessibilityRole="button">
-          <Text style={styles.primaryText}>Get started</Text>
+        <Text style={styles.kicker}>CASA RÚSTICO</Text>
+        <Text style={styles.title}>Colombia{"\n"}leads.</Text>
+        <Text style={styles.body}>
+          Single-origin bags. The cup first. Checkout stays here.
+        </Text>
+      </Animated.View>
+      <Animated.View style={[styles.actions, { opacity: rise }]}>
+        <Pressable
+          onPress={onDone}
+          disabled={!ready}
+          style={[styles.primary, !ready && styles.primaryOff]}
+          accessibilityRole="button"
+          accessibilityLabel="Enter the shop"
+        >
+          <Text style={styles.primaryText}>Enter the shop</Text>
         </Pressable>
-      </View>
+        <Text style={styles.house}>From the highlands</Text>
+      </Animated.View>
     </SafeAreaView>
   );
 }
 
 /**
  * Kraft seal every launch (same crop as the native splash).
- * Hold, then fade only — no overlay beans, no tagline, no scale.
- * Returning launches keep this overlay mounted until the fade finishes
- * so enterShop does not tear it down mid-crossfade.
+ * Escape-format: three quiet dots, then one cream CTA on first launch.
+ * No overlay beans, no Safari, no carousel.
  */
 export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: Props) {
   const [splash, setSplash] = useState(true);
   const [splashGone, setSplashGone] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [reduced, setReduced] = useState(false);
   const enter = useRef(onEnter);
   enter.current = onEnter;
+
+  useEffect(() => {
+    let alive = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((v) => {
+      if (alive) setReduced(!!v);
+    });
+    const sub = AccessibilityInfo.addEventListener?.("reduceMotionChanged", setReduced);
+    return () => {
+      alive = false;
+      sub?.remove?.();
+    };
+  }, []);
 
   useEffect(() => {
     setSplash(true);
     setSplashGone(false);
     setLeaving(false);
-    const id = setTimeout(() => setSplash(false), SEAL_HOLD_MS);
+    const hold = reduced ? 200 : SEAL_HOLD_MS;
+    const id = setTimeout(() => setSplash(false), hold);
     return () => clearTimeout(id);
-  }, [replayKey]);
+  }, [replayKey, reduced]);
 
   useEffect(() => {
     if (splash) return;
+    const fade = reduced ? 80 : SEAL_FADE_MS;
     const id = setTimeout(() => {
       setSplashGone(true);
       if (!firstLaunch) enter.current();
-    }, SEAL_FADE_MS);
+    }, fade);
     return () => clearTimeout(id);
-  }, [splash, firstLaunch]);
+  }, [splash, firstLaunch, reduced]);
 
   const finish = () => {
     setLeaving(true);
-    setTimeout(onEnter, 280);
+    setTimeout(onEnter, 220);
   };
 
-  const showOnboard = firstLaunch && !leaving;
-  const captureTaps = splash || showOnboard;
+  const showEnter = firstLaunch && !leaving;
+  const captureTaps = splash || showEnter;
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={captureTaps ? "auto" : "none"}>
-      {showOnboard ? <Onboard onDone={finish} /> : null}
-      {!splashGone ? <Splash fading={!splash} onSkip={() => setSplash(false)} onReady={onReady} /> : null}
+      {showEnter ? <EnterHouse onDone={finish} reduced={reduced} /> : null}
+      {!splashGone ? (
+        <Splash
+          fading={!splash}
+          onSkip={() => setSplash(false)}
+          onReady={onReady}
+          reduced={reduced}
+        />
+      ) : null}
     </View>
   );
 }
@@ -230,7 +247,7 @@ export function WelcomeScreen({ onEnter, onReady, firstLaunch, replayKey = 0 }: 
 const styles = StyleSheet.create({
   splash: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: KRAFT,
+    backgroundColor: colors.kraftSplash,
     zIndex: 20,
   },
   splashHit: {
@@ -242,85 +259,98 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
   },
-  onboard: {
-    flex: 1,
-    backgroundColor: LINEN,
-  },
-  skip: {
-    position: "absolute",
-    right: 8,
-    top: 8,
-    zIndex: 5,
-    minHeight: 44,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-  },
-  skipText: {
-    color: LINEN,
-    fontFamily: fonts.bodyMed,
-    fontSize: 15,
-  },
-  pager: { flex: 1 },
-  slide: { justifyContent: "flex-start" },
-  photo: {
-    flex: 1,
-    overflow: "hidden",
-    backgroundColor: "#c4a484",
-    minHeight: 220,
-  },
   dots: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
+    gap: 12,
+    marginTop: 28,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "rgba(18,14,11,0.18)",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#FFF8F0",
   },
-  dotOn: { backgroundColor: INK, width: 18 },
-  copy: { paddingHorizontal: 28, alignItems: "center", paddingBottom: 8 },
+  splashWord: {
+    marginTop: 18,
+    color: "rgba(247,243,236,0.78)",
+    fontFamily: fonts.body,
+    fontSize: 15,
+    letterSpacing: 1.2,
+  },
+  enter: {
+    flex: 1,
+    backgroundColor: colors.linen,
+  },
+  mistFar: {
+    position: "absolute",
+    top: 48,
+    left: -40,
+    right: 40,
+    height: 56,
+    borderRadius: 999,
+    backgroundColor: colors.paper,
+    opacity: 0.45,
+  },
+  mistNear: {
+    position: "absolute",
+    top: 110,
+    left: 20,
+    right: -30,
+    height: 36,
+    borderRadius: 999,
+    backgroundColor: colors.paper,
+    opacity: 0.28,
+  },
+  enterCopy: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 72,
+  },
   kicker: {
-    color: BRASS_DIM,
+    color: colors.kraftDeep,
     fontFamily: fonts.bodyBold,
     fontSize: 12,
-    letterSpacing: 2.6,
+    letterSpacing: 2.8,
   },
   title: {
-    marginTop: 8,
-    color: INK,
-    fontFamily: fonts.bodyBold,
-    fontSize: 28,
-    letterSpacing: -0.4,
-    textAlign: "center",
+    marginTop: 12,
+    color: colors.ink,
+    fontFamily: fonts.display,
+    fontSize: 44,
+    lineHeight: 48,
+    letterSpacing: -0.8,
   },
   body: {
-    marginTop: 8,
-    color: BRASS_DIM,
+    marginTop: 14,
+    color: colors.brass,
     fontFamily: fonts.body,
-    fontSize: 16,
-    lineHeight: 22,
-    textAlign: "center",
-    maxWidth: 340,
+    fontSize: 17,
+    lineHeight: 24,
+    maxWidth: 320,
   },
   actions: {
     paddingHorizontal: 24,
-    paddingBottom: 8,
-    paddingTop: 8,
-    gap: 4,
+    paddingBottom: 28,
+    gap: 14,
+    alignItems: "center",
   },
   primary: {
-    backgroundColor: INK,
-    borderRadius: radii.pill,
+    alignSelf: "stretch",
+    backgroundColor: colors.kraft,
+    borderRadius: 16,
     minHeight: 56,
     alignItems: "center",
     justifyContent: "center",
   },
+  primaryOff: { opacity: 0.55 },
   primaryText: {
-    color: LINEN,
+    color: colors.linen,
     fontFamily: fonts.bodyBold,
-    fontSize: 16,
+    fontSize: 17,
+  },
+  house: {
+    color: colors.linenMuted,
+    fontFamily: fonts.body,
+    fontSize: 14,
   },
 });

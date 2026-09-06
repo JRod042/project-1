@@ -1,18 +1,23 @@
 /**
- * Casa Rústico — cream page, paper surfaces, kraft wells, espresso ink.
- * Liquid Glass is chrome only (tab bar, nav, sheets, docks). Content stays solid.
+ * Casa Rústico — cream page, kraft wells, espresso ink.
+ * Tokens shared with Espresso Escape (cream / kraft / honey) so both
+ * brand apps read as one house. Liquid Glass is chrome only.
  */
 export const colors = {
-  bg: "#f5ead8",
+  bg: "#F7F3EC",
   paper: "#fffdf8",
-  kraft: "#c4a484",
+  kraft: "#A47C59",
+  kraftDeep: "#8D6C4F",
+  kraftSplash: "#9c704b",
   bgElevated: "#fffdf8",
-  bgPanel: "#e6d3b8",
+  bgPanel: "#E4D2B8",
   bgCard: "#fffdf8",
-  linen: "#f5ead8",
+  linen: "#F7F3EC",
   linenDim: "#5c4a3a",
   linenMuted: "#8a7460",
   ink: "#120e0b",
+  espresso: "#1A120B",
+  honey: "#E8B86D",
   brass: "#8a6e52",
   brassSoft: "#c4a484",
   brassDim: "#8a6e52",
@@ -24,8 +29,9 @@ export const colors = {
   glassStrong: "rgba(255, 253, 248, 0.72)",
   glassBorder: "rgba(255, 255, 255, 0.55)",
   glassHighlight: "rgba(255, 255, 255, 0.82)",
-  glassTint: "rgba(245, 234, 216, 0.28)",
-  tabGlass: "#f5ead8",
+  glassTint: "rgba(247, 243, 236, 0.28)",
+  tabGlass: "#F7F3EC",
+  mist: "rgba(247, 243, 236, 0.55)",
 };
 
 export const fonts = {
