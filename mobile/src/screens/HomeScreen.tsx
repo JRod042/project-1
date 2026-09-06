@@ -1,188 +1,102 @@
-import { useMemo, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors, fonts, radii } from "../theme";
-import {
-  apparel,
-  brand,
-  coffees,
-  colombia,
-  formatPrice,
-  mugs,
-  origins,
-  type Product,
-} from "../lib/catalog";
+import { brand, colombia, formatPrice, origins } from "../lib/catalog";
 import { useCart } from "../lib/cart";
+import { useRewards } from "../lib/rewards";
 import { CatalogGrid } from "../components/ProductCard";
 import { PressableScale } from "../components/PressableScale";
 import { ScreenFade } from "../components/ScreenFade";
-
-type Family = "origins" | "pods" | "mugs" | "apparel";
-
-const FAMILIES: { id: Family; label: string; image: () => string; items: () => Product[] }[] = [
-  { id: "origins", label: "Origins", image: () => origins()[0]?.image ?? "", items: origins },
-  {
-    id: "pods",
-    label: "Capsules",
-    image: () => coffees().find((p) => p.id === "cr-capsules")?.image ?? "",
-    items: () => coffees().filter((p) => p.id === "cr-capsules"),
-  },
-  { id: "mugs", label: "Mugs", image: () => mugs()[0]?.image ?? "", items: mugs },
-  { id: "apparel", label: "Apparel", image: () => apparel()[0]?.image ?? "", items: apparel },
-];
+import { StarsRing } from "../components/StarsRing";
 
 type Props = {
   onOpenProduct: (id: string) => void;
+  onOpenOrder: () => void;
+  onOpenRewards: () => void;
+  onOpenRitual: () => void;
+  onOpenYou: () => void;
 };
 
-export function HomeScreen({ onOpenProduct }: Props) {
-  const [family, setFamily] = useState<Family | null>(null);
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+export function HomeScreen({
+  onOpenProduct,
+  onOpenOrder,
+  onOpenRewards,
+  onOpenRitual,
+  onOpenYou,
+}: Props) {
+  const { stars } = useRewards();
   const cart = useCart();
-  const { width } = useWindowDimensions();
-  const gutter = 20;
-  const gap = 12;
-  const col = (width - gutter * 2 - gap) / 2;
-
-  if (family) {
-    const meta = FAMILIES.find((f) => f.id === family)!;
-    return (
-      <FamilyCollection
-        label={meta.label}
-        items={meta.items()}
-        onBack={() => setFamily(null)}
-        onOpenProduct={onOpenProduct}
-      />
-    );
-  }
-
-  const discover = origins().filter((p) => p.id !== colombia.id).slice(0, 6);
+  const short = origins().slice(0, 4);
 
   return (
     <ScreenFade>
       <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View pointerEvents="none" style={styles.mistFar} />
         <View pointerEvents="none" style={styles.mistNear} />
-        <View style={styles.head}>
-          <View>
-            <Text style={styles.kicker}>CASA RÚSTICO</Text>
-            <Text style={styles.title}>Shop</Text>
-          </View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>CR</Text>
-          </View>
-        </View>
 
+        <Text style={styles.kicker}>CASA RÚSTICO</Text>
+        <Text style={styles.title}>{greeting()}</Text>
+        <Text style={styles.lede}>The cup first. Checkout stays here.</Text>
 
-        <PressableScale
-          onPress={() => onOpenProduct(colombia.id)}
-          style={[styles.familyCard, styles.colombiaCard]}
-          haptic
-          accessibilityLabel="Colombia"
-        >
-          <View style={styles.familyPhoto}>
-            <Image source={{ uri: colombia.image }} style={styles.familyImg} resizeMode="contain" />
-          </View>
-          <Text style={styles.familyName}>Colombia</Text>
+        <PressableScale onPress={onOpenRewards} style={styles.card} haptic={false}>
+          <StarsRing stars={stars} />
+          <Text style={styles.link}>See rewards →</Text>
         </PressableScale>
 
-        <View style={[styles.familyGrid, { paddingHorizontal: gutter, gap }]}>
-          {FAMILIES.map((f) => (
-            <PressableScale
-              key={f.id}
-              onPress={() => setFamily(f.id)}
-              style={[styles.familyCard, { width: col, height: col }]}
-              haptic={false}
-            >
-              <View style={styles.familyPhoto}>
-                <Image source={{ uri: f.image() }} style={styles.familyImg} resizeMode="contain" />
-              </View>
-              <Text style={styles.familyName}>{f.label}</Text>
-            </PressableScale>
-          ))}
-        </View>
+        <PressableScale onPress={() => onOpenProduct(colombia.id)} style={styles.hero}>
+          <Image source={{ uri: colombia.image }} style={styles.heroImg} resizeMode="cover" />
+          <View style={styles.heroWash} />
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroKicker}>COLOMBIA LEADS</Text>
+            <Text style={styles.heroName}>{colombia.name}</Text>
+            <Text style={styles.heroMeta}>
+              {colombia.roast} · {colombia.origin} · {formatPrice(colombia.price)}
+            </Text>
+          </View>
+        </PressableScale>
 
         <PressableScale
           onPress={() => cart.flash(`Copied ${brand.promo}`)}
           style={styles.promo}
         >
-          <Text style={styles.promoKicker}>HOUSE OFFER</Text>
-          <Text style={styles.promoCode}>{brand.promo}</Text>
-          <Text style={styles.promoCopy}>{brand.promoCopy} at checkout · tap to copy</Text>
+          <View>
+            <Text style={styles.promoCode}>Code {brand.promo}</Text>
+            <Text style={styles.promoCopy}>10% off the short menu</Text>
+          </View>
+          <View style={styles.promoChip}>
+            <Text style={styles.promoChipText}>10%</Text>
+          </View>
         </PressableScale>
 
+        <View style={styles.pair}>
+          <PressableScale onPress={onOpenRitual} style={styles.pairCard} haptic={false}>
+            <Text style={styles.pairKicker}>POUR</Text>
+            <Text style={styles.pairTitle}>Ritual</Text>
+            <Text style={styles.pairHint}>3:00 house pour-over</Text>
+          </PressableScale>
+          <PressableScale onPress={onOpenYou} style={styles.pairCard} haptic={false}>
+            <Text style={styles.pairKicker}>HOUSE</Text>
+            <Text style={styles.pairTitle}>Story</Text>
+            <Text style={styles.pairHint}>Cordillera, the cup</Text>
+          </PressableScale>
+        </View>
+
         <View style={styles.sectionRow}>
-          <Text style={styles.section}>More origins</Text>
-          <PressableScale onPress={() => setFamily("origins")}>
-            <Text style={styles.seeAll}>See all</Text>
+          <Text style={styles.section}>The short menu</Text>
+          <PressableScale onPress={onOpenOrder} haptic={false}>
+            <Text style={styles.seeAll}>All</Text>
           </PressableScale>
         </View>
-        <CatalogGrid products={discover} onOpen={onOpenProduct} />
-      </ScrollView>
-    </ScreenFade>
-  );
-}
-
-function FamilyCollection({
-  label,
-  items,
-  onBack,
-  onOpenProduct,
-}: {
-  label: string;
-  items: Product[];
-  onBack: () => void;
-  onOpenProduct: (id: string) => void;
-}) {
-  const cart = useCart();
-  const hero = items[0];
-  const rest = useMemo(() => items.slice(1), [items]);
-
-  const buyHero = () => {
-    if (!hero) return;
-    cart.add({
-      productId: hero.id,
-      variantId: hero.defaultVariantId,
-      variantTitle: hero.variants?.[0]?.title ?? hero.subtitle,
-      price: hero.price,
-      qty: 1,
-    });
-    cart.flash("Added to bag");
-  };
-
-  return (
-    <ScreenFade>
-      <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.collectionHead}>
-          <PressableScale onPress={onBack} style={styles.backText} haptic={false}>
-            <Text style={styles.backGlyph}>‹ Shop</Text>
-          </PressableScale>
-          <Text style={styles.title}>{label}</Text>
-        </View>
-
-        {hero ? (
-          <View style={styles.feature}>
-            <PressableScale onPress={() => onOpenProduct(hero.id)} style={styles.featureWell} haptic={false}>
-              <Image source={{ uri: hero.image }} style={styles.featureImg} resizeMode="contain" />
-            </PressableScale>
-            <Text style={styles.featureName}>{hero.name}</Text>
-            <Text style={styles.featureFrom}>From {formatPrice(hero.price)}</Text>
-            {hero.notes ? <Text style={styles.featureNotes}>{hero.notes}</Text> : null}
-            <View style={styles.pills}>
-              <PressableScale onPress={buyHero} style={styles.pillFill}>
-                <Text style={styles.pillFillText}>Add to bag</Text>
-              </PressableScale>
-              <PressableScale onPress={() => onOpenProduct(hero.id)} style={styles.pillQuiet} haptic={false}>
-                <Text style={styles.pillQuietText}>Learn more</Text>
-              </PressableScale>
-            </View>
-          </View>
-        ) : null}
-
-        {rest.length > 0 ? (
-          <>
-            <Text style={[styles.section, { paddingHorizontal: 20 }]}>Also in {label.toLowerCase()}</Text>
-            <CatalogGrid products={rest} onOpen={onOpenProduct} />
-          </>
-        ) : null}
+        <CatalogGrid products={short} onOpen={onOpenProduct} />
+        <PressableScale onPress={onOpenOrder} style={styles.fullMenu}>
+          <Text style={styles.fullMenuText}>Shop the full menu</Text>
+        </PressableScale>
       </ScrollView>
     </ScreenFade>
   );
@@ -191,28 +105,6 @@ function FamilyCollection({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   content: { paddingBottom: 180 },
-  head: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 8,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-  kicker: {
-    color: colors.kraftDeep,
-    fontFamily: fonts.bodyBold,
-    fontSize: 11,
-    letterSpacing: 2.4,
-    marginBottom: 4,
-  },
-  title: {
-    color: colors.ink,
-    fontFamily: fonts.display,
-    fontSize: 34,
-    letterSpacing: -0.6,
-    lineHeight: 40,
-  },
   mistFar: {
     position: "absolute",
     top: 8,
@@ -233,157 +125,132 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     opacity: 0.22,
   },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.kraft,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 4,
-  },
-  avatarText: {
-    color: colors.ink,
-    fontFamily: fonts.bodyBold,
-    fontSize: 11,
-    letterSpacing: 0.4,
-  },
-  familyGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  familyCard: {
-    backgroundColor: colors.paper,
-    borderRadius: radii.lg,
-    overflow: "hidden",
-  },
-  familyPhoto: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 16,
-  },
-  familyImg: { width: "78%", height: "78%" },
-  familyName: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    paddingTop: 4,
-    color: colors.ink,
-    fontFamily: fonts.displaySoft,
-    fontSize: 18,
-    letterSpacing: -0.3,
-  },
-  colombiaCard: {
-    marginHorizontal: 20,
-    marginBottom: 4,
-    height: 220,
-  },
-  promo: {
-    marginHorizontal: 20,
-    marginTop: 12,
-    marginBottom: 4,
-    backgroundColor: colors.kraft,
-    borderRadius: radii.lg,
+  kicker: {
     paddingHorizontal: 20,
-    paddingVertical: 18,
-  },
-  promoKicker: {
-    color: colors.ink,
+    paddingTop: 8,
+    color: colors.kraftDeep,
     fontFamily: fonts.bodyBold,
     fontSize: 11,
-    letterSpacing: 1.8,
+    letterSpacing: 2.4,
   },
-  promoCode: {
-    marginTop: 6,
+  title: {
+    paddingHorizontal: 20,
+    marginTop: 4,
     color: colors.ink,
-    fontFamily: fonts.bodyBold,
-    fontSize: 28,
-    letterSpacing: 0.6,
+    fontFamily: fonts.display,
+    fontSize: 34,
+    letterSpacing: -0.6,
+    lineHeight: 40,
   },
-  promoCopy: {
-    marginTop: 6,
-    color: colors.linenDim,
+  lede: {
+    paddingHorizontal: 20,
+    marginTop: 4,
+    marginBottom: 16,
+    color: colors.linenMuted,
     fontFamily: fonts.body,
+    fontSize: 15,
+  },
+  card: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    backgroundColor: colors.paper,
+    borderRadius: radii.xl,
+    padding: 16,
+  },
+  link: {
+    marginTop: 12,
+    color: colors.kraftDeep,
+    fontFamily: fonts.bodyMed,
     fontSize: 14,
   },
+  hero: {
+    marginHorizontal: 20,
+    height: 220,
+    borderRadius: radii.xl,
+    overflow: "hidden",
+    backgroundColor: colors.paper,
+    marginBottom: 12,
+  },
+  heroImg: { ...StyleSheet.absoluteFill },
+  heroWash: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(18,14,11,0.38)",
+  },
+  heroCopy: { position: "absolute", left: 16, right: 16, bottom: 16 },
+  heroKicker: {
+    color: colors.honey,
+    fontFamily: fonts.bodyBold,
+    fontSize: 11,
+    letterSpacing: 2,
+  },
+  heroName: {
+    marginTop: 4,
+    color: colors.linen,
+    fontFamily: fonts.display,
+    fontSize: 32,
+    letterSpacing: -0.5,
+  },
+  heroMeta: { marginTop: 4, color: "rgba(247,243,236,0.82)", fontFamily: fonts.body, fontSize: 14 },
+  promo: {
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.paper,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  promoCode: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 15 },
+  promoCopy: { marginTop: 2, color: colors.linenMuted, fontFamily: fonts.body, fontSize: 12 },
+  promoChip: {
+    borderRadius: 999,
+    backgroundColor: colors.bg,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  promoChipText: { color: colors.kraftDeep, fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.4 },
+  pair: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  pairCard: {
+    flex: 1,
+    backgroundColor: colors.paper,
+    borderRadius: radii.lg,
+    padding: 16,
+  },
+  pairKicker: {
+    color: colors.kraftDeep,
+    fontFamily: fonts.bodyBold,
+    fontSize: 10,
+    letterSpacing: 2,
+  },
+  pairTitle: { marginTop: 8, color: colors.ink, fontFamily: fonts.displaySoft, fontSize: 22 },
+  pairHint: { marginTop: 4, color: colors.linenMuted, fontFamily: fonts.body, fontSize: 12 },
   sectionRow: {
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 12,
+    paddingBottom: 8,
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
   },
-  section: {
-    color: colors.ink,
-    fontFamily: fonts.displaySoft,
-    fontSize: 22,
-    letterSpacing: -0.3,
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
-  seeAll: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 16 },
-  collectionHead: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 },
-  backText: { minHeight: 36, justifyContent: "center", marginLeft: -4 },
-  backGlyph: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 17 },
-  feature: { paddingBottom: 8 },
-  featureWell: {
+  section: { color: colors.ink, fontFamily: fonts.displaySoft, fontSize: 22 },
+  seeAll: { color: colors.brass, fontFamily: fonts.bodyMed, fontSize: 15 },
+  fullMenu: {
     marginHorizontal: 20,
-    aspectRatio: 1,
-    borderRadius: radii.lg,
-    backgroundColor: colors.paper,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  featureImg: { width: "72%", height: "72%" },
-  featureName: {
-    marginTop: 18,
-    paddingHorizontal: 20,
-    color: colors.ink,
-    fontFamily: fonts.display,
-    fontSize: 28,
-    letterSpacing: -0.5,
-  },
-  featureFrom: {
-    marginTop: 6,
-    paddingHorizontal: 20,
-    color: colors.ink,
-    fontFamily: fonts.bodyMed,
-    fontSize: 17,
-  },
-  featureNotes: {
-    marginTop: 6,
-    paddingHorizontal: 20,
-    color: colors.linenDim,
-    fontFamily: fonts.body,
-    fontSize: 17,
-    lineHeight: 24,
-  },
-  pills: {
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  pillFill: {
-    minHeight: 44,
-    paddingHorizontal: 22,
-    borderRadius: radii.pill,
-    backgroundColor: colors.ink,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pillFillText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 15 },
-  pillQuiet: {
-    minHeight: 44,
-    paddingHorizontal: 22,
+    marginTop: 12,
+    minHeight: 52,
     borderRadius: radii.pill,
     backgroundColor: colors.paper,
     alignItems: "center",
     justifyContent: "center",
   },
-  pillQuietText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 15 },
+  fullMenuText: { color: colors.ink, fontFamily: fonts.bodyBold, fontSize: 16 },
 });

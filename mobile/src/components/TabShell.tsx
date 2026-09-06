@@ -3,53 +3,44 @@ import { colors, fonts } from "../theme";
 import { PressableScale } from "./PressableScale";
 import { GlassPanel } from "./GlassPanel";
 
-export type TabId = "shop" | "ritual" | "story" | "bag";
+export type TabId = "home" | "order" | "rewards" | "you";
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: "shop", label: "Shop" },
-  { id: "ritual", label: "Ritual" },
-  { id: "story", label: "You" },
-  { id: "bag", label: "Bag" },
+  { id: "home", label: "Home" },
+  { id: "order", label: "Order" },
+  { id: "rewards", label: "Rewards" },
+  { id: "you", label: "You" },
 ];
 
 type Props = {
   active: TabId;
   onChange: (id: TabId) => void;
-  bagCount?: number;
 };
 
 function Glyph({ id, on }: { id: TabId; on: boolean }) {
   const c = on ? colors.ink : colors.linenMuted;
   return (
     <View style={[g.well, on && g.wellOn]}>
-      {id === "shop" ? (
-        <View style={g.grid}>
-          <View style={[g.cell, { backgroundColor: c }]} />
-          <View style={[g.cell, { backgroundColor: c }]} />
-          <View style={[g.cell, { backgroundColor: c }]} />
-          <View style={[g.cell, { backgroundColor: c }]} />
+      {id === "home" ? (
+        <View style={[g.house, { borderColor: c }]}>
+          <View style={[g.roof, { borderBottomColor: c }]} />
         </View>
-      ) : id === "ritual" ? (
+      ) : id === "order" ? (
         <View style={[g.cup, { borderColor: c }]}>
           <View style={[g.steam, { backgroundColor: c }]} />
         </View>
-      ) : id === "story" ? (
-        <View style={g.book}>
-          <View style={[g.line, { backgroundColor: c }]} />
-          <View style={[g.line, { backgroundColor: c, width: 12 }]} />
-          <View style={[g.line, { backgroundColor: c, width: 10 }]} />
-        </View>
+      ) : id === "rewards" ? (
+        <View style={[g.star, { backgroundColor: c }]} />
       ) : (
-        <View style={g.bag}>
-          <View style={[g.handle, { borderColor: c }]} />
-          <View style={[g.body, { borderColor: c }]} />
+        <View style={[g.person, { borderColor: c }]}>
+          <View style={[g.head, { backgroundColor: c }]} />
         </View>
       )}
     </View>
   );
 }
 
-export function TabShell({ active, onChange, bagCount = 0 }: Props) {
+export function TabShell({ active, onChange }: Props) {
   return (
     <GlassPanel style={styles.bar} contentStyle={styles.row} interactive>
       {TABS.map((t) => {
@@ -63,14 +54,7 @@ export function TabShell({ active, onChange, bagCount = 0 }: Props) {
               accessibilityState={{ selected: on }}
               accessibilityLabel={t.label}
             >
-              <View>
-                <Glyph id={t.id} on={on} />
-                {t.id === "bag" && bagCount > 0 ? (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{bagCount > 9 ? "9+" : bagCount}</Text>
-                  </View>
-                ) : null}
-              </View>
+              <Glyph id={t.id} on={on} />
               <Text style={[styles.label, on && styles.labelOn]} numberOfLines={1}>
                 {t.label}
               </Text>
@@ -93,14 +77,25 @@ const g = StyleSheet.create({
   wellOn: {
     backgroundColor: "rgba(255,253,248,0.42)",
   },
-  grid: {
+  house: {
     width: 14,
-    height: 14,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 2,
+    height: 10,
+    borderWidth: 1.6,
+    borderTopWidth: 0,
+    marginTop: 4,
   },
-  cell: { width: 6, height: 6, borderRadius: 1.5 },
+  roof: {
+    position: "absolute",
+    top: -7,
+    left: -3,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 7,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+  },
   cup: {
     width: 16,
     height: 12,
@@ -117,23 +112,28 @@ const g = StyleSheet.create({
     borderRadius: 1,
     opacity: 0.85,
   },
-  book: { width: 16, height: 16, justifyContent: "center", gap: 3 },
-  line: { height: 1.6, width: 16, borderRadius: 1 },
-  bag: { width: 16, height: 18, alignItems: "center" },
-  handle: {
-    width: 8,
-    height: 5,
-    borderWidth: 1.5,
-    borderBottomWidth: 0,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
-  },
-  body: {
-    width: 14,
-    height: 12,
-    borderWidth: 1.5,
+  star: {
+    width: 10,
+    height: 10,
     borderRadius: 2,
-    marginTop: -1,
+    transform: [{ rotate: "45deg" }],
+  },
+  person: {
+    width: 14,
+    height: 8,
+    borderWidth: 1.6,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    marginTop: 6,
+    alignItems: "center",
+  },
+  head: {
+    position: "absolute",
+    top: -8,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 });
 
@@ -173,17 +173,4 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   labelOn: { color: colors.ink },
-  badge: {
-    position: "absolute",
-    top: 0,
-    right: 2,
-    minWidth: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: colors.ink,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 3,
-  },
-  badgeText: { color: colors.linen, fontFamily: fonts.bodyBold, fontSize: 9 },
 });
