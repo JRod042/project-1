@@ -7,6 +7,7 @@
 |-----|---------|
 | **[docs/NORTH_STAR.md](docs/NORTH_STAR.md)** | Product + hard constraints |
 | **[mobile/IOS.md](mobile/IOS.md)** | TestFlight / EAS |
+| **[docs/EAS_BUILD_INVENTORY.md](docs/EAS_BUILD_INVENTORY.md)** | Keep vs stale Expo builds (shop 49; Escape 1.0.4 / 9) |
 
 ## What ships
 

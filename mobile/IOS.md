@@ -28,7 +28,7 @@ GitHub Actions → **Casa Rústico store** · profile **production** · submit *
 | iPhone | Uploads the binary to App Store Connect. After processing it appears in TestFlight. | App Store Connect → version 1.0.0 → select this build → **Submit for Review**. Apple does not auto-release. |
 | Android | Uploads the AAB to Play **production** and completes the release. | Play Console must already have the listing (privacy, content rating, store listing). First-ever Play upload had to be manual; after that this path is live. |
 
-Current store build: **49**.
+Current store build: **49**. **KEEP** Expo iOS [e48957cd](https://expo.dev/accounts/jrod42/projects/omni/builds/e48957cd-d852-49ef-8fa2-c3d5ec8bdd65) (ASC Waiting for Review). Do not delete or expire it. Older 46–48 and below are stale — see **[docs/EAS_BUILD_INVENTORY.md](../docs/EAS_BUILD_INVENTORY.md)**.
 
 ---
 
