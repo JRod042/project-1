@@ -5,7 +5,7 @@ import {
   ColorScheme,
   ShopifyCheckoutSheetProvider,
   useShopifyCheckoutSheet,
-} from "@shopify/checkout-sheet-kit";
+} from "./src/lib/checkoutKit";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,

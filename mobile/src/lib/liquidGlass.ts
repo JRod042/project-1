@@ -23,7 +23,9 @@ export function useChromeMaterial(): { native: boolean; reduce: boolean } {
     const apply = (next: boolean) => {
       if (live) setReduce(next);
     };
-    void AccessibilityInfo.isReduceTransparencyEnabled().then(apply);
+    const probe = AccessibilityInfo.isReduceTransparencyEnabled;
+    if (typeof probe !== "function") return;
+    void probe.call(AccessibilityInfo).then(apply);
     const sub = AccessibilityInfo.addEventListener("reduceTransparencyChanged", apply);
     return () => {
       live = false;
